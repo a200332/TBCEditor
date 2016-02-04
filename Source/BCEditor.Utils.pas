@@ -5,75 +5,63 @@ interface
 uses
   Winapi.Windows, System.Math, System.Classes, Vcl.Graphics, System.UITypes, BCEditor.Consts, BCEditor.Types;
 
-function CeilOfIntDiv(ADividend: Cardinal; ADivisor: Word): Word;
-function DeleteWhiteSpace(const AStr: string): string;
-function GetTabConvertProc(TabWidth: Integer): TBCEditorTabConvertProc;
-function GetTextSize(AHandle: HDC; AText: PChar; ACount: Integer): TSize;
-function MessageDialog(const Msg: string; DlgType: TMsgDlgType; Buttons: TMsgDlgButtons): Integer;
-function MinMax(Value, MinValue, MaxValue: Integer): Integer;
-function TextExtent(ACanvas: TCanvas; const Text: string): TSize;
-function TextWidth(ACanvas: TCanvas; const Text: string): Integer;
-function TextHeight(ACanvas: TCanvas; const Text: string): Integer;
-procedure ClearList(var List: TList);
-procedure FreeList(var List: TList);
+function DeleteWhitespace(const AText: string): string;
+function GetTabConvertProc(ATabWidth: Integer): TBCEditorTabConvertProc;
+function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
+function MinMax(AValue, AMinValue, AMaxValue: Integer): Integer;
+function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
+function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
+procedure ClearList(var AList: TList);
+procedure FreeList(var AList: TList);
 
 implementation
 
 uses
   Vcl.Forms, Vcl.Dialogs, System.SysUtils, System.Character;
 
-procedure FreeList(var List: TList);
+procedure FreeList(var AList: TList);
 begin
-  ClearList(List);
-  if Assigned(List) then
+  ClearList(AList);
+  if Assigned(AList) then
   begin
-    List.Free;
-    List := nil;
+    AList.Free;
+    AList := nil;
   end;
 end;
 
-function CeilOfIntDiv(ADividend: Cardinal; ADivisor: Word): Word;
-var
-  LRemainder: Word;
-begin
-  DivMod(ADividend, ADivisor, Result, LRemainder);
-  if LRemainder > 0 then
-    Inc(Result);
-end;
-
-procedure ClearList(var List: TList);
+procedure ClearList(var AList: TList);
 var
   i: Integer;
 begin
-  if not Assigned(List) then
+  if not Assigned(AList) then
     Exit;
-  for i := 0 to List.Count - 1 do
-    if Assigned(List[i]) then
+  for i := 0 to AList.Count - 1 do
+    if Assigned(AList[i]) then
     begin
-      TObject(List[i]).Free;
-      List[i] := nil;
+      TObject(AList[i]).Free;
+      AList[i] := nil;
     end;
-  List.Clear;
+  AList.Clear;
 end;
 
-function DeleteWhiteSpace(const AStr: string): string;
+function DeleteWhitespace(const AText: string): string;
 var
   i, j: Integer;
 begin
-  SetLength(Result, Length(AStr));
+  SetLength(Result, Length(AText));
   j := 0;
-  for i := 1 to Length(AStr) do
-    if not AStr[i].IsWhiteSpace then
+  for i := 1 to Length(AText) do
+    if not AText[i].IsWhiteSpace then
     begin
       Inc(j);
-      Result[j] := AStr[i];
+      Result[j] := AText[i];
     end;
   SetLength(Result, j);
 end;
 
-function MessageDialog(const Msg: string; DlgType: TMsgDlgType; Buttons: TMsgDlgButtons): Integer;
+function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
 begin
-  with CreateMessageDialog(Msg, DlgType, Buttons) do
+  with CreateMessageDialog(AMessage, ADlgType, AButtons) do
     try
       HelpContext := 0;
       HelpFile := '';
@@ -84,41 +72,41 @@ begin
     end;
 end;
 
-function MinMax(Value, MinValue, MaxValue: Integer): Integer;
+function MinMax(AValue, AMinValue, AMaxValue: Integer): Integer;
 begin
-  Value := Min(Value, MaxValue);
-  Result := Max(Value, MinValue);
+  AValue := Min(AValue, AMaxValue);
+  Result := Max(AValue, AMinValue);
 end;
 
-function GetHasTabs(Line: PChar; var CharsBefore: Integer): Boolean;
+function GetHasTabs(ALine: PChar; var ACharsBefore: Integer): Boolean;
 begin
   Result := False;
-  CharsBefore := 0;
-  if Assigned(Line) then
+  ACharsBefore := 0;
+  if Assigned(ALine) then
   begin
-    while Line^ <> BCEDITOR_NONE_CHAR do
+    while ALine^ <> BCEDITOR_NONE_CHAR do
     begin
-      if Line^ = BCEDITOR_TAB_CHAR then
+      if ALine^ = BCEDITOR_TAB_CHAR then
         Exit(True);
-      Inc(CharsBefore);
-      Inc(Line);
+      Inc(ACharsBefore);
+      Inc(ALine);
     end;
   end
 end;
 
-function ConvertTabs(const Line: string; TabWidth: Integer; var HasTabs: Boolean): string;
+function ConvertTabs(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean): string;
 var
   PSource: PChar;
 begin
-  HasTabs := False;
+  AHasTabs := False;
   Result := '';
-  PSource := PChar(Line);
+  PSource := PChar(ALine);
   while PSource^ <> BCEDITOR_NONE_CHAR do
   begin
     if PSource^ = BCEDITOR_TAB_CHAR then
     begin
-      HasTabs := True;
-      Result := Result + StringOfChar(BCEDITOR_SPACE_CHAR, TabWidth);
+      AHasTabs := True;
+      Result := Result + StringOfChar(BCEDITOR_SPACE_CHAR, ATabWidth);
     end
     else
       Result := Result + PSource^;
@@ -126,39 +114,25 @@ begin
   end;
 end;
 
-function GetTabConvertProc(TabWidth: Integer): TBCEditorTabConvertProc;
+function GetTabConvertProc(ATabWidth: Integer): TBCEditorTabConvertProc;
 begin
   Result := TBCEditorTabConvertProc(@ConvertTabs);
 end;
 
-function GetTextSize(AHandle: HDC; AText: PChar; ACount: Integer): TSize;
+function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
+var
+  LSize: TSize;
 begin
-  Result.cx := 0;
-  Result.cy := 0;
-  GetTextExtentPoint32W(AHandle, AText, ACount, Result);
+  GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
+  Result := LSize.cx;
 end;
 
-type
-  TAccessCanvas = class(TCanvas)
-  end;
-
-function TextExtent(ACanvas: TCanvas; const Text: string): TSize;
+function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
+var
+  LSize: TSize;
 begin
-  with TAccessCanvas(ACanvas) do
-  begin
-    RequiredState([csHandleValid, csFontValid]);
-    Result := GetTextSize(Handle, PChar(Text), Length(Text));
-  end;
-end;
-
-function TextWidth(ACanvas: TCanvas; const Text: string): Integer;
-begin
-  Result := TextExtent(ACanvas, Text).cx;
-end;
-
-function TextHeight(ACanvas: TCanvas; const Text: string): Integer;
-begin
-  Result := TextExtent(ACanvas, Text).cy;
+  GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
+  Result := LSize.cy;
 end;
 
 end.

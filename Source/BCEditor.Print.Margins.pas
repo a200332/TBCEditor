@@ -16,6 +16,16 @@ type
     FLeftTextIndent: Double;
     FMargin: Double;
     FMirrorMargins: Boolean;
+    FPixelBottom: Integer;
+    FPixelFooter: Integer;
+    FPixelHeader: Integer;
+    FPixelInternalMargin: Integer;
+    FPixelLeft: Integer;
+    FPixelLeftTextIndent: Integer;
+    FPixelMargin: Integer;
+    FPixelRight: Integer;
+    FPixelRightTextIndent: Integer;
+    FPixelTop: Integer;
     FRight: Double;
     FRightTextIndent: Double;
     FTop: Double;
@@ -43,23 +53,22 @@ type
     procedure SetRightTextIndent(const AValue: Double);
     procedure SetTop(const AValue: Double);
   public
-    PixelBottom: Integer;
-    PixelFooter: Integer;
-    PixelHeader: Integer;
-    PixelInternalMargin: Integer;
-    PixelLeft: Integer;
-    PixelLeftTextIndent: Integer;
-    PixelMargin: Integer;
-    PixelRight: Integer;
-    PixelRightTextIndent: Integer;
-    PixelTop: Integer;
     constructor Create;
-
-    procedure Assign(Source: TPersistent); override;
+    procedure Assign(ASource: TPersistent); override;
     procedure InitPage(ACanvas: TCanvas; APageNumber: Integer; APrinterInfo: TBCEditorPrinterInfo;
       ALineNumbers, ALineNumbersInMargin: Boolean; AMaxLineNumber: Integer);
     procedure LoadFromStream(AStream: TStream);
     procedure SaveToStream(AStream: TStream);
+    property PixelBottom: Integer read FPixelBottom write FPixelBottom;
+    property PixelFooter: Integer read FPixelFooter write FPixelFooter;
+    property PixelHeader: Integer read FPixelHeader write FPixelHeader;
+    property PixelInternalMargin: Integer read FPixelInternalMargin write FPixelInternalMargin;
+    property PixelLeft: Integer read FPixelLeft write FPixelLeft;
+    property PixelLeftTextIndent: Integer read FPixelLeftTextIndent write FPixelLeftTextIndent;
+    property PixelMargin: Integer read FPixelMargin write FPixelMargin;
+    property PixelRight: Integer read FPixelRight write FPixelRight;
+    property PixelRightTextIndent: Integer read FPixelRightTextIndent write FPixelRightTextIndent;
+    property PixelTop: Integer read FPixelTop write FPixelTop;
   published
     property Bottom: Double read GetBottom write SetBottom;
     property Footer: Double read GetFooter write SetFooter;
@@ -253,10 +262,10 @@ begin
   PixelLeftTextIndent := PixelLeft + Round(APrinterInfo.XPixPermm * FLeftTextIndent);
 end;
 
-procedure TBCEditorPrintMargins.Assign(Source: TPersistent);
+procedure TBCEditorPrintMargins.Assign(ASource: TPersistent);
 begin
-  if Assigned(Source) and (Source is TBCEditorPrintMargins) then
-  with Source as TBCEditorPrintMargins do
+  if Assigned(ASource) and (ASource is TBCEditorPrintMargins) then
+  with ASource as TBCEditorPrintMargins do
   begin
     Self.FLeft := FLeft;
     Self.FRight := FRight;
@@ -272,7 +281,7 @@ begin
     Self.FUnitSystem := FUnitSystem;
   end
   else
-    inherited;
+    inherited Assign(ASource);
 end;
 
 procedure TBCEditorPrintMargins.LoadFromStream(AStream: TStream);

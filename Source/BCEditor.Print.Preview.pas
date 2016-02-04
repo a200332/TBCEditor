@@ -18,7 +18,7 @@ type
     FEditorPrint: TBCEditorPrint;
     FOnPreviewPage: TBCEditorPreviewPageEvent;
     FOnScaleChange: TNotifyEvent;
-    FPageBackground: TColor;
+    FPageBackgroundColor: TColor;
     FPageNumber: Integer;
     FPageSize: TPoint;
     FScaleMode: TBCEditorPreviewScale;
@@ -35,23 +35,23 @@ type
     function GetPageWidth100Percent: Integer;
     function GetPageWidthFromHeight(AHeight: Integer): Integer;
     procedure PaintPaper;
-    procedure SetBorderStyle(Value: TBorderStyle);
-    procedure SetEditorPrint(Value: TBCEditorPrint);
-    procedure SetPageBackground(Value: TColor);
-    procedure SetScaleMode(Value: TBCEditorPreviewScale);
-    procedure SetScalePercent(Value: Integer);
-    procedure WMEraseBkgnd(var Msg: TWMEraseBkgnd); message WM_ERASEBKGND;
-    procedure WMHScroll(var Msg: TWMHScroll); message WM_HSCROLL;
+    procedure SetBorderStyle(AValue: TBorderStyle);
+    procedure SetEditorPrint(AValue: TBCEditorPrint);
+    procedure SetPageBackgroundColor(AValue: TColor);
+    procedure SetScaleMode(AValue: TBCEditorPreviewScale);
+    procedure SetScalePercent(AValue: Integer);
+    procedure WMEraseBkgnd(var AMessage: TWMEraseBkgnd); message WM_ERASEBKGND;
+    procedure WMHScroll(var AMessage: TWMHScroll); message WM_HSCROLL;
     procedure WMMouseWheel(var Message: TWMMouseWheel); message WM_MOUSEWHEEL;
-    procedure WMSize(var Msg: TWMSize); message WM_SIZE;
-    procedure WMVScroll(var Msg: TWMVScroll); message WM_VSCROLL;
+    procedure WMSize(var AMessage: TWMSize); message WM_SIZE;
+    procedure WMVScroll(var AMessage: TWMVScroll); message WM_VSCROLL;
   protected
     procedure CreateParams(var AParams: TCreateParams); override;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-    procedure ScrollHorzFor(Value: Integer);
-    procedure ScrollHorzTo(Value: Integer); virtual;
-    procedure ScrollVertFor(Value: Integer);
-    procedure ScrollVertTo(Value: Integer); virtual;
+    procedure ScrollHorzFor(AValue: Integer);
+    procedure ScrollHorzTo(AValue: Integer); virtual;
+    procedure ScrollVertFor(AValue: Integer);
+    procedure ScrollVertTo(AValue: Integer); virtual;
     procedure SizeChanged; virtual;
     procedure UpdateScrollbars; virtual;
   public
@@ -76,7 +76,7 @@ type
     property OnMouseUp;
     property OnPreviewPage: TBCEditorPreviewPageEvent read FOnPreviewPage write FOnPreviewPage;
     property OnScaleChange: TNotifyEvent read FOnScaleChange write FOnScaleChange;
-    property PageBackgroundColor: TColor read FPageBackground write SetPageBackground default clWhite;
+    property PageBackgroundColor: TColor read FPageBackgroundColor write SetPageBackgroundColor default clWhite;
     property PopupMenu;
     property ScaleMode: TBCEditorPreviewScale read FScaleMode write SetScaleMode default pscUserScaled;
     property ScalePercent: Integer read FScalePercent write SetScalePercent default 100;
@@ -102,7 +102,7 @@ begin
   FBorderStyle := bsSingle;
   FScaleMode := pscUserScaled;
   FScalePercent := 100;
-  FPageBackground := clWhite;
+  FPageBackgroundColor := clWhite;
   Width := 200;
   Height := 120;
   ParentColor := False;
@@ -116,7 +116,7 @@ end;
 
 procedure TBCEditorPrintPreview.CreateParams(var AParams: TCreateParams);
 const
-  BorderStyles: array [TBorderStyle] of DWord = (0, WS_BORDER);
+  BorderStyles: array [TBorderStyle] of Cardinal = (0, WS_BORDER);
 begin
   inherited;
   with AParams do
@@ -200,36 +200,32 @@ begin
     Pen.Style := psSolid;
     if (csDesigning in ComponentState) or (not Assigned(FEditorPrint)) then
     begin
-      FillRect(LClipRect);
-      Brush.Color := FPageBackground;
+      PatBlt(Canvas.Handle, LClipRect.Left, LClipRect.Top, LClipRect.Width, LClipRect.Height, PATCOPY);
+      Brush.Color := FPageBackgroundColor;
       Rectangle(MARGIN_WIDTH_LEFT_AND_RIGHT, MARGIN_HEIGHT_TOP_AND_BOTTOM, MARGIN_WIDTH_LEFT_AND_RIGHT + 30,
         MARGIN_HEIGHT_TOP_AND_BOTTOM + 43);
       Exit;
     end;
-    with PaperRect do
-    begin
-      Left := FVirtualOffset.X + FScrollPosition.X;
-      if ScaleMode = pscWholePage then
-        Top := FVirtualOffset.Y
-      else
-        Top := FVirtualOffset.Y + FScrollPosition.Y;
-      Right := Left + FPageSize.X;
-      Bottom := Top + FPageSize.Y;
-      PaperRGN := CreateRectRgn(Left, Top, Right + 1, Bottom + 1);
-    end;
+    PaperRect.Left := FVirtualOffset.X + FScrollPosition.X;
+    if ScaleMode = pscWholePage then
+      PaperRect.Top := FVirtualOffset.Y
+    else
+      PaperRect.Top := FVirtualOffset.Y + FScrollPosition.Y;
+    PaperRect.Right := PaperRect.Left + FPageSize.X;
+    PaperRect.Bottom := PaperRect.Top + FPageSize.Y;
+    PaperRGN := CreateRectRgn(PaperRect.Left, PaperRect.Top, PaperRect.Right + 1, PaperRect.Bottom + 1);
     if NULLREGION <> ExtSelectClipRgn(Handle, PaperRGN, RGN_DIFF) then
-      FillRect(LClipRect);
+      PatBlt(Canvas.Handle, LClipRect.Left, LClipRect.Top, LClipRect.Width, LClipRect.Height, PATCOPY);
     SelectClipRgn(Handle, PaperRGN);
-    Brush.Color := FPageBackground;
-    with PaperRect do
-      Rectangle(Left, Top, Right + 1, Bottom + 1);
+    Brush.Color := FPageBackgroundColor;
+    Rectangle(PaperRect.Left, PaperRect.Top, PaperRect.Right + 1, PaperRect.Bottom + 1);
     DeleteObject(PaperRGN);
   end;
 end;
 
 procedure TBCEditorPrintPreview.Paint;
 var
-  OriginalScreenPoint: TPoint;
+  LOriginalScreenPoint: TPoint;
 begin
   with Canvas do
   begin
@@ -237,79 +233,77 @@ begin
     if (csDesigning in ComponentState) or (not Assigned(FEditorPrint)) then
       Exit;
     SetMapMode(Handle, MM_ANISOTROPIC);
-    with FEditorPrint.PrinterInfo do
-    begin
-      SetWindowExtEx(Handle, PhysicalWidth, PhysicalHeight, nil);
-      SetViewPortExtEx(Handle, FPageSize.X, FPageSize.Y, nil);
-      OriginalScreenPoint.X := MulDiv(LeftMargin, FPageSize.X, PhysicalWidth);
-      OriginalScreenPoint.Y := MulDiv(TopMargin, FPageSize.Y, PhysicalHeight);
-      Inc(OriginalScreenPoint.X, FVirtualOffset.X + FScrollPosition.X);
-      if ScaleMode = pscWholePage then
-        Inc(OriginalScreenPoint.Y, FVirtualOffset.Y)
-      else
-        Inc(OriginalScreenPoint.Y, FVirtualOffset.Y + FScrollPosition.Y);
-      SetViewPortOrgEx(Handle, OriginalScreenPoint.X, OriginalScreenPoint.Y, nil);
-      IntersectClipRect(Handle, 0, 0, PrintableWidth, PrintableHeight);
-    end;
+    SetWindowExtEx(Handle, FEditorPrint.PrinterInfo.PhysicalWidth, FEditorPrint.PrinterInfo.PhysicalHeight, nil);
+    SetViewPortExtEx(Handle, FPageSize.X, FPageSize.Y, nil);
+    LOriginalScreenPoint.X := MulDiv(FEditorPrint.PrinterInfo.LeftMargin, FPageSize.X, FEditorPrint.PrinterInfo.PhysicalWidth);
+    LOriginalScreenPoint.Y := MulDiv(FEditorPrint.PrinterInfo.TopMargin, FPageSize.Y, FEditorPrint.PrinterInfo.PhysicalHeight);
+    Inc(LOriginalScreenPoint.X, FVirtualOffset.X + FScrollPosition.X);
+    if ScaleMode = pscWholePage then
+      Inc(LOriginalScreenPoint.Y, FVirtualOffset.Y)
+    else
+      Inc(LOriginalScreenPoint.Y, FVirtualOffset.Y + FScrollPosition.Y);
+    SetViewPortOrgEx(Handle, LOriginalScreenPoint.X, LOriginalScreenPoint.Y, nil);
+    IntersectClipRect(Handle, 0, 0, FEditorPrint.PrinterInfo.PrintableWidth,
+      FEditorPrint.PrinterInfo.PrintableHeight);
     FEditorPrint.PrintToCanvas(Canvas, FPageNumber);
   end;
 end;
 
-procedure TBCEditorPrintPreview.ScrollHorzFor(Value: Integer);
+procedure TBCEditorPrintPreview.ScrollHorzFor(AValue: Integer);
 begin
-  ScrollHorzTo(FScrollPosition.X + Value);
+  ScrollHorzTo(FScrollPosition.X + AValue);
 end;
 
-procedure TBCEditorPrintPreview.ScrollHorzTo(Value: Integer);
+procedure TBCEditorPrintPreview.ScrollHorzTo(AValue: Integer);
 var
-  LWidth, Position: Integer;
+  LWidth, LPosition: Integer;
 begin
   LWidth := ClientWidth;
-  Position := LWidth - FVirtualSize.X;
-  if Value < Position then
-    Value := Position;
-  if Value > 0 then
-    Value := 0;
-  if Value <> FScrollPosition.X then
+  LPosition := LWidth - FVirtualSize.X;
+  if AValue < LPosition then
+    AValue := LPosition;
+  if AValue > 0 then
+    AValue := 0;
+  if FScrollPosition.X <> AValue then
   begin
-    Position := Value - FScrollPosition.X;
-    FScrollPosition.X := Value;
+    LPosition := AValue - FScrollPosition.X;
+    FScrollPosition.X := AValue;
     UpdateScrollbars;
-    if Abs(Position) > LWidth div 2 then
+    if Abs(LPosition) > LWidth div 2 then
       Invalidate
     else
     begin
-      ScrollWindow(Handle, Position, 0, nil, nil);
+      ScrollWindow(Handle, LPosition, 0, nil, nil);
       Update;
     end;
   end;
 end;
 
-procedure TBCEditorPrintPreview.ScrollVertFor(Value: Integer);
+procedure TBCEditorPrintPreview.ScrollVertFor(AValue: Integer);
 begin
-  ScrollVertTo(FScrollPosition.Y + Value);
+  ScrollVertTo(FScrollPosition.Y + AValue);
 end;
 
-procedure TBCEditorPrintPreview.ScrollVertTo(Value: Integer);
+procedure TBCEditorPrintPreview.ScrollVertTo(AValue: Integer);
 var
-  LHeight, Position: Integer;
+  LHeight, LPosition: Integer;
 begin
   LHeight := ClientHeight;
-  Position := LHeight - FVirtualSize.Y;
-  if Value < Position then
-    Value := Position;
-  if Value > 0 then
-    Value := 0;
-  if (Value <> FScrollPosition.Y) then
+  LPosition := LHeight - FVirtualSize.Y;
+  if AValue < LPosition then
+    AValue := LPosition;
+  if AValue > 0 then
+    AValue := 0;
+  if FScrollPosition.Y <> AValue then
   begin
-    Position := Value - FScrollPosition.Y;
-    FScrollPosition.Y := Value;
+    LPosition := AValue - FScrollPosition.Y;
+    FScrollPosition.Y := AValue;
     UpdateScrollbars;
-    if Abs(Position) > LHeight div 2 then
+    if Abs(LPosition) > LHeight div 2 then
       Invalidate
     else
     begin
-      ScrollWindow(Handle, 0, Position, nil, nil);
+      ScrollWindow(Handle, 0, LPosition, nil, nil);
       Update;
     end;
   end;
@@ -321,7 +315,7 @@ var
 begin
   if not (HandleAllocated and Assigned(FEditorPrint)) then
     Exit;
-  // compute paper size
+
   case FScaleMode of
     pscWholePage:
       begin
@@ -360,70 +354,70 @@ end;
 
 procedure TBCEditorPrintPreview.UpdateScrollbars;
 var
-  ScrollInfo: TScrollInfo;
+  LScrollInfo: TScrollInfo;
 begin
-  FillChar(ScrollInfo, SizeOf(TScrollInfo), 0);
-  ScrollInfo.cbSize := SizeOf(TScrollInfo);
-  ScrollInfo.fMask := SIF_ALL;
+  FillChar(LScrollInfo, SizeOf(TScrollInfo), 0);
+  LScrollInfo.cbSize := SizeOf(TScrollInfo);
+  LScrollInfo.fMask := SIF_ALL;
   case FScaleMode of
     pscWholePage:
       begin
         ShowScrollbar(Handle, SB_HORZ, False);
-        ScrollInfo.fMask := ScrollInfo.fMask or SIF_DISABLENOSCROLL;
-        ScrollInfo.nMin := 1;
+        LScrollInfo.fMask := LScrollInfo.fMask or SIF_DISABLENOSCROLL;
+        LScrollInfo.nMin := 1;
         if Assigned(FEditorPrint) then
         begin
-          ScrollInfo.nMax := FEditorPrint.PageCount;
-          ScrollInfo.nPos := FPageNumber;
+          LScrollInfo.nMax := FEditorPrint.PageCount;
+          LScrollInfo.nPos := FPageNumber;
         end
         else
         begin
-          ScrollInfo.nMax := 1;
-          ScrollInfo.nPos := 1;
+          LScrollInfo.nMax := 1;
+          LScrollInfo.nPos := 1;
         end;
-        ScrollInfo.nPage := 1;
-        SetScrollInfo(Handle, SB_VERT, ScrollInfo, True);
+        LScrollInfo.nPage := 1;
+        SetScrollInfo(Handle, SB_VERT, LScrollInfo, True);
       end;
     pscPageWidth:
       begin
         ShowScrollbar(Handle, SB_HORZ, False);
-        ScrollInfo.fMask := ScrollInfo.fMask or SIF_DISABLENOSCROLL;
-        ScrollInfo.nMax := FVirtualSize.Y;
-        ScrollInfo.nPos := -FScrollPosition.Y;
-        ScrollInfo.nPage := ClientHeight;
-        SetScrollInfo(Handle, SB_VERT, ScrollInfo, True);
+        LScrollInfo.fMask := LScrollInfo.fMask or SIF_DISABLENOSCROLL;
+        LScrollInfo.nMax := FVirtualSize.Y;
+        LScrollInfo.nPos := -FScrollPosition.Y;
+        LScrollInfo.nPage := ClientHeight;
+        SetScrollInfo(Handle, SB_VERT, LScrollInfo, True);
       end;
     pscUserScaled:
       begin
         ShowScrollbar(Handle, SB_HORZ, True);
         ShowScrollbar(Handle, SB_VERT, True);
-        ScrollInfo.fMask := ScrollInfo.fMask or SIF_DISABLENOSCROLL;
-        ScrollInfo.nMax := FVirtualSize.X;
-        ScrollInfo.nPos := -FScrollPosition.X;
-        ScrollInfo.nPage := ClientWidth;
-        SetScrollInfo(Handle, SB_HORZ, ScrollInfo, True);
-        ScrollInfo.nMax := FVirtualSize.Y;
-        ScrollInfo.nPos := -FScrollPosition.Y;
-        ScrollInfo.nPage := ClientHeight;
-        SetScrollInfo(Handle, SB_VERT, ScrollInfo, True);
+        LScrollInfo.fMask := LScrollInfo.fMask or SIF_DISABLENOSCROLL;
+        LScrollInfo.nMax := FVirtualSize.X;
+        LScrollInfo.nPos := -FScrollPosition.X;
+        LScrollInfo.nPage := ClientWidth;
+        SetScrollInfo(Handle, SB_HORZ, LScrollInfo, True);
+        LScrollInfo.nMax := FVirtualSize.Y;
+        LScrollInfo.nPos := -FScrollPosition.Y;
+        LScrollInfo.nPage := ClientHeight;
+        SetScrollInfo(Handle, SB_VERT, LScrollInfo, True);
       end;
   end;
 end;
 
-procedure TBCEditorPrintPreview.SetBorderStyle(Value: TBorderStyle);
+procedure TBCEditorPrintPreview.SetBorderStyle(AValue: TBorderStyle);
 begin
-  if Value <> FBorderStyle then
+  if FBorderStyle <> AValue then
   begin
-    FBorderStyle := Value;
+    FBorderStyle := AValue;
     RecreateWnd;
   end;
 end;
 
-procedure TBCEditorPrintPreview.SetPageBackground(Value: TColor);
+procedure TBCEditorPrintPreview.SetPageBackgroundColor(AValue: TColor);
 begin
-  if Value <> FPageBackground then
+  if FPageBackgroundColor <> AValue then
   begin
-    FPageBackground := Value;
+    FPageBackgroundColor := AValue;
     Invalidate;
   end;
 end;
@@ -435,21 +429,21 @@ begin
   Result := FEditorPrint
 end;
 
-procedure TBCEditorPrintPreview.SetEditorPrint(Value: TBCEditorPrint);
+procedure TBCEditorPrintPreview.SetEditorPrint(AValue: TBCEditorPrint);
 begin
-  if FEditorPrint <> Value then
+  if FEditorPrint <> AValue then
   begin
-    FEditorPrint := Value;
+    FEditorPrint := AValue;
     if Assigned(FEditorPrint) then
       FEditorPrint.FreeNotification(Self);
   end;
 end;
 
-procedure TBCEditorPrintPreview.SetScaleMode(Value: TBCEditorPreviewScale);
+procedure TBCEditorPrintPreview.SetScaleMode(AValue: TBCEditorPreviewScale);
 begin
-  if FScaleMode <> Value then
+  if FScaleMode <> AValue then
   begin
-    FScaleMode := Value;
+    FScaleMode := AValue;
     FScrollPosition := Point(0, 0);
     SizeChanged;
     if Assigned(FOnScaleChange) then
@@ -458,13 +452,13 @@ begin
   end;
 end;
 
-procedure TBCEditorPrintPreview.SetScalePercent(Value: Integer);
+procedure TBCEditorPrintPreview.SetScalePercent(AValue: Integer);
 begin
-  if FScalePercent <> Value then
+  if FScalePercent <> AValue then
   begin
     FScaleMode := pscUserScaled;
     FScrollPosition := Point(0, 0);
-    FScalePercent := Value;
+    FScalePercent := AValue;
     SizeChanged;
     Invalidate;
   end
@@ -474,19 +468,19 @@ begin
     FOnScaleChange(Self);
 end;
 
-procedure TBCEditorPrintPreview.WMEraseBkgnd(var Msg: TWMEraseBkgnd);
+procedure TBCEditorPrintPreview.WMEraseBkgnd(var AMessage: TWMEraseBkgnd);
 begin
-  Msg.Result := 1;
+  AMessage.Result := 1;
 end;
 
-procedure TBCEditorPrintPreview.WMHScroll(var Msg: TWMHScroll);
+procedure TBCEditorPrintPreview.WMHScroll(var AMessage: TWMHScroll);
 var
   LWidth: Integer;
 begin
-  if (FScaleMode <> pscWholePage) then
+  if FScaleMode <> pscWholePage then
   begin
     LWidth := ClientWidth;
-    case Msg.ScrollCode of
+    case AMessage.ScrollCode of
       SB_TOP:
         ScrollHorzTo(0);
       SB_BOTTOM:
@@ -500,12 +494,12 @@ begin
       SB_PAGEUP:
         ScrollHorzFor(LWidth div 2);
       SB_THUMBPOSITION, SB_THUMBTRACK:
-        ScrollHorzTo(-Msg.Pos);
+        ScrollHorzTo(-AMessage.Pos);
     end;
   end;
 end;
 
-procedure TBCEditorPrintPreview.WMSize(var Msg: TWMSize);
+procedure TBCEditorPrintPreview.WMSize(var AMessage: TWMSize);
 begin
   inherited;
   if not (csDesigning in ComponentState) then
@@ -513,30 +507,30 @@ begin
 end;
 
 var
-  ScrollHintWnd: THintWindow;
+  GScrollHintWnd: THintWindow;
 
 function GetScrollHint: THintWindow;
 begin
-  if not Assigned(ScrollHintWnd) then
+  if not Assigned(GScrollHintWnd) then
   begin
-    ScrollHintWnd := HintWindowClass.Create(Application);
-    ScrollHintWnd.Visible := False;
+    GScrollHintWnd := HintWindowClass.Create(Application);
+    GScrollHintWnd.Visible := False;
   end;
-  Result := ScrollHintWnd;
+  Result := GScrollHintWnd;
 end;
 
-procedure TBCEditorPrintPreview.WMVScroll(var Msg: TWMVScroll);
+procedure TBCEditorPrintPreview.WMVScroll(var AMessage: TWMVScroll);
 var
   LHeight: Integer;
-  S: string;
-  ScrollHintRect: TRect;
+  LHintText: string;
+  LScrollHintRect: TRect;
   LPoint: TPoint;
-  ScrollHint: THintWindow;
+  LScrollHint: THintWindow;
 begin
   if (FScaleMode = pscWholePage) then
   begin
     if Assigned(FEditorPrint) then
-      case Msg.ScrollCode of
+      case AMessage.ScrollCode of
         SB_TOP:
           FPageNumber := 1;
         SB_BOTTOM:
@@ -555,32 +549,32 @@ begin
           end;
         SB_THUMBPOSITION, SB_THUMBTRACK:
           begin
-            FPageNumber := Msg.Pos;
+            FPageNumber := AMessage.Pos;
             if FShowScrollHint then
             begin
-              ScrollHint := GetScrollHint;
-              if not ScrollHint.Visible then
+              LScrollHint := GetScrollHint;
+              if not LScrollHint.Visible then
               begin
-                ScrollHint.Color := Application.HintColor;
-                ScrollHint.Visible := True;
+                LScrollHint.Color := Application.HintColor;
+                LScrollHint.Visible := True;
               end;
-              S := Format(SBCEditorPreviewScrollHint, [FPageNumber]);
-              ScrollHintRect := ScrollHint.CalcHintRect(200, S, nil);
-              LPoint := ClientToScreen(Point(ClientWidth - ScrollHintRect.Right - 4, 10));
-              OffsetRect(ScrollHintRect, LPoint.X, LPoint.Y);
-              ScrollHint.ActivateHint(ScrollHintRect, S);
-              SendMessage(ScrollHint.Handle, WM_NCPAINT, 1, 0);
-              ScrollHint.Invalidate;
-              ScrollHint.Update;
+              LHintText := Format(SBCEditorPreviewScrollHint, [FPageNumber]);
+              LScrollHintRect := LScrollHint.CalcHintRect(200, LHintText, nil);
+              LPoint := ClientToScreen(Point(ClientWidth - LScrollHintRect.Right - 4, 10));
+              OffsetRect(LScrollHintRect, LPoint.X, LPoint.Y);
+              LScrollHint.ActivateHint(LScrollHintRect, LHintText);
+              SendMessage(LScrollHint.Handle, WM_NCPAINT, 1, 0);
+              LScrollHint.Invalidate;
+              LScrollHint.Update;
             end;
           end;
         SB_ENDSCROLL:
           begin
             if FShowScrollHint then
             begin
-              ScrollHint := GetScrollHint;
-              ScrollHint.Visible := False;
-              ShowWindow(ScrollHint.Handle, SW_HIDE);
+              LScrollHint := GetScrollHint;
+              LScrollHint.Visible := False;
+              ShowWindow(LScrollHint.Handle, SW_HIDE);
             end;
           end;
       end;
@@ -593,7 +587,7 @@ begin
   else
   begin
     LHeight := ClientHeight;
-    case Msg.ScrollCode of
+    case AMessage.ScrollCode of
       SB_TOP:
         ScrollVertTo(0);
       SB_BOTTOM:
@@ -607,18 +601,18 @@ begin
       SB_PAGEUP:
         ScrollVertFor(LHeight div 2);
       SB_THUMBPOSITION, SB_THUMBTRACK:
-        ScrollVertTo(-Msg.Pos);
+        ScrollVertTo(-AMessage.Pos);
     end;
   end;
 end;
 
 procedure TBCEditorPrintPreview.WMMouseWheel(var Message: TWMMouseWheel);
 var
-  CtrlPressed: Boolean;
+  LCtrlPressed: Boolean;
 
   procedure MouseWheelUp;
   begin
-    if CtrlPressed and (FPageNumber > 1) then
+    if LCtrlPressed and (FPageNumber > 1) then
       PreviousPage
     else
       ScrollVertFor(WHEEL_DELTA);
@@ -626,7 +620,7 @@ var
 
   procedure MouseWheelDown;
   begin
-    if CtrlPressed and (FPageNumber < PageCount) then
+    if LCtrlPressed and (FPageNumber < PageCount) then
       NextPage
     else
       ScrollVertFor(-WHEEL_DELTA);
@@ -635,7 +629,7 @@ var
 var
   IsNegative: Boolean;
 begin
-  CtrlPressed := GetKeyState(VK_CONTROL) < 0;
+  LCtrlPressed := GetKeyState(VK_CONTROL) < 0;
 
   Inc(FWheelAccumulator, message.WheelDelta);
 
@@ -656,19 +650,21 @@ end;
 
 procedure TBCEditorPrintPreview.UpdatePreview;
 var
-  OldScale: Integer;
-  OldMode: TBCEditorPreviewScale;
+  LOldScale: Integer;
+  LOldMode: TBCEditorPreviewScale;
 begin
-  OldScale := ScalePercent;
-  OldMode := ScaleMode;
+  LOldScale := ScalePercent;
+  LOldMode := ScaleMode;
   ScalePercent := 100;
   if Assigned(FEditorPrint) then
     FEditorPrint.UpdatePages(Canvas);
   SizeChanged;
   Invalidate;
-  ScaleMode := OldMode;
+  ScaleMode := LOldMode;
   if ScaleMode = pscUserScaled then
-    ScalePercent := OldScale;
+    ScalePercent := LOldScale;
+  if FPageNumber > FEditorPrint.PageCount then
+    FPageNumber := FEditorPrint.PageCount;
   if Assigned(FOnPreviewPage) then
     FOnPreviewPage(Self, FPageNumber);
 end;

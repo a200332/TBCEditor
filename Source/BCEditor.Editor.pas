@@ -66,6 +66,7 @@ type
     property OnCommandProcessed;
     property OnContextHelp;
     property OnCustomLineColors;
+    property OnCustomTokenAttribute;
     property OnDblClick;
     property OnDragDrop;
     property OnDragOver;
@@ -110,6 +111,7 @@ type
     property SkinData;
     {$ENDIF}
     property SpecialChars;
+    property SyncEdit;
     property TabOrder;
     property Tabs;
     property TabStop;

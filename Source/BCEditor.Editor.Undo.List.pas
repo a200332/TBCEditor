@@ -9,29 +9,29 @@ type
   TBCEditorUndoList = class(TPersistent)
   protected
     FBlockCount: Integer;
-    FFullUndoImposible: Boolean;
+    FBlockNumber: Integer;
+    FChangeBlockNumber: Integer;
     FInsideRedo: Boolean;
+    FInsideUndoBlock: Boolean;
     FItems: TList;
     FLockCount: Integer;
-    FMaxUndoActions: Integer;
     FOnAddedUndo: TNotifyEvent;
     function GetCanUndo: Boolean;
     function GetItemCount: Integer;
-    function GetItems(Index: Integer): TBCEditorUndoItem;
-    procedure EnsureMaxEntries;
-    procedure SetMaxUndoActions(Value: Integer);
-    procedure SetItems(Index: Integer; const Value: TBCEditorUndoItem);
+    function GetItems(AIndex: Integer): TBCEditorUndoItem;
+    procedure SetItems(AIndex: Integer; const AValue: TBCEditorUndoItem);
   public
     constructor Create;
     destructor Destroy; override;
 
     function PeekItem: TBCEditorUndoItem;
     function PopItem: TBCEditorUndoItem;
+    function LastChangeBlockNumber: Integer;
     function LastChangeReason: TBCEditorChangeReason;
     function LastChangeString: string;
     procedure AddChange(AReason: TBCEditorChangeReason; const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-      const ChangeText: string; SelectionMode: TBCEditorSelectionMode; Data: Pointer = nil; Index: Integer = 0);
-    procedure BeginBlock;
+      const AChangeText: string; SelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
+    procedure BeginBlock(AChangeBlockNumber: Integer = 0);
     procedure Clear;
     procedure EndBlock;
     procedure Lock;
@@ -39,15 +39,13 @@ type
     procedure Unlock;
   public
     procedure AddGroupBreak;
-    procedure Assign(Source: TPersistent); override;
-    procedure DeleteItem(AIndex: Integer);
+    procedure Assign(ASource: TPersistent); override;
     property BlockCount: Integer read FBlockCount;
     property CanUndo: Boolean read GetCanUndo;
-    property FullUndoImpossible: Boolean read FFullUndoImposible;
     property InsideRedo: Boolean read FInsideRedo write FInsideRedo default False;
+    property InsideUndoBlock: Boolean read FInsideUndoBlock write FInsideUndoBlock default False;
     property ItemCount: Integer read GetItemCount;
-    property Items[index: Integer]: TBCEditorUndoItem read GetItems write SetItems;
-    property MaxUndoActions: Integer read FMaxUndoActions write SetMaxUndoActions default BCEDITOR_MAX_UNDO_ACTIONS;
+    property Items[AIndex: Integer]: TBCEditorUndoItem read GetItems write SetItems;
     property OnAddedUndo: TNotifyEvent read FOnAddedUndo write FOnAddedUndo;
   end;
 
@@ -60,8 +58,9 @@ begin
   inherited;
 
   FItems := TList.Create;
-  FMaxUndoActions := BCEDITOR_MAX_UNDO_ACTIONS;
   FInsideRedo := False;
+  FInsideUndoBlock := False;
+  FBlockNumber := BCEDITOR_UNDO_BLOCK_NUMBER_START;
 end;
 
 destructor TBCEditorUndoList.Destroy;
@@ -71,34 +70,34 @@ begin
   inherited Destroy;
 end;
 
-procedure TBCEditorUndoList.Assign(Source: TPersistent);
+procedure TBCEditorUndoList.Assign(ASource: TPersistent);
 var
   i: Integer;
   LUndoItem: TBCEditorUndoItem;
 begin
-  if Assigned(Source) and (Source is TBCEditorUndoList) then
-  with Source as TBCEditorUndoList do
+  if Assigned(ASource) and (ASource is TBCEditorUndoList) then
+  with ASource as TBCEditorUndoList do
   begin
     Self.Clear;
-    for i := 0 to (Source as TBCEditorUndoList).FItems.Count - 1 do
+    for i := 0 to (ASource as TBCEditorUndoList).FItems.Count - 1 do
     begin
       LUndoItem := TBCEditorUndoItem.Create;
       LUndoItem.Assign(FItems[i]);
       Self.FItems.Add(LUndoItem);
     end;
+    Self.FInsideUndoBlock := FInsideUndoBlock;
     Self.FBlockCount := FBlockCount;
-    Self.FFullUndoImposible := FFullUndoImposible;
+    Self.FChangeBlockNumber := FChangeBlockNumber;
     Self.FLockCount := FLockCount;
-    Self.FMaxUndoActions := FMaxUndoActions;
     Self.FInsideRedo := FInsideRedo;
   end
   else
-    inherited Assign(Source);
+    inherited Assign(ASource);
 end;
 
 procedure TBCEditorUndoList.AddChange(AReason: TBCEditorChangeReason;
   const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-  const ChangeText: string; SelectionMode: TBCEditorSelectionMode; Data: Pointer = nil; Index: Integer = 0);
+  const AChangeText: string; SelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
 var
   LNewItem: TBCEditorUndoItem;
 begin
@@ -107,53 +106,52 @@ begin
     LNewItem := TBCEditorUndoItem.Create;
     with LNewItem do
     begin
+      if AChangeBlockNumber <> 0 then
+        ChangeBlockNumber := AChangeBlockNumber
+      else
+      if FInsideUndoBlock then
+        ChangeBlockNumber := FChangeBlockNumber
+      else
+        ChangeBlockNumber := 0;
       ChangeReason := AReason;
       ChangeSelectionMode := SelectionMode;
       ChangeCaretPosition := ACaretPosition;
       ChangeBeginPosition := ASelectionBeginPosition;
       ChangeEndPosition := ASelectionEndPosition;
-      ChangeString := ChangeText;
-      ChangeData := Data;
+      ChangeString := AChangeText;
     end;
     PushItem(LNewItem);
   end;
 end;
 
-procedure TBCEditorUndoList.BeginBlock;
+procedure TBCEditorUndoList.BeginBlock(AChangeBlockNumber: Integer = 0);
 begin
   Inc(FBlockCount);
+  if AChangeBlockNumber = 0 then
+  begin
+    Inc(FBlockNumber);
+    FChangeBlockNumber := FBlockNumber;
+  end
+  else
+    FChangeBlockNumber := AChangeBlockNumber;
+  FInsideUndoBlock := True;
 end;
 
 procedure TBCEditorUndoList.Clear;
 var
   i: Integer;
 begin
+  FBlockCount := 0;
   for i := 0 to FItems.Count - 1 do
     TBCEditorUndoItem(FItems[i]).Free;
   FItems.Clear;
-  FFullUndoImposible := False;
 end;
 
 procedure TBCEditorUndoList.EndBlock;
 begin
-  if FBlockCount > 0 then
-    Dec(FBlockCount);
-end;
-
-procedure TBCEditorUndoList.EnsureMaxEntries;
-var
-  LItem: TBCEditorUndoItem;
-begin
-  if FItems.Count > FMaxUndoActions then
-  begin
-    FFullUndoImposible := True;
-    while FItems.Count > FMaxUndoActions do
-    begin
-      LItem := FItems[0];
-      LItem.Free;
-      FItems.Delete(0);
-    end;
-  end;
+  Assert(FBlockCount > 0);
+  Dec(FBlockCount);
+  FInsideUndoBlock := False;
 end;
 
 function TBCEditorUndoList.GetCanUndo: Boolean;
@@ -199,20 +197,8 @@ begin
   if Assigned(AItem) then
   begin
     FItems.Add(AItem);
-    EnsureMaxEntries;
     if (AItem.ChangeReason <> crGroupBreak) and Assigned(OnAddedUndo) then
       OnAddedUndo(Self);
-  end;
-end;
-
-procedure TBCEditorUndoList.SetMaxUndoActions(Value: Integer);
-begin
-  if Value < 0 then
-    Value := 0;
-  if Value <> FMaxUndoActions then
-  begin
-    FMaxUndoActions := Value;
-    EnsureMaxEntries;
   end;
 end;
 
@@ -228,6 +214,14 @@ begin
     Result := crNothing
   else
     Result := TBCEditorUndoItem(FItems[FItems.Count - 1]).ChangeReason;
+end;
+
+function TBCEditorUndoList.LastChangeBlockNumber: Integer;
+begin
+  if FItems.Count = 0 then
+    Result := 0
+  else
+    Result := TBCEditorUndoItem(FItems[FItems.Count - 1]).ChangeBlockNumber;
 end;
 
 function TBCEditorUndoList.LastChangeString: string;
@@ -246,20 +240,20 @@ begin
     AddChange(crGroupBreak, vDummy, vDummy, vDummy, '', smNormal);
 end;
 
-function TBCEditorUndoList.GetItems(Index: Integer): TBCEditorUndoItem;
+function TBCEditorUndoList.GetItems(AIndex: Integer): TBCEditorUndoItem;
 begin
-  Result := TBCEditorUndoItem(FItems[index]);
+  Result := TBCEditorUndoItem(FItems[AIndex]);
 end;
 
-procedure TBCEditorUndoList.SetItems(Index: Integer; const Value: TBCEditorUndoItem);
+procedure TBCEditorUndoList.SetItems(AIndex: Integer; const AValue: TBCEditorUndoItem);
 begin
-  FItems[index] := Value;
+  FItems[AIndex] := AValue;
 end;
 
-procedure TBCEditorUndoList.DeleteItem(AIndex: Integer);
+{procedure TBCEditorUndoList.DeleteItem(AIndex: Integer);
 begin
   TBCEditorUndoItem(FItems[AIndex]).Free;
   FItems.Delete(AIndex);
-end;
+end; }
 
 end.

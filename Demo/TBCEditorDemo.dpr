@@ -3,7 +3,7 @@ program TBCEditorDemo;
 uses
   {$ifdef DEBUG}
   FastMM4,
-  {$endif }
+  {$endif}
   Vcl.Forms,
   TBCEditorDemo.Forms.Main in 'Forms\TBCEditorDemo.Forms.Main.pas' {MainForm};
 
@@ -15,7 +15,6 @@ begin
   {$endif}
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.Title := 'BCEditor - Property Demo';
   Application.CreateForm(TMainForm, MainForm);
   Application.Run;
 end.

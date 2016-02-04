@@ -15,25 +15,30 @@ type
     FEnabled: Boolean;
     FEngine: TBCEditorSearchEngine;
     FHighlighter: TBCEditorSearchHighlighter;
+    FLines: TList;
     FMap: TBCEditorSearchMap;
     FOnChange: TBCEditorSearchChangeEvent;
     FOptions: TBCEditorSearchOptions;
-    FSearchText: String;
+    FSearchText: string;
+    FVisible: Boolean;
     procedure DoChange;
-    procedure SetEnabled(const Value: Boolean);
-    procedure SetEngine(const Value: TBCEditorSearchEngine);
-    procedure SetHighlighter(const Value: TBCEditorSearchHighlighter);
-    procedure SetMap(const Value: TBCEditorSearchMap);
-    procedure SetOnChange(const Value: TBCEditorSearchChangeEvent);
-    procedure SetSearchText(const Value: String);
+    procedure SetEnabled(const AValue: Boolean);
+    procedure SetEngine(const AValue: TBCEditorSearchEngine);
+    procedure SetHighlighter(const AValue: TBCEditorSearchHighlighter);
+    procedure SetMap(const AValue: TBCEditorSearchMap);
+    procedure SetOnChange(const AValue: TBCEditorSearchChangeEvent);
+    procedure SetSearchText(const AValue: string);
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Assign(Source: TPersistent); override;
+    procedure Assign(ASource: TPersistent); override;
+    procedure ClearLines;
+    property Visible: Boolean read FVisible write FVisible;
   published
     property Enabled: Boolean read FEnabled write SetEnabled default True;
     property Engine: TBCEditorSearchEngine read FEngine write SetEngine default seNormal;
     property Highlighter: TBCEditorSearchHighlighter read FHighlighter write SetHighlighter;
+    property Lines: TList read FLines write FLines;
     property Map: TBCEditorSearchMap read FMap write SetMap;
     property OnChange: TBCEditorSearchChangeEvent read FOnChange write SetOnChange;
     property Options: TBCEditorSearchOptions read FOptions write FOptions default BCEDITOR_SEARCH_OPTIONS;
@@ -51,6 +56,7 @@ begin
   FSearchText := '';
   FEngine := seNormal;
   FMap := TBCEditorSearchMap.Create;
+  FLines := TList.Create;
   FHighlighter := TBCEditorSearchHighlighter.Create;
   FOptions := BCEDITOR_SEARCH_OPTIONS;
   FEnabled := True;
@@ -60,13 +66,15 @@ destructor TBCEditorSearch.Destroy;
 begin
   FMap.Free;
   FHighlighter.Free;
+  ClearLines;
+  FLines.Free;
   inherited;
 end;
 
-procedure TBCEditorSearch.Assign(Source: TPersistent);
+procedure TBCEditorSearch.Assign(ASource: TPersistent);
 begin
-  if Assigned(Source) and (Source is TBCEditorSearch) then
-  with Source as TBCEditorSearch do
+  if Assigned(ASource) and (ASource is TBCEditorSearch) then
+  with ASource as TBCEditorSearch do
   begin
     Self.FEnabled := FEnabled;
     Self.FSearchText := FSearchText;
@@ -77,7 +85,7 @@ begin
     Self.DoChange;
   end
   else
-    inherited Assign(Source);
+    inherited Assign(ASource);
 end;
 
 procedure TBCEditorSearch.DoChange;
@@ -86,48 +94,57 @@ begin
     FOnChange(scRefresh);
 end;
 
-procedure TBCEditorSearch.SetOnChange(const Value: TBCEditorSearchChangeEvent);
+procedure TBCEditorSearch.SetOnChange(const AValue: TBCEditorSearchChangeEvent);
 begin
-  FOnChange := Value;
+  FOnChange := AValue;
   FMap.OnChange := FOnChange;
   FHighlighter.OnChange := FOnChange;
 end;
 
-procedure TBCEditorSearch.SetEngine(const Value: TBCEditorSearchEngine);
+procedure TBCEditorSearch.SetEngine(const AValue: TBCEditorSearchEngine);
 begin
-  if FEngine <> Value then
+  if FEngine <> AValue then
   begin
-    FEngine := Value;
+    FEngine := AValue;
     if Assigned(FOnChange) then
       FOnChange(scEngineUpdate);
   end;
 end;
 
-procedure TBCEditorSearch.SetSearchText(const Value: String);
+procedure TBCEditorSearch.SetSearchText(const AValue: string);
 begin
-  FSearchText := Value;
+  FSearchText := AValue;
   if Assigned(FOnChange) then
     FOnChange(scSearch);
 end;
 
-procedure TBCEditorSearch.SetEnabled(const Value: Boolean);
+procedure TBCEditorSearch.SetEnabled(const AValue: Boolean);
 begin
-  if FEnabled <> Value then
+  if FEnabled <> AValue then
   begin
-    FEnabled := Value;
+    FEnabled := AValue;
     if Assigned(FOnChange) then
       FOnChange(scSearch);
   end;
 end;
 
-procedure TBCEditorSearch.SetHighlighter(const Value: TBCEditorSearchHighlighter);
+procedure TBCEditorSearch.SetHighlighter(const AValue: TBCEditorSearchHighlighter);
 begin
-  FHighlighter.Assign(Value);
+  FHighlighter.Assign(AValue);
 end;
 
-procedure TBCEditorSearch.SetMap(const Value: TBCEditorSearchMap);
+procedure TBCEditorSearch.SetMap(const AValue: TBCEditorSearchMap);
 begin
-  FMap.Assign(Value);
+  FMap.Assign(AValue);
+end;
+
+procedure TBCEditorSearch.ClearLines;
+var
+  i: Integer;
+begin
+  for i := FLines.Count - 1 downto 0 do
+    Dispose(PBCEditorTextPosition(FLines.Items[i]));
+  FLines.Clear;
 end;
 
 end.

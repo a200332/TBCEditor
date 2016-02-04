@@ -1,8 +1,8 @@
-Version 1.0 beta. Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
+Version 1.3. Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
 
 <h3>Description</h3>
 
-A syntax highlighting edit control with code folding, minimap, external JSON highlighter and color scheme files, etc.
+A syntax highlighting edit control for RAD Studio (Delphi/C++ Builder) with code folding, completion proposal, matching pair, minimap, sync edit, word wrap, etc. External highlighter and color scheme files are in JSON format which can be also loaded from a stream.
 
 <h3>Build requirements</h3>
 
@@ -23,14 +23,10 @@ USE_VCL_STYLES | Use VCL styles. A set of graphical details that define the look
 ```
   with Editor do 
   begin
-    { Load highlighter from file }
     Highlighter.LoadFromFile('JSON.json');
-    { Load color from file }
     Highlighter.Colors.LoadFromFile('Default.json'); 
-    { Load a file into editor }  
     LoadFromFile(GetHighlighterFileName('JSON.json')); 
     ...
-    { Set editor lines }
     Lines.Text := Highlighter.Info.General.Sample; 
   end;
 ```
@@ -38,12 +34,12 @@ Note! LoadFromStream does not support multi-highlighters (for example HTML with 
 
 <h3>Demo</h3>
 
-TBCEditor Control Demo v. 1.0b. 
+TBCEditor Control Demo v. 1.3. 
 
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
-The latest update: 23.11.2015 06:34, UTC+02:00
+The latest update: 03.02.2016 21:23, UTC+02:00
 
 Demo source build requires <a href="http://www.alphaskins.com/">AlphaSkins</a> and <a href="http://www.ehlib.com/">EhLib</a>. 
 <h3>Documentation</h3>
@@ -58,13 +54,18 @@ Documentation will be written after the project stabilizes and dust settles. Thi
 
 <h3>Screenshots</h3>
 
-![bceditor0](https://cloud.githubusercontent.com/assets/11475177/7647152/44552956-fad8-11e4-9994-8c0ac8a21572.png)
-![bceditor1](https://cloud.githubusercontent.com/assets/11475177/7427349/1766adc6-efe2-11e4-8a2f-a59ec668d217.png)
-![bceditor2](https://cloud.githubusercontent.com/assets/11475177/7427350/177ba3c0-efe2-11e4-92dc-946b026cbfab.png)
-![bceditor3](https://cloud.githubusercontent.com/assets/11475177/7427351/177f5f4c-efe2-11e4-8388-179a0947eb5f.png)
-![bceditor4](https://cloud.githubusercontent.com/assets/11475177/7427352/17843c06-efe2-11e4-8c03-7a3daa4639be.png)
-![bceditor5](https://cloud.githubusercontent.com/assets/11475177/7634347/04a52aa6-fa63-11e4-97d4-5d2a9e93e0b8.png)
-![bceditor6](https://cloud.githubusercontent.com/assets/11475177/7427347/1743c07c-efe2-11e4-9c90-318cdc2b09a0.png)
+![bceditor1](https://cloud.githubusercontent.com/assets/11475177/11452990/a3774372-9602-11e5-8a0b-7ad2b568e4b2.png)
+![bceditor0](https://cloud.githubusercontent.com/assets/11475177/11832901/3ac6cfc4-a3c6-11e5-984e-2e174beacd74.png)
+![bceditor2](https://cloud.githubusercontent.com/assets/11475177/11452991/a3785e88-9602-11e5-801c-d8e9a7b8ab64.png)
+![bceditor3](https://cloud.githubusercontent.com/assets/11475177/11452992/a37b154c-9602-11e5-882c-5a73809be517.png)
+![bceditor4](https://cloud.githubusercontent.com/assets/11475177/11452987/a36de61a-9602-11e5-80e9-abd797af7a71.png)
+![bceditor5](https://cloud.githubusercontent.com/assets/11475177/11452988/a3716a2e-9602-11e5-994b-0934bb8e5a76.png)
+![bceditor6](https://cloud.githubusercontent.com/assets/11475177/11452989/a375d938-9602-11e5-8cbf-103f6a44db13.png)
+![bceditor7](https://cloud.githubusercontent.com/assets/11475177/12049668/bb345a32-aef2-11e5-8a4e-715c26d154f6.png)
+
+
+
+
 
 
 
