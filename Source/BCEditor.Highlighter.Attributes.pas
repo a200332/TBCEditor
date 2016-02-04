@@ -3,7 +3,7 @@ unit BCEditor.Highlighter.Attributes;
 interface
 
 uses
-  Winapi.Windows, System.Classes, Vcl.Graphics;
+  Winapi.Windows, System.Classes, Vcl.Graphics, BCEditor.Consts;
 
 type
   TBCEditorHighlighterAttribute = class(TPersistent)
@@ -11,6 +11,7 @@ type
     FBackground: TColor;
     FBackgroundDefault: TColor;
     FElement: string;
+    FEscapeChar: Char;
     FForeground: TColor;
     FForegroundDefault: TColor;
     FName: string;
@@ -23,13 +24,13 @@ type
     function GetFontStyleStored: Boolean;
     function GetForegroundColorStored: Boolean;
     procedure Changed; virtual;
-    procedure SetBackground(Value: TColor);
-    procedure SetForeground(Value: TColor);
-    procedure SetStyle(Value: TFontStyles);
+    procedure SetBackground(AValue: TColor);
+    procedure SetForeground(AValue: TColor);
+    procedure SetStyle(AValue: TFontStyles);
   public
     constructor Create(const AttributeName: string);
-    procedure Assign(Source: TPersistent); override;
-    procedure AssignColorAndStyle(Source: TBCEditorHighlighterAttribute);
+    procedure Assign(ASource: TPersistent); override;
+    procedure AssignColorAndStyle(ASource: TBCEditorHighlighterAttribute);
     procedure InternalSaveDefaultValues;
   public
     property Name: string read FName write FName;
@@ -37,6 +38,7 @@ type
   published
     property Background: TColor read FBackground write SetBackground stored GetBackgroundColorStored;
     property Element: string read FElement write FElement;
+    property EscapeChar: Char read FEscapeChar write FEscapeChar default BCEDITOR_NONE_CHAR;
     property Foreground: TColor read FForeground write SetForeground stored GetForegroundColorStored;
     property ParentForeground: Boolean read FParentForeground write FParentForeground;
     property ParentBackground: Boolean read FParentBackground write FParentBackground;
@@ -50,40 +52,50 @@ uses
 
 { TBCEditorHighlighterAttribute }
 
-procedure TBCEditorHighlighterAttribute.Assign(Source: TPersistent);
+constructor TBCEditorHighlighterAttribute.Create(const AttributeName: string);
 begin
-  if Assigned(Source) and (Source is TBCEditorHighlighterAttribute) then
-    with Source as TBCEditorHighlighterAttribute do
-    begin
-      Self.FName := FName;
-      Self.AssignColorAndStyle(Source as TBCEditorHighlighterAttribute);
-    end
-  else
-    inherited Assign(Source);
+  inherited Create;
+
+  FBackground := clNone;
+  FForeground := clNone;
+  FName := AttributeName;
+  FEscapeChar := BCEDITOR_NONE_CHAR;
 end;
 
-procedure TBCEditorHighlighterAttribute.AssignColorAndStyle(Source: TBCEditorHighlighterAttribute);
+procedure TBCEditorHighlighterAttribute.Assign(ASource: TPersistent);
+begin
+  if Assigned(ASource) and (ASource is TBCEditorHighlighterAttribute) then
+    with ASource as TBCEditorHighlighterAttribute do
+    begin
+      Self.FName := FName;
+      Self.AssignColorAndStyle(ASource as TBCEditorHighlighterAttribute);
+    end
+  else
+    inherited Assign(ASource);
+end;
+
+procedure TBCEditorHighlighterAttribute.AssignColorAndStyle(ASource: TBCEditorHighlighterAttribute);
 var
   IsChanged: Boolean;
 begin
   IsChanged := False;
-  if FBackground <> Source.FBackground then
+  if FBackground <> ASource.FBackground then
   begin
-    FBackground := Source.FBackground;
+    FBackground := ASource.FBackground;
     IsChanged := True;
   end;
-  if FForeground <> Source.FForeground then
+  if FForeground <> ASource.FForeground then
   begin
-    FForeground := Source.FForeground;
+    FForeground := ASource.FForeground;
     IsChanged := True;
   end;
-  if FStyle <> Source.FStyle then
+  if FStyle <> ASource.FStyle then
   begin
-    FStyle := Source.FStyle;
+    FStyle := ASource.FStyle;
     IsChanged := True;
   end;
-  FParentForeground := Source.ParentForeground;
-  FParentBackground := Source.ParentBackground;
+  FParentForeground := ASource.ParentForeground;
+  FParentBackground := ASource.ParentBackground;
   if IsChanged then
     Changed;
 end;
@@ -92,15 +104,6 @@ procedure TBCEditorHighlighterAttribute.Changed;
 begin
   if Assigned(FOnChange) then
     FOnChange(Self);
-end;
-
-constructor TBCEditorHighlighterAttribute.Create(const AttributeName: string);
-begin
-  inherited Create;
-
-  FBackground := clNone;
-  FForeground := clNone;
-  FName := AttributeName;
 end;
 
 function TBCEditorHighlighterAttribute.GetBackgroundColorStored: Boolean;
@@ -125,29 +128,29 @@ begin
   FStyleDefault := FStyle;
 end;
 
-procedure TBCEditorHighlighterAttribute.SetBackground(Value: TColor);
+procedure TBCEditorHighlighterAttribute.SetBackground(AValue: TColor);
 begin
-  if FBackground <> Value then
+  if FBackground <> AValue then
   begin
-    FBackground := Value;
+    FBackground := AValue;
     Changed;
   end;
 end;
 
-procedure TBCEditorHighlighterAttribute.SetForeground(Value: TColor);
+procedure TBCEditorHighlighterAttribute.SetForeground(AValue: TColor);
 begin
-  if FForeground <> Value then
+  if FForeground <> AValue then
   begin
-    FForeground := Value;
+    FForeground := AValue;
     Changed;
   end;
 end;
 
-procedure TBCEditorHighlighterAttribute.SetStyle(Value: TFontStyles);
+procedure TBCEditorHighlighterAttribute.SetStyle(AValue: TFontStyles);
 begin
-  if FStyle <> Value then
+  if FStyle <> AValue then
   begin
-    FStyle := Value;
+    FStyle := AValue;
     Changed;
   end;
 end;

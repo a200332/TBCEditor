@@ -14,12 +14,12 @@ type
     FIndex: Integer;
     FLineNumber: Integer;
     FText: string;
-    procedure SetFont(const Value: TFont);
+    procedure SetFont(const AValue: TFont);
   public
     constructor Create;
     destructor Destroy; override;
 
-    function GetText(NumberOfPages, PageNum: Integer; Roman: Boolean; Title, ATime, ADate: string): string;
+    function GetText(ANumberOfPages, APageNumber: Integer; ARoman: Boolean; const ATitle, ATime, ADate: string): string;
     procedure LoadFromStream(AStream: TStream);
     procedure SaveToStream(AStream: TStream);
   public
@@ -63,24 +63,25 @@ type
     procedure DrawFrame(ACanvas: TCanvas);
     procedure RestoreFontPenBrush(ACanvas: TCanvas);
     procedure SaveFontPenBrush(ACanvas: TCanvas);
-    procedure SetDefaultFont(const Value: TFont);
+    procedure SetDefaultFont(const AValue: TFont);
   public
     constructor Create;
     destructor Destroy; override;
 
-    function Add(Text: string; Font: TFont; Alignment: TAlignment; LineNumber: Integer): Integer;
+    function Add(const AText: string; const AFont: TFont; const AAlignment: TAlignment; const ALineNumber: Integer): Integer;
     function Count: Integer;
-    function Get(Index: Integer): TBCEditorSectionItem;
-    procedure Assign(Source: TPersistent); override;
+    function Get(AIndex: Integer): TBCEditorSectionItem;
+    procedure Assign(ASource: TPersistent); override;
     procedure Clear;
-    procedure Delete(Index: Integer);
+    procedure Delete(AIndex: Integer);
     procedure FixLines;
-    procedure InitPrint(ACanvas: TCanvas; NumberOfPages: Integer; Title: string; Margins: TBCEditorPrintMargins);
+    procedure InitPrint(ACanvas: TCanvas; NumberOfPages: Integer; const Title: string; Margins: TBCEditorPrintMargins);
     procedure LoadFromStream(AStream: TStream);
     procedure Print(ACanvas: TCanvas; PageNum: Integer);
     procedure SaveToStream(AStream: TStream);
-    procedure SetPixelsPerInch(Value: Integer);
+    procedure SetPixelsPerInch(AValue: Integer);
     property SectionType: TBCEditorSectionType read FSectionType write FSectionType;
+    property NumberOfPages: Integer read FNumberOfPages write FNumberOfPages;
   published
     property DefaultFont: TFont read FDefaultFont write SetDefaultFont;
     property FrameTypes: TBCEditorFrameTypes read FFrameTypes write FFrameTypes default [ftLine];
@@ -119,7 +120,7 @@ begin
   FFont.Free;
 end;
 
-function TBCEditorSectionItem.GetText(NumberOfPages, PageNum: Integer; Roman: Boolean; Title, ATime, ADate: string): string;
+function TBCEditorSectionItem.GetText(ANumberOfPages, APageNumber: Integer; ARoman: Boolean; const ATitle, ATime, ADate: string): string;
 var
   LLength, Start, Run: Integer;
   LString: string;
@@ -144,23 +145,23 @@ var
     Macro := AnsiUpperCase(Copy(FText, Start, Run - Start + 1));
     if Macro = '$PAGENUM$' then
     begin
-      if Roman then
-        DoAppend(IntToRoman(PageNum))
+      if ARoman then
+        DoAppend(IntToRoman(APageNumber))
       else
-        DoAppend(IntToStr(PageNum));
+        DoAppend(IntToStr(APageNumber));
       Exit;
     end;
     if Macro = '$PAGECOUNT$' then
     begin
-      if Roman then
-        DoAppend(IntToRoman(NumberOfPages))
+      if ARoman then
+        DoAppend(IntToRoman(ANumberOfPages))
       else
-        DoAppend(IntToStr(NumberOfPages));
+        DoAppend(IntToStr(ANumberOfPages));
       Exit;
     end;
     if Macro = '$TITLE$' then
     begin
-      DoAppend(Title);
+      DoAppend(ATitle);
       Exit;
     end;
     if Macro = '$DATE$' then
@@ -317,9 +318,9 @@ begin
   end;
 end;
 
-procedure TBCEditorSectionItem.SetFont(const Value: TFont);
+procedure TBCEditorSectionItem.SetFont(const AValue: TFont);
 begin
-  FFont.Assign(Value);
+  FFont.Assign(AValue);
 end;
 
 { TBCEditorSection }
@@ -362,28 +363,28 @@ begin
   inherited;
 end;
 
-function TBCEditorSection.Add(Text: string; Font: TFont; Alignment: TAlignment; LineNumber: Integer): Integer;
+function TBCEditorSection.Add(const AText: string; const AFont: TFont; const AAlignment: TAlignment; const ALineNumber: Integer): Integer;
 var
-  SectionItem: TBCEditorSectionItem;
+  LSectionItem: TBCEditorSectionItem;
 begin
-  SectionItem := TBCEditorSectionItem.Create;
-  if not Assigned(Font) then
-    SectionItem.Font := FDefaultFont
+  LSectionItem := TBCEditorSectionItem.Create;
+  if not Assigned(AFont) then
+    LSectionItem.Font := FDefaultFont
   else
-    SectionItem.Font := Font;
-  SectionItem.Alignment := Alignment;
-  SectionItem.LineNumber := LineNumber;
-  SectionItem.Index := FItems.Add(SectionItem);
-  SectionItem.Text := Text;
-  Result := SectionItem.Index;
+    LSectionItem.Font := AFont;
+  LSectionItem.Alignment := AAlignment;
+  LSectionItem.LineNumber := ALineNumber;
+  LSectionItem.Index := FItems.Add(LSectionItem);
+  LSectionItem.Text := AText;
+  Result := LSectionItem.Index;
 end;
 
-procedure TBCEditorSection.Delete(Index: Integer);
+procedure TBCEditorSection.Delete(AIndex: Integer);
 var
   i: Integer;
 begin
   for i := 0 to FItems.Count - 1 do
-  if TBCEditorSectionItem(FItems[i]).Index = index then
+  if TBCEditorSectionItem(FItems[i]).Index = AIndex then
   begin
     FItems.Delete(i);
     break;
@@ -399,29 +400,29 @@ begin
   FItems.Clear;
 end;
 
-procedure TBCEditorSection.SetDefaultFont(const Value: TFont);
+procedure TBCEditorSection.SetDefaultFont(const AValue: TFont);
 begin
-  FDefaultFont.Assign(Value);
+  FDefaultFont.Assign(AValue);
 end;
 
 procedure TBCEditorSection.FixLines;
 var
-  i, CurrentLine: Integer;
-  LineInfo: TBCEditorLineInfo;
+  i, LCurrentLine: Integer;
+  LLineInfo: TBCEditorLineInfo;
 begin
   for i := 0 to FLineInfo.Count - 1 do
     TBCEditorLineInfo(FLineInfo[i]).Free;
   FLineInfo.Clear;
-  CurrentLine := 0;
+  LCurrentLine := 0;
   FLineCount := 0;
   for i := 0 to FItems.Count - 1 do
   begin
-    if TBCEditorSectionItem(FItems[i]).LineNumber <> CurrentLine then
+    if TBCEditorSectionItem(FItems[i]).LineNumber <> LCurrentLine then
     begin
-      CurrentLine := TBCEditorSectionItem(FItems[i]).LineNumber;
+      LCurrentLine := TBCEditorSectionItem(FItems[i]).LineNumber;
       FLineCount := FLineCount + 1;
-      LineInfo := TBCEditorLineInfo.Create;
-      FLineInfo.Add(LineInfo);
+      LLineInfo := TBCEditorLineInfo.Create;
+      FLineInfo.Add(LLineInfo);
     end;
     TBCEditorSectionItem(FItems[i]).LineNumber := FLineCount;
   end;
@@ -429,34 +430,34 @@ end;
 
 procedure TBCEditorSection.CalculateHeight(ACanvas: TCanvas);
 var
-  i, CurrentLine: Integer;
-  SectionItem: TBCEditorSectionItem;
-  OrginalHeight: Integer;
-  TextMetric: TTextMetric;
+  i, LCurrentLine: Integer;
+  LSectionItem: TBCEditorSectionItem;
+  LOrginalHeight: Integer;
+  LTextMetric: TTextMetric;
 begin
   FFrameHeight := -1;
   if FItems.Count <= 0 then
     Exit;
 
-  CurrentLine := 1;
+  LCurrentLine := 1;
   FFrameHeight := 0;
-  OrginalHeight := FFrameHeight;
+  LOrginalHeight := FFrameHeight;
   for i := 0 to FItems.Count - 1 do
   begin
-    SectionItem := TBCEditorSectionItem(FItems[i]);
-    if SectionItem.LineNumber <> CurrentLine then
+    LSectionItem := TBCEditorSectionItem(FItems[i]);
+    if LSectionItem.LineNumber <> LCurrentLine then
     begin
-      CurrentLine := SectionItem.LineNumber;
-      OrginalHeight := FFrameHeight;
+      LCurrentLine := LSectionItem.LineNumber;
+      LOrginalHeight := FFrameHeight;
     end;
-    ACanvas.Font.Assign(SectionItem.Font);
-    GetTextMetrics(ACanvas.Handle, TextMetric);
-    with TBCEditorLineInfo(FLineInfo[CurrentLine - 1]), TextMetric do
+    ACanvas.Font.Assign(LSectionItem.Font);
+    GetTextMetrics(ACanvas.Handle, LTextMetric);
+    with TBCEditorLineInfo(FLineInfo[LCurrentLine - 1]), LTextMetric do
     begin
       LineHeight := Max(LineHeight, TextHeight(ACanvas, 'W'));
       MaxBaseDistance := Max(MaxBaseDistance, tmHeight - tmDescent);
     end;
-    FFrameHeight := Max(FFrameHeight, OrginalHeight + TextHeight(ACanvas, 'W'));
+    FFrameHeight := Max(FFrameHeight, LOrginalHeight + TextHeight(ACanvas, 'W'));
   end;
   FFrameHeight := FFrameHeight + 2 * FMargins.PixelInternalMargin;
 end;
@@ -468,21 +469,21 @@ begin
     Result := Integer(Item1) - Integer(Item2);
 end;
 
-procedure TBCEditorSection.SetPixelsPerInch(Value: Integer);
+procedure TBCEditorSection.SetPixelsPerInch(AValue: Integer);
 var
-  i, TmpSize: Integer;
+  i, LTmpSize: Integer;
   LFont: TFont;
 begin
   for i := 0 to FItems.Count - 1 do
   begin
     LFont := TBCEditorSectionItem(FItems[i]).Font;
-    TmpSize := LFont.Size;
-    LFont.PixelsPerInch := Value;
-    LFont.Size := TmpSize;
+    LTmpSize := LFont.Size;
+    LFont.PixelsPerInch := AValue;
+    LFont.Size := LTmpSize;
   end;
 end;
 
-procedure TBCEditorSection.InitPrint(ACanvas: TCanvas; NumberOfPages: Integer; Title: string; Margins: TBCEditorPrintMargins);
+procedure TBCEditorSection.InitPrint(ACanvas: TCanvas; NumberOfPages: Integer; const Title: string; Margins: TBCEditorPrintMargins);
 begin
   SaveFontPenBrush(ACanvas);
   FDate := DateToStr(Now);
@@ -552,10 +553,10 @@ end;
 
 procedure TBCEditorSection.Print(ACanvas: TCanvas; PageNum: Integer);
 var
-  i, X, Y, CurrentLine: Integer;
+  i, X, Y, LCurrentLine: Integer;
   S: string;
-  SectionItem: TBCEditorSectionItem;
-  OldAlign: UINT;
+  LSectionItem: TBCEditorSectionItem;
+  LOldAlign: UINT;
   LAlignment: TAlignment;
 begin
   if FFrameHeight <= 0 then
@@ -569,21 +570,21 @@ begin
     Y := FMargins.PixelFooter;
   Y := Y + FMargins.PixelInternalMargin;
 
-  CurrentLine := 1;
+  LCurrentLine := 1;
   for i := 0 to FItems.Count - 1 do
   begin
-    SectionItem := TBCEditorSectionItem(FItems[i]);
-    ACanvas.Font := SectionItem.Font;
-    if SectionItem.LineNumber <> CurrentLine then
+    LSectionItem := TBCEditorSectionItem(FItems[i]);
+    ACanvas.Font := LSectionItem.Font;
+    if LSectionItem.LineNumber <> LCurrentLine then
     begin
-      Y := Y + TBCEditorLineInfo(FLineInfo[CurrentLine - 1]).LineHeight;
-      CurrentLine := SectionItem.LineNumber;
+      Y := Y + TBCEditorLineInfo(FLineInfo[LCurrentLine - 1]).LineHeight;
+      LCurrentLine := LSectionItem.LineNumber;
     end;
-    S := SectionItem.GetText(FNumberOfPages, PageNum, FRomanNumbers, FTitle, FTime, FDate);
-    LAlignment := SectionItem.Alignment;
+    S := LSectionItem.GetText(FNumberOfPages, PageNum, FRomanNumbers, FTitle, FTime, FDate);
+    LAlignment := LSectionItem.Alignment;
     if MirrorPosition and ((PageNum mod 2) = 0) then
     begin
-      case SectionItem.Alignment of
+      case LSectionItem.Alignment of
         taRightJustify:
           LAlignment := taLeftJustify;
         taLeftJustify:
@@ -600,20 +601,21 @@ begin
           X := (PixelLeftTextIndent + PixelRightTextIndent - TextWidth(ACanvas, S)) div 2;
       end;
     end;
-    OldAlign := SetTextAlign(ACanvas.Handle, TA_BASELINE);
-    ExtTextOut(ACanvas.Handle, X, Y + TBCEditorLineInfo(FLineInfo[CurrentLine - 1]).MaxBaseDistance, 0, nil, PChar(S),
+    LOldAlign := SetTextAlign(ACanvas.Handle, TA_BASELINE);
+    Winapi.Windows.ExtTextOut(ACanvas.Handle, X, Y + TBCEditorLineInfo(FLineInfo[LCurrentLine - 1]).MaxBaseDistance, 0, nil, PChar(S),
       Length(S), nil);
-    SetTextAlign(ACanvas.Handle, OldAlign);
+    SetTextAlign(ACanvas.Handle, LOldAlign);
   end;
   RestoreFontPenBrush(ACanvas);
 end;
 
-procedure TBCEditorSection.Assign(Source: TPersistent);
+procedure TBCEditorSection.Assign(ASource: TPersistent);
 var
   i: Integer;
+  LSectionItem: TBCEditorSectionItem;
 begin
-  if Assigned(Source) and (Source is TBCEditorSection) then
-  with Source as TBCEditorSection do
+  if Assigned(ASource) and (ASource is TBCEditorSection) then
+  with ASource as TBCEditorSection do
   begin
     Clear;
     Self.FSectionType := FSectionType;
@@ -621,14 +623,16 @@ begin
     Self.FShadedColor := FShadedColor;
     Self.FLineColor := FLineColor;
     for i := 0 to FItems.Count - 1 do
-    with TBCEditorSectionItem(FItems[i]) do
-      Self.Add(Text, Font, Alignment, LineNumber);
+    begin
+      LSectionItem := TBCEditorSectionItem(FItems[i]);
+      Self.Add(LSectionItem.Text, LSectionItem.Font, LSectionItem.Alignment, LSectionItem.LineNumber);
+    end;
     Self.FDefaultFont.Assign(FDefaultFont);
     Self.FRomanNumbers := FRomanNumbers;
     Self.FMirrorPosition := FMirrorPosition;
   end
   else
-    inherited Assign(Source);
+    inherited Assign(ASource);
 end;
 
 function TBCEditorSection.Count: Integer;
@@ -636,9 +640,9 @@ begin
   Result := FItems.Count;
 end;
 
-function TBCEditorSection.Get(Index: Integer): TBCEditorSectionItem;
+function TBCEditorSection.Get(AIndex: Integer): TBCEditorSectionItem;
 begin
-  Result := TBCEditorSectionItem(FItems[index]);
+  Result := TBCEditorSectionItem(FItems[AIndex]);
 end;
 
 procedure TBCEditorSection.LoadFromStream(AStream: TStream);

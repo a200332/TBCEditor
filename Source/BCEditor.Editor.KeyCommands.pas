@@ -129,6 +129,9 @@ const
   { Search }
   ecSearchNext = 800;
   ecSearchPrevious = 801;
+  { Comments }
+  ecLineComment = 900;
+  ecBlockComment = 901;
 
   ecUserFirst = 1001;
   { code folding }
@@ -141,12 +144,12 @@ const
   ecCollapseCurrent = ecUserFirst + 109;
 
 type
-  TBCEditorCommand = Word;
+  TBCEditorCommand = type Word;
 
-  TBCEditorHookedCommandEvent = procedure(Sender: TObject; AfterProcessing: Boolean; var Handled: Boolean;
-    var Command: TBCEditorCommand; var AChar: Char; Data: Pointer; HandlerData: Pointer) of object;
-  TBCEditorProcessCommandEvent = procedure(Sender: TObject; var Command: TBCEditorCommand; var AChar: Char;
-    Data: Pointer) of object;
+  TBCEditorHookedCommandEvent = procedure(Sender: TObject; AfterProcessing: Boolean; var AHandled: Boolean;
+    var ACommand: TBCEditorCommand; var AChar: Char; Data: Pointer; AHandlerData: Pointer) of object;
+  TBCEditorProcessCommandEvent = procedure(Sender: TObject; var ACommand: TBCEditorCommand; var AChar: Char;
+    AData: Pointer) of object;
 
   TBCEditorHookedCommandHandler = class(TObject)
   strict private
@@ -168,13 +171,13 @@ type
     FCommand: TBCEditorCommand;
     function GetShortCut: TShortCut;
     function GetSecondaryShortCut: TShortCut;
-    procedure SetCommand(const Value: TBCEditorCommand);
-    procedure SetKey(const Value: Word);
-    procedure SetSecondaryKey(const Value: Word);
-    procedure SetShiftState(const Value: TShiftState);
-    procedure SetSecondaryShiftState(const Value: TShiftState);
-    procedure SetShortCut(const Value: TShortCut);
-    procedure SetSecondaryShortCut(const Value: TShortCut);
+    procedure SetCommand(const AValue: TBCEditorCommand);
+    procedure SetKey(const AValue: Word);
+    procedure SetSecondaryKey(const AValue: Word);
+    procedure SetShiftState(const AValue: TShiftState);
+    procedure SetSecondaryShiftState(const AValue: TShiftState);
+    procedure SetShortCut(const AValue: TShortCut);
+    procedure SetSecondaryShortCut(const AValue: TShortCut);
   protected
     function GetDisplayName: string; override;
   public
@@ -192,8 +195,8 @@ type
   TBCEditorKeyCommands = class(TCollection)
   strict private
     FOwner: TPersistent;
-    function GetItem(Index: Integer): TBCEditorKeyCommand;
-    procedure SetItem(Index: Integer; Value: TBCEditorKeyCommand);
+    function GetItem(AIndex: Integer): TBCEditorKeyCommand;
+    procedure SetItem(AIndex: Integer; AValue: TBCEditorKeyCommand);
   protected
     function GetOwner: TPersistent; override;
   public
@@ -209,7 +212,7 @@ type
     procedure Assign(ASource: TPersistent); override;
     procedure ResetDefaults;
   public
-    property Items[index: Integer]: TBCEditorKeyCommand read GetItem write SetItem; default;
+    property Items[AIndex: Integer]: TBCEditorKeyCommand read GetItem write SetItem; default;
   end;
 
 function IdentToEditorCommand(const AIdent: string; var ACommand: LongInt): Boolean;
@@ -221,13 +224,13 @@ uses
   Winapi.Windows, BCEditor.Language;
 
 type
-  TBCEditorCommandString = recOrd
+  TBCEditorCommandString = record
     Value: TBCEditorCommand;
     Name: string;
   end;
 
 const
-  EditorCommandStrings: array [0 .. 109] of TBCEditorCommandString = (
+  EditorCommandStrings: array [0 .. 111] of TBCEditorCommandString = (
     (Value: ecNone; Name: 'ecNone'),
     (Value: ecLeft; Name: 'ecLeft'),
     (Value: ecRight; Name: 'ecRight'),
@@ -337,7 +340,9 @@ const
     (Value: ecUncollapseAll; Name: 'ecUncollapseAll'),
     (Value: ecCollapseCurrent; Name: 'ecCollapseCurrent'),
     (Value: ecSearchNext; Name: 'ecSearchNext'),
-    (Value: ecSearchPrevious; Name: 'ecSearchPrevious')
+    (Value: ecSearchPrevious; Name: 'ecSearchPrevious'),
+    (Value: ecLineComment; Name: 'ecLineComment'),
+    (Value: ecBlockComment; Name: 'ecBlockComment')
   );
 
 function IdentToEditorCommand(const AIdent: string; var ACommand: LongInt): Boolean;
@@ -419,38 +424,38 @@ begin
   Result := Vcl.Menus.ShortCut(Key, ShiftState);
 end;
 
-procedure TBCEditorKeyCommand.SetCommand(const Value: TBCEditorCommand);
+procedure TBCEditorKeyCommand.SetCommand(const AValue: TBCEditorCommand);
 begin
-  if Value <> FCommand then
-    FCommand := Value;
+  if FCommand <> AValue then
+    FCommand := AValue;
 end;
 
-procedure TBCEditorKeyCommand.SetKey(const Value: Word);
+procedure TBCEditorKeyCommand.SetKey(const AValue: Word);
 begin
-  if Value <> FKey then
-    FKey := Value;
+  if FKey <> AValue then
+    FKey := AValue;
 end;
 
-procedure TBCEditorKeyCommand.SetShiftState(const Value: TShiftState);
+procedure TBCEditorKeyCommand.SetShiftState(const AValue: TShiftState);
 begin
-  if Value <> FShiftState then
-    FShiftState := Value;
+  if FShiftState <> AValue then
+    FShiftState := AValue;
 end;
 
-procedure TBCEditorKeyCommand.SetShortCut(const Value: TShortCut);
+procedure TBCEditorKeyCommand.SetShortCut(const AValue: TShortCut);
 var
   LNewKey: Word;
   LNewShiftState: TShiftState;
   LDuplicate: Integer;
 begin
-  if Value <> 0 then
+  if AValue <> 0 then
   begin
-    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(Value, SecondaryShortCut);
+    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(AValue, SecondaryShortCut);
     if (LDuplicate <> -1) and (LDuplicate <> Self.Index) then
       raise Exception.Create(SBCEditorDuplicateShortcut);
   end;
 
-  Vcl.Menus.ShortCutToKey(Value, LNewKey, LNewShiftState);
+  Vcl.Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
 
   if (LNewKey <> Key) or (LNewShiftState <> ShiftState) then
   begin
@@ -459,32 +464,32 @@ begin
   end;
 end;
 
-procedure TBCEditorKeyCommand.SetSecondaryKey(const Value: Word);
+procedure TBCEditorKeyCommand.SetSecondaryKey(const AValue: Word);
 begin
-  if Value <> FSecondaryKey then
-    FSecondaryKey := Value;
+  if FSecondaryKey <> AValue then
+    FSecondaryKey := AValue;
 end;
 
-procedure TBCEditorKeyCommand.SetSecondaryShiftState(const Value: TShiftState);
+procedure TBCEditorKeyCommand.SetSecondaryShiftState(const AValue: TShiftState);
 begin
-  if Value <> FSecondaryShiftState then
-    FSecondaryShiftState := Value;
+  if FSecondaryShiftState <> AValue then
+    FSecondaryShiftState := AValue;
 end;
 
-procedure TBCEditorKeyCommand.SetSecondaryShortCut(const Value: TShortCut);
+procedure TBCEditorKeyCommand.SetSecondaryShortCut(const AValue: TShortCut);
 var
   LNewKey: Word;
   LNewShiftState: TShiftState;
   LDuplicate: Integer;
 begin
-  if Value <> 0 then
+  if AValue <> 0 then
   begin
-    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(ShortCut, Value);
+    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(ShortCut, AValue);
     if (LDuplicate <> -1) and (LDuplicate <> Self.Index) then
       raise Exception.Create(SBCEditOrduplicateShortcut);
   end;
 
-  Vcl.Menus.ShortCutToKey(Value, LNewKey, LNewShiftState);
+  Vcl.Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
   if (LNewKey <> SecondaryKey) or (LNewShiftState <> SecondaryShiftState) then
   begin
     SecondaryKey := LNewKey;
@@ -517,14 +522,14 @@ end;
 procedure TBCEditorKeyCommands.Assign(ASource: TPersistent);
 var
   i: Integer;
+  LKeyCommands: TBCEditorKeyCommands;
 begin
   if Assigned(ASource) and (ASource is TBCEditorKeyCommands) then
-  with ASource as TBCEditorKeyCommands do
   begin
+    LKeyCommands := ASource as TBCEditorKeyCommands;
     Self.Clear;
-    for i := 0 to Count - 1 do
-      with NewItem do
-        Assign((ASource as TBCEditorKeyCommands)[i]);
+    for i := 0 to LKeyCommands.Count - 1 do
+      NewItem.Assign(LKeyCommands[i]);
   end
   else
     inherited Assign(ASource);
@@ -603,9 +608,9 @@ begin
     end;
 end;
 
-function TBCEditorKeyCommands.GetItem(Index: Integer): TBCEditorKeyCommand;
+function TBCEditorKeyCommands.GetItem(AIndex: Integer): TBCEditorKeyCommand;
 begin
-  Result := TBCEditorKeyCommand(inherited GetItem(index));
+  Result := TBCEditorKeyCommand(inherited GetItem(AIndex));
 end;
 
 function TBCEditorKeyCommands.GetOwner: TPersistent;
@@ -714,11 +719,14 @@ begin
   Add(ecNormalSelect, [ssCtrl, ssAlt], Ord('N'));
   Add(ecColumnSelect, [ssCtrl, ssAlt], Ord('C'));
   Add(ecLineSelect, [ssCtrl, ssAlt], Ord('L'));
+  { Comments }
+  Add(ecLineComment, [ssCtrl], VK_OEM_2);
+  Add(ecBlockComment, [ssCtrl, ssShift], VK_OEM_2);
 end;
 
-procedure TBCEditorKeyCommands.SetItem(Index: Integer; Value: TBCEditorKeyCommand);
+procedure TBCEditorKeyCommands.SetItem(AIndex: Integer; AValue: TBCEditorKeyCommand);
 begin
-  inherited SetItem(index, Value);
+  inherited SetItem(AIndex, AValue);
 end;
 
 initialization

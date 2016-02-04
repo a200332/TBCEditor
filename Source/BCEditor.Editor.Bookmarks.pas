@@ -11,24 +11,24 @@ type
     FChar: Integer;
     FData: Pointer;
     FEditor: TCustomControl;
-    FImage: Integer;
+    FImageIndex: Integer;
     FIndex: Integer;
     FInternalImage: Boolean;
     FLine: Integer;
     FVisible: Boolean;
     function GetIsBookmark: Boolean;
     procedure Invalidate;
-    procedure SetChar(const Value: Integer); virtual;
-    procedure SetImage(const Value: Integer); virtual;
-    procedure SetInternalImage(const Value: Boolean);
-    procedure SetLine(const Value: Integer); virtual;
-    procedure SetVisible(const Value: Boolean);
+    procedure SetChar(const AValue: Integer); virtual;
+    procedure SetImageIndex(const AValue: Integer); virtual;
+    procedure SetInternalImage(const AValue: Boolean);
+    procedure SetLine(const AValue: Integer); virtual;
+    procedure SetVisible(const AValue: Boolean);
   public
     constructor Create(AOwner: TCustomControl);
 
     property Char: Integer read FChar write SetChar;
     property Data: Pointer read FData write FData;
-    property ImageIndex: Integer read FImage write SetImage;
+    property ImageIndex: Integer read FImageIndex write SetImageIndex;
     property Index: Integer read FIndex write FIndex;
     property InternalImage: Boolean read FInternalImage write SetInternalImage;
     property IsBookmark: Boolean read GetIsBookmark;
@@ -81,9 +81,9 @@ begin
   Result := FIndex >= 0;
 end;
 
-procedure TBCEditorBookmark.SetChar(const Value: Integer);
+procedure TBCEditorBookmark.SetChar(const AValue: Integer);
 begin
-  FChar := Value;
+  FChar := AValue;
 end;
 
 procedure TBCEditorBookmark.Invalidate;
@@ -93,36 +93,36 @@ begin
      (FEditor as TBCBaseEditor).InvalidateLeftMarginLines(FLine, FLine);
 end;
 
-procedure TBCEditorBookmark.SetImage(const Value: Integer);
+procedure TBCEditorBookmark.SetImageIndex(const AValue: Integer);
 begin
-  FImage := Value;
+  FImageIndex := AValue;
   Invalidate;
 end;
 
-procedure TBCEditorBookmark.SetInternalImage(const Value: Boolean);
+procedure TBCEditorBookmark.SetInternalImage(const AValue: Boolean);
 begin
-  FInternalImage := Value;
+  FInternalImage := AValue;
   Invalidate;
 end;
 
-procedure TBCEditorBookmark.SetLine(const Value: Integer);
+procedure TBCEditorBookmark.SetLine(const AValue: Integer);
 begin
   if FVisible and Assigned(FEditor) then
   begin
     if FLine > 0 then
       Invalidate;
-    FLine := Value;
+    FLine := AValue;
     Invalidate;
   end
   else
-    FLine := Value;
+    FLine := AValue;
 end;
 
-procedure TBCEditorBookmark.SetVisible(const Value: Boolean);
+procedure TBCEditorBookmark.SetVisible(const AValue: Boolean);
 begin
-  if FVisible <> Value then
+  if FVisible <> AValue then
   begin
-    FVisible := Value;
+    FVisible := AValue;
     Invalidate;
   end;
 end;
@@ -170,24 +170,30 @@ end;
 procedure TBCEditorBookmarkList.ClearLine(ALine: Integer);
 var
   i: Integer;
+  LMark: TBCEditorBookmark;
 begin
   for i := Count - 1 downto 0 do
-    if not Items[i].IsBookmark and (Items[i].Line = ALine) then
+  begin
+    LMark := Items[i];
+    if not LMark.IsBookmark and (LMark.Line = ALine) then
       Delete(i);
+  end;
 end;
 
 procedure TBCEditorBookmarkList.GetMarksForLine(ALine: Integer; var AMarks: TBCEditorBookmarks);
 var
   i, j: Integer;
+  LMark: TBCEditorBookmark;
 begin
   FillChar(AMarks, SizeOf(AMarks), 0);
   j := 0;
   for i := 0 to Count - 1 do
   begin
-    if Items[i].Line = ALine then
+    LMark := Items[i];
+    if LMark.Line = ALine then
     begin
       Inc(j);
-      AMarks[j] := Items[i];
+      AMarks[j] := LMark;
       if j = BCEDITOR_MAX_BOOKMARKS then
         Break;
     end;

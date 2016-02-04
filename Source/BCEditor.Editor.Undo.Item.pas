@@ -8,6 +8,7 @@ uses
 type
   TBCEditorUndoItem = class(TPersistent)
   protected
+    FChangeBlockNumber: Integer;
     FChangeCaretPosition: TBCEditorTextPosition;
     FChangeData: Pointer;
     FChangeEndPosition: TBCEditorTextPosition;
@@ -16,8 +17,9 @@ type
     FChangeBeginPosition: TBCEditorTextPosition;
     FChangeString: string;
   public
-    procedure Assign(Source: TPersistent); override;
+    procedure Assign(ASource: TPersistent); override;
 
+    property ChangeBlockNumber: Integer read FChangeBlockNumber write FChangeBlockNumber;
     property ChangeCaretPosition: TBCEditorTextPosition read FChangeCaretPosition write FChangeCaretPosition;
     property ChangeData: Pointer read FChangeData write FChangeData;
     property ChangeEndPosition: TBCEditorTextPosition read FChangeEndPosition write FChangeEndPosition;
@@ -31,11 +33,14 @@ implementation
 
 { TBCEditorUndoItem }
 
-procedure TBCEditorUndoItem.Assign(Source: TPersistent);
+procedure TBCEditorUndoItem.Assign(ASource: TPersistent);
 begin
-  if Assigned(Source) and (Source is TBCEditorUndoItem) then
-  with Source as TBCEditorUndoItem do
+  if Assigned(ASource) and (ASource is TBCEditorUndoItem) then
+  with ASource as TBCEditorUndoItem do
   begin
+    Self.FChangeBlockNumber := FChangeBlockNumber;
+    Self.FChangeCaretPosition := FChangeCaretPosition;
+    Self.FChangeData := FChangeData;
     Self.FChangeReason := FChangeReason;
     Self.FChangeSelectionMode := FChangeSelectionMode;
     Self.FChangeBeginPosition := FChangeBeginPosition;
@@ -43,7 +48,7 @@ begin
     Self.FChangeString := FChangeString;
   end
   else
-    inherited Assign(Source);
+    inherited Assign(ASource);
 end;
 
 end.

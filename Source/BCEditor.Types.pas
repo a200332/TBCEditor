@@ -33,8 +33,11 @@ type
   TBCEditorCustomLineColorsEvent = procedure(Sender: TObject; ALine: Integer; var AUseColors: Boolean;
     var AForeground: TColor; var ABackground: TColor) of object;
 
+  TBCEditorCustomTokenAttributeEvent = procedure(Sender: TObject; const AText: string; const ALine: Integer;
+    const APosition: Integer; var AForegroundColor: TColor; var ABackgroundColor: TColor; var AStyles: TFontStyles) of object;
+
   TBCEditorStateFlag = (sfCaretChanged, sfScrollBarChanged, sfLinesChanging, sfIgnoreNextChar, sfCaretVisible, sfDblClicked,
-    sfWaitForDragging, sfCodeFoldingInfoClicked, sfInSelection);
+    sfWaitForDragging, sfCodeFoldingInfoClicked, sfInSelection, sfDragging);
   TBCEditorStateFlags = set of TBCEditorStateFlag;
 
   TBCEditorOption = (
@@ -77,6 +80,7 @@ type
     soALTSetsColumnMode,
     soFromEndOfLine,
     soHighlightSimilarTerms,
+    soToEndOfLastLine,
     soToEndOfLine,
     soTripleClickRowSelect
   );
@@ -99,9 +103,15 @@ type
     soSelectedOnly,
     soShowStringNotFound,
     soShowSearchMatchNotFound,
-    soWholeWordsOnly
+    soWholeWordsOnly,
+    soWrapAround
   );
   TBCEditorSearchOptions = set of TBCEditorSearchOption;
+
+  TBCEditorSyncEditOption = (
+    seCaseSensitive
+  );
+  TBCEditorSyncEditOptions = set of TBCEditorSyncEditOption;
 
   TBCEditorReplaceOption = (
     roBackwards,
@@ -131,6 +141,7 @@ type
   TBCEditorSearchMapOptions = set of TBCEditorSearchMapOption;
 
   TBCEditorCompletionProposalOption = (
+    cpoAutoInvoke,
     cpoCaseSensitive,
     cpoFiltered,
     cpoParseItemsFromText,
@@ -176,12 +187,13 @@ type
     ttAssemblerComment,
     ttAssemblerReservedWord,
     ttAttribute,
+    ttBlockComment,
     ttCharacter,
-    ttComment,
     ttDirective,
     ttHexNumber,
     ttHighlightedBlock,
     ttHighlightedBlockSymbol,
+    ttLineComment,
     ttMailtoLink,
     ttMethod,
     ttMethodName,
@@ -219,8 +231,6 @@ type
   TBCEditorContextHelpEvent = procedure(Sender: TObject; Word: string) of object;
 
   TBCEditorMouseCursorEvent = procedure(Sender: TObject; const aLineCharPos: TBCEditorTextPosition; var aCursor: TCursor) of object;
-
-  TBCEditorCharSet = set of AnsiChar;
 
   TBCEditorTokenHelper = record
     Position: Integer;
@@ -273,6 +283,8 @@ type
   );
   TBCEditorMinimapOptions = set of TBCEditorMinimapOption;
 
+  TBCEditorMinimapAlign = (maLeft, maRight);
+
   TBCEditorUndoOption = (
     uoGroupUndo
   );
@@ -285,7 +297,7 @@ type
   TBCEditorSortOrder = (soToggle, soAsc, soDesc);
 
   TBCEditorChangeReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent,
-    crAutoCompleteBegin, crAutoCompleteEnd, crCaret, crSelection, crNothing, crGroupBreak);
+    crCaret, crSelection, crNothing, crGroupBreak);
 
   TBCEditorWordWrapStyle = (wwsClientWidth, wwsRightMargin, wwsSpecified);
 
@@ -309,6 +321,9 @@ type
   TBCEditorLeftMarginBorderStyle = (mbsNone, mbsMiddle, mbsRight);
 
   TBCEditorScrollHintFormat = (shfTopLineOnly, shfTopToBottom);
+
+  TBCEditorIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
+  TBCEditorIndicatorOptions = set of TBCEditorIndicatorOption;
 
 implementation
 
