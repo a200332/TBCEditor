@@ -11,6 +11,8 @@ A syntax highlighting edit control for RAD Studio (Delphi/C++ Builder) with code
 * Delphi XE7: Update 1 required
 * C++ Builder XE7, XE8, and Seattle are supported
 
+Note! Do not offer me older versions to support. I don't have time to keep up with those.
+
 <h3>Conditional compilation</h3>
 
 Define | Description 
@@ -39,7 +41,7 @@ TBCEditor Control Demo v. 1.3.
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
-The latest update: 08.02.2016 17:02, UTC+02:00
+The latest update: 26.02.2016 17:32, UTC+02:00
 
 Demo source build requires <a href="http://www.alphaskins.com/">AlphaSkins</a> and <a href="http://www.ehlib.com/">EhLib</a>. 
 <h3>Documentation</h3>
