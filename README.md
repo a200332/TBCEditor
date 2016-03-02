@@ -1,4 +1,4 @@
-Version 1.3. Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
+Version 1.4. Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
 
 <h3>Description</h3>
 
@@ -36,12 +36,12 @@ Note! LoadFromStream does not support multi-highlighters (for example HTML with 
 
 <h3>Demo</h3>
 
-TBCEditor Control Demo v. 1.3. 
+TBCEditor Control Demo v. 1.4. 
 
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
-The latest update: 26.02.2016 17:32, UTC+02:00
+The latest update: 28.02.2016 23:13, UTC+02:00
 
 Demo source build requires <a href="http://www.alphaskins.com/">AlphaSkins</a> and <a href="http://www.ehlib.com/">EhLib</a>. 
 <h3>Documentation</h3>

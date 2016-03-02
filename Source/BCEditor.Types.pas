@@ -256,7 +256,8 @@ type
   );
 
   TBCEditorSpecialCharsOption = (
-    scoUseTextColor
+    scoTextColor,
+    scoMiddleColor
   );
   TBCEditorSpecialCharsOptions = set of TBCEditorSpecialCharsOption;
   TBCEditorSpecialCharsStyle = (scsDot, scsSolid);
@@ -288,6 +289,7 @@ type
   TBCEditorMinimapOptions = set of TBCEditorMinimapOption;
 
   TBCEditorMinimapAlign = (maLeft, maRight);
+  TBCEditorSearchMapAlign = (saLeft, saRight);
 
   TBCEditorUndoOption = (
     uoGroupUndo
