@@ -3,20 +3,19 @@
       "Info": {
          "General": {
             "Version": "1.5.2",
-            "Date": "21.03.2016",
+            "Date": "03.05.2016",
             "Sample": [
-               "// Hello World in Scala\r\n",
-               "\r\n",
-               "object HelloWorld {\r\n",
-               "  def main(args: Array[String]) {\r\n",
-               "    println(\"Hello, world!\\n\");\r\n",
-               "  }\r\n",
-               "}"
+               "// GLSL example\r\n",
+               "void mainImage( out vec4 fragColor, in vec2 fragCoord )\r\n",
+               "{\r\n",
+               "  vec2 uv = fragCoord.xy / iResolution.xy;\r\n",
+               "  fragColor = vec4(uv,0.5+0.5*sin(iGlobalTime),1.0);\r\n",
+               "}\r\n"
             ]
          },
          "Author": {
-            "Name": "Lasse Rautiainen",
-            "Mail": "lasse@bonecode.com"
+            "Name": "Wouter van Nifterick",
+            "Mail": "woutervannifterick@gmail.com"
          }
       },
       "MainRules": {
@@ -25,6 +24,40 @@
          },
          "SubRules": {
             "Range": [
+               {
+                  "Type": "Method",
+                  "Attributes": {
+                     "Element": "MethodName"
+                  },
+                  "Properties": {
+                     "AlternativeClose": [
+                        "(",
+                        "/",
+                        "{",
+                        ";"
+                     ]
+                  },
+                  "TokenRange": {
+                     "Open": "void",
+                     "Close": ")"
+                  },
+                  "SubRules": {
+                     "KeyList": [
+                        {
+                           "Type": "Symbol",
+                           "Words": [
+                              "in",
+                              "out",
+                              "inout",
+                              "("
+                           ],
+                           "Attributes": {
+                              "Element": "Symbol"
+                           }
+                        }
+                     ]
+                  }
+               },
                {
                   "Type": "BlockComment",
                   "Attributes": {
@@ -154,7 +187,7 @@
                   "Attributes": {
                      "Element": "Number"
                   },
-                  "Delimiters": "*/+-=\\|&()[]{}`~!@,$%^?:;'\".><#'ghijklmnopqrstuwvyzÃ¥Ã¤Ã¶",
+                  "Delimiters": "*/+-=\\|&()[]{}`~!@,$%^?:;'\".><#'ghijklmnopqrstuwvyzåäö",
                   "Properties": {
                      "CloseOnTerm": true,
                      "CloseOnEndOfLine": true
@@ -167,55 +200,181 @@
             ],
             "KeyList": [
                {
+                  "Name": "GLSL Keywords",
                   "Type": "ReservedWord",
                   "Words": [
-                     "abstract",
+                     "break",
                      "case",
-                     "catch",
-                     "class",
-                     "def",
+                     "continue",
+                     "default",
+                     "discard",
                      "do",
                      "else",
-                     "extends",
-                     "false",
-                     "final",
-                     "finally",
+                     "exit",
                      "for",
-                     "forsome",
                      "if",
-                     "implicit",
-                     "import",
-                     "lazy",
-                     "match",
-                     "new",
-                     "null",
-                     "object",
-                     "override",
-                     "package",
-                     "private",
-                     "protected",
                      "return",
-                     "sealed",
-                     "super",
-                     "this",
-                     "throw",
-                     "trait",
-                     "try",
-                     "true",
-                     "type",
-                     "val",
-                     "var",
-                     "while",
-                     "with",
-                     "yield"
+                     "struct",
+                     "switch",
+                     "while"
                   ],
                   "Attributes": {
                      "Element": "ReservedWord"
                   }
                },
                {
+                  "Name": "GLSL types",
+                  "Type": "ReservedWord",
+                  "Words": [
+                     "bool",
+                     "bvec2",
+                     "bvec3",
+                     "bvec4",
+                     "float",
+                     "int",
+                     "ivec2",
+                     "ivec3",
+                     "ivec4",
+                     "mat2",
+                     "mat3",
+                     "mat4",
+                     "sampler2D",
+                     "samplerCube",
+                     "vec2",
+                     "vec3",
+                     "vec4",
+                     "void",
+                     "struct"
+                  ],
+                  "Attributes": {
+                     "Element": "ReservedWord"
+                  }
+               },
+               {
+                  "Name": "Word",
+                  "Type": "ReservedWord",
+                  "Words": [
+                     "attribute",
+                     "const",
+                     "uniform",
+                     "varying",
+                     "highp",
+                     "mediump",
+                     "lowp"
+                  ],
+                  "Attributes": {
+                     "Element": "ReservedWord"
+                  }
+               },
+               {
+                  "Name": "ShaderUniforms",
+                  "Type": "Attribute",
+                  "Words": [
+                     "fragCoord",
+                     "fragColor",
+                     "gl_FragCoord",
+                     "gl_FragColor",
+                     "resolution",
+                     "iResolution",
+                     "iGlobalTime",
+                     "globalTime",
+                     "iTimeDelta",
+                     "iFrame",
+                     "iChannelTime",
+                     "iChannelResolution",
+                     "iMouse",
+                     "mouse",
+                     "iChannel0",
+                     "iChannel1",
+                     "iChannel2",
+                     "iChannel3",
+                     "iDate",
+                     "iSampleRate",
+                     "uniform",
+                     "varying"
+                  ],
+                  "Attributes": {
+                     "Element": "Attribute"
+                  }
+               },
+               {
+                  "Type": "Method",
+                  "Words": [
+                     "abs",
+                     "acos",
+                     "acosh",
+                     "asin",
+                     "asinh",
+                     "atan",
+                     "atanh",
+                     "ceil",
+                     "clamp",
+                     "cos",
+                     "cosh",
+                     "cross",
+                     "degrees",
+                     "determinant",
+                     "dFdx",
+                     "dFdxCoarse",
+                     "dFdxFine",
+                     "dFdy",
+                     "dFdyCoarse",
+                     "dFdyFine",
+                     "distance",
+                     "dot",
+                     "equal",
+                     "exp",
+                     "exp2",
+                     "faceforward",
+                     "floor",
+                     "fma",
+                     "fract",
+                     "frexp",
+                     "fwidth",
+                     "fwidthCoarse",
+                     "fwidthFine",
+                     "inverse",
+                     "inversesqrt",
+                     "isinf",
+                     "isnan",
+                     "ldexp",
+                     "length",
+                     "log",
+                     "log2",
+                     "max",
+                     "min",
+                     "mix",
+                     "mod",
+                     "modf",
+                     "normalize",
+                     "pow",
+                     "radians",
+                     "reflect",
+                     "refract",
+                     "sign",
+                     "sin",
+                     "sinh",
+                     "smoothstep",
+                     "sqrt",
+                     "step",
+                     "tan",
+                     "tanh",
+                     "texture2D",
+                     "texture2DLod",
+                     "texture2DProj",
+                     "texture2DProjLod",
+                     "transpose",
+                     "trunc"
+                  ],
+                  "Attributes": {
+                     "Element": "Method"
+                  }
+               },
+               {
                   "Type": "Symbol",
                   "Words": [
+                     "!",
+                     "?",
                      ":",
                      ";",
                      "<",
@@ -232,10 +391,7 @@
                      "[",
                      "]",
                      "{",
-                     "}",
-                     "%",
-                     "#",
-                     "@"
+                     "}"
                   ],
                   "Attributes": {
                      "Element": "Symbol"
@@ -315,16 +471,6 @@
    },
    "CompletionProposal": {
       "SkipRegion": [
-         {
-            "OpenToken": "'",
-            "CloseToken": "'",
-            "RegionType": "String"
-         },
-         {
-            "OpenToken": "\"",
-            "CloseToken": "\"",
-            "RegionType": "String"
-         },
          {
             "OpenToken": "//",
             "RegionType": "SingleLine"
