@@ -34,8 +34,6 @@ type
     FBorderStyle: TBorderStyle;
     FCaret: TBCEditorCaret;
     FCaretOffset: TPoint;
-    FCharCountArray: PByteArray;
-    FCharCountArrayLength: Integer;
     FDisplayCaretX: Integer;
     FDisplayCaretY: Integer;
     FDragBeginTextCaretPosition: TBCEditorTextPosition;
@@ -271,6 +269,7 @@ type
     procedure CompletionProposalTimerHandler(ASender: TObject);
     procedure ComputeScroll(X, Y: Integer);
     procedure CreateLineNumbersCache(AResetCache: Boolean = False);
+    procedure CreateShadowBitmap(const AClipRect: TRect);
     procedure DeflateMinimapRect(var ARect: TRect);
     procedure DeleteChar;
     procedure DeleteLastWordOrBeginningOfLine(const ACommand: TBCEditorCommand);
@@ -996,11 +995,6 @@ begin
     FreeMem(FMinimapShadowAlphaByteArray);
     FMinimapShadowAlphaByteArray := nil;
   end;
-  if Assigned(FCharCountArray) then
-  begin
-    FreeMem(FCharCountArray);
-    FCharCountArray := nil;
-  end;
   if Assigned(FSearchEngine) then
   begin
     FSearchEngine.Free;
@@ -1205,7 +1199,7 @@ begin
   if TopLine <> LTopLine then
   begin
     TopLine := LTopLine;
-    Paint;
+    Invalidate;
   end;
 end;
 
@@ -2139,6 +2133,30 @@ begin
   end;
 end;
 
+procedure TBCBaseEditor.CreateShadowBitmap(const AClipRect: TRect);
+var
+  LRow, LColumn: Integer;
+  LPixel: PBCEditorQuadColor;
+  LAlpha: Single;
+begin
+  FMinimapShadowBitmap.Height := 0;
+  FMinimapShadowBitmap.Height := AClipRect.Height; //FI:W508 FixInsight ignore
+
+  for LRow := 0 to FMinimapShadowBitmap.Height - 1 do
+  begin
+    LPixel := FMinimapShadowBitmap.Scanline[LRow];
+    for LColumn := 0 to FMinimapShadowBitmap.Width - 1 do
+    begin
+      LAlpha := FMinimapShadowAlphaArray[LColumn];
+      LPixel.Alpha := FMinimapShadowAlphaByteArray[LColumn];
+      LPixel.Red := Round(LPixel.Red * LAlpha);
+      LPixel.Green := Round(LPixel.Green * LAlpha);
+      LPixel.Blue := Round(LPixel.Blue * LAlpha);
+      Inc(LPixel);
+    end;
+  end;
+end;
+
 function TBCBaseEditor.DisplayPositionToPixels(const ADisplayPosition: TBCEditorDisplayPosition): TPoint;
 begin
   Result.X := (ADisplayPosition.Column - 1) * FCharWidth + FTextOffset;
@@ -2984,7 +3002,7 @@ begin
   end;
 
   CheckIfAtMatchingKeywords;
-  Paint;
+  Invalidate;
   UpdateScrollBars;
 end;
 
@@ -3080,7 +3098,7 @@ begin
     SetParentCollapsedOfSubCodeFoldingRanges(False, FoldRangeLevel);
   end;
   CheckIfAtMatchingKeywords;
-  Paint;
+  Invalidate;
   UpdateScrollBars;
 end;
 
@@ -7107,18 +7125,18 @@ begin
     ReleaseDC(0, LDC);
     LCompatibleDC := CreateCompatibleDC(0);
     LOldBitmap := SelectObject(LCompatibleDC, LCompatibleBitmap);
-    LDC := BeginPaint(Handle, LPaintStruct);
     try
+      LDC := BeginPaint(Handle, LPaintStruct);
+      //Perform(WM_ERASEBKGND, LCompatibleDC, LCompatibleDC);
       Message.DC := LCompatibleDC;
       WMPaint(Message);
-
+      //Message.DC := 0;
       BitBlt(LDC, 0, 0, ClientRect.Right, ClientRect.Bottom, LCompatibleDC, 0, 0, SRCCOPY);
-
-      SelectObject(LCompatibleDC, LOldBitmap);
+      EndPaint(Handle, LPaintStruct);
     finally
+      SelectObject(LCompatibleDC, LOldBitmap);
       DeleteObject(LCompatibleBitmap);
       DeleteDC(LCompatibleDC);
-      EndPaint(Handle, LPaintStruct);
     end;
   end;
 end;
@@ -7956,7 +7974,7 @@ begin
         LPreviousLine := TopLine
       else
         Break;
-      Paint;
+      Invalidate;
     end
     else
     while LNewLine > TopLine + LStep do
@@ -7967,7 +7985,7 @@ begin
         LPreviousLine := TopLine
       else
         Break;
-      Paint;
+      Invalidate;
     end;
     TopLine := LNewLine;
   end;
@@ -8986,7 +9004,7 @@ var
   LSelectionAvailable: Boolean;
   LTextLinesLeft, LTextLinesRight: Integer;
 begin
-  LClipRect := Canvas.ClipRect;
+  LClipRect := ClientRect;
 
   LLine1 := FTopLine + LClipRect.Top div FLineHeight;
   LTemp := (LClipRect.Bottom + FLineHeight - 1) div FLineHeight;
@@ -9132,14 +9150,6 @@ begin
       BitBlt(FMinimapBufferBitmap.Canvas.Handle, 0, 0, DrawRect.Width, DrawRect.Height, Canvas.Handle, DrawRect.Left,
         DrawRect.Top, SRCCOPY);
       FTextDrawer.SetBaseFont(Font);
-
-      if FMinimap.Shadow.Visible then
-      begin
-        DrawRect := LClipRect;
-        DrawRect.Left := LTextLinesLeft - FLeftMargin.GetWidth - FCodeFolding.GetWidth;
-        DrawRect.Right := LTextLinesRight;
-        PaintMinimapShadow(Canvas, DrawRect);
-      end;
     end;
 
     { Search map }
@@ -9156,6 +9166,15 @@ begin
       PaintSearchMap(DrawRect);
     end;
     FTextDrawer.EndDrawing;
+
+    if FMinimap.Visible then
+      if FMinimap.Shadow.Visible then
+      begin
+        DrawRect := LClipRect;
+        DrawRect.Left := LTextLinesLeft - FLeftMargin.GetWidth - FCodeFolding.GetWidth;
+        DrawRect.Right := LTextLinesRight;
+        PaintMinimapShadow(Canvas, DrawRect);
+      end;
 
     DoOnPaint;
   finally
@@ -9301,11 +9320,9 @@ begin
     AFoldRange.Collapsed and not AFoldRange.ParentCollapsed then
   begin
     LCollapseMarkRect.Left := (ATokenPosition + ATokenLength + 1) * FCharWidth;
+    LCollapseMarkRect.Right := LCollapseMarkRect.Left + FCharWidth * 4 - 2;
     LCollapseMarkRect.Top := ALineRect.Top + 2;
     LCollapseMarkRect.Bottom := ALineRect.Bottom - 2;
-    LCollapseMarkRect.Right := LCollapseMarkRect.Left + FCharWidth * 4 - 2;
-
-    AFoldRange.CollapseMarkRect := LCollapseMarkRect;
 
     if LCollapseMarkRect.Right - AScrolledXBy > 0 then
     begin
@@ -9327,6 +9344,15 @@ begin
         X := X + FCharWidth - 1;
       end;
     end;
+
+    if FMinimap.Align = maLeft then
+      Inc(LCollapseMarkRect.Left, FMinimap.GetWidth);
+    if FSearch.Map.Align = saLeft then
+      Inc(LCollapseMarkRect.Left, FSearch.Map.GetWidth);
+    Inc(LCollapseMarkRect.Left, FLeftMargin.GetWidth + FCodeFolding.GetWidth);
+    LCollapseMarkRect.Right := LCollapseMarkRect.Left + FCharWidth * 4 - 2;
+
+    AFoldRange.CollapseMarkRect := LCollapseMarkRect;
   end;
   ACanvas.Pen.Color := LOldPenColor;
 end;
@@ -9574,7 +9600,8 @@ var
         begin
           LLineRect.Top := LLineRect.Bottom;
           LLineRect.Bottom := AClipRect.Bottom;
-          FTextDrawer.ExtTextOut(LLineRect.Left, LLineRect.Top, ETO_OPAQUE, LLineRect, '', 0);
+          //FTextDrawer.ExtTextOut(LLineRect.Left, LLineRect.Top, ETO_OPAQUE, LLineRect, '', 0);
+          Winapi.Windows.ExtTextOut(Canvas.Handle, LLineRect.Left, LLineRect.Top, ETO_OPAQUE, @LLineRect, '', 0, nil);
         end;
       finally
         FTextDrawer.SetBaseFont(Self.Font);
@@ -9839,27 +9866,10 @@ end;
 
 procedure TBCBaseEditor.PaintMinimapShadow(ACanvas: TCanvas; AClipRect: TRect);
 var
-  LRow, LColumn: Integer;
-  LPixel: PBCEditorQuadColor;
-  LAlpha: Single;
   LLeft: Integer;
 begin
-  FMinimapShadowBitmap.Height := 0;
-  FMinimapShadowBitmap.Height := AClipRect.Height; //FI:W508 FixInsight ignore
-
-  for LRow := 0 to FMinimapShadowBitmap.Height - 1 do
-  begin
-    LPixel := FMinimapShadowBitmap.Scanline[LRow];
-    for LColumn := 0 to FMinimapShadowBitmap.Width - 1 do
-    begin
-      LAlpha := FMinimapShadowAlphaArray[LColumn];
-      LPixel.Alpha := FMinimapShadowAlphaByteArray[LColumn];
-      LPixel.Red := Round(LPixel.Red * LAlpha);
-      LPixel.Green := Round(LPixel.Green * LAlpha);
-      LPixel.Blue := Round(LPixel.Blue * LAlpha);
-      Inc(LPixel);
-    end;
-  end;
+  if FMinimapShadowBitmap.Height <> AClipRect.Height then
+    CreateShadowBitmap(AClipRect);
 
   if FMinimap.Align = maLeft then
     LLeft := AClipRect.Left
@@ -10038,7 +10048,9 @@ begin
 
         LRect.Left := (LDisplayPosition.Column - 1) * FTextDrawer.CharWidth;
         LRect.Right := LRect.Left + LLength * FTextDrawer.CharWidth;
-        FTextDrawer.ExtTextOut(LRect.Left, LRect.Top, ETO_OPAQUE or ETO_CLIPPED, LRect, PChar(LText), LLength);
+        //FTextDrawer.ExtTextOut(LRect.Left, LRect.Top, ETO_OPAQUE or ETO_CLIPPED, LRect, PChar(LText), LLength);
+        Winapi.Windows.ExtTextOut(ACanvas.Handle, LRect.Left, LRect.Top, ETO_OPAQUE or ETO_CLIPPED, @LRect,
+          PChar(LText), LLength, nil);
       end;
     end;
   end;
@@ -10207,7 +10219,9 @@ begin
           FTextDrawer.SetForegroundColor(ACanvas.Pen.Color);
           FTextDrawer.SetStyle([]);
           LPilcrow := Char($00B6);
-          FTextDrawer.ExtTextOut(LCharRect.Left, LCharRect.Top, ETO_OPAQUE or ETO_CLIPPED, LCharRect, PChar(LPilcrow), 1);
+          //FTextDrawer.ExtTextOut(LCharRect.Left, LCharRect.Top, ETO_OPAQUE or ETO_CLIPPED, LCharRect, PChar(LPilcrow), 1);
+          Winapi.Windows.ExtTextOut(ACanvas.Handle, LCharRect.Left, LCharRect.Top, ETO_OPAQUE or ETO_CLIPPED, @LCharRect,
+            PChar(LPilcrow), 1, nil);
         end
         else
         if FSpecialChars.EndOfLine.Style = eolArrow then
@@ -10317,6 +10331,7 @@ var
   LLastChar: Integer;
   LBookmarkOnCurrentLine: Boolean;
   LVisibleChars: Integer;
+  LCurrentLineText: string;
 
   function IsBookmarkOnCurrentLine: Boolean;
   var
@@ -10368,13 +10383,13 @@ var
       if (FSelectionEndPosition.Line < FSelectionBeginPosition.Line) or
         ((FSelectionEndPosition.Line = FSelectionBeginPosition.Line) and (FSelectionEndPosition.Char < FSelectionBeginPosition.Char)) then
       begin
-        LSelectionBeginPosition := TextToDisplayPosition(FSelectionEndPosition, True);
-        LSelectionEndPosition := TextToDisplayPosition(FSelectionBeginPosition, True);
+        LSelectionBeginPosition := TextToDisplayPosition(FSelectionEndPosition, False);
+        LSelectionEndPosition := TextToDisplayPosition(FSelectionBeginPosition, False);
       end
       else
       begin
-        LSelectionBeginPosition := TextToDisplayPosition(FSelectionBeginPosition, True);
-        LSelectionEndPosition := TextToDisplayPosition(FSelectionEndPosition, True);
+        LSelectionBeginPosition := TextToDisplayPosition(FSelectionBeginPosition, False);
+        LSelectionEndPosition := TextToDisplayPosition(FSelectionEndPosition, False);
       end;
   end;
 
@@ -10404,9 +10419,11 @@ var
     ACanvas.Brush.Color := LColor; { Rest of the line }
   end;
 
-  function GetCharWidth(AIndex: Integer; AMinimap: Boolean = False): Integer;
+  function GetTextWidth(AIndex: Integer; AMinimap: Boolean = False): Integer;
   var
-    i: Integer;
+    LText: string;
+    LAfterLine: Integer;
+    LTextSize: TSize;
   begin
     if AMinimap then
     begin
@@ -10422,27 +10439,35 @@ var
     else
       Result := 0;
 
-    for i := 1 to AIndex - 1 do
-      Result := Result + FTextDrawer.CharWidth * FCharCountArray[i - 1];
+    LText := Copy(LCurrentLineText, 1, AIndex - 1);
+    GetTextExtentPoint32(ACanvas.Handle, LText, Length(LText), LTextSize);
+    Result := Result + LTextSize.Width;
+
+    LAfterLine := AIndex - Length(LCurrentLineText) - 1;
+    if LAfterLine = 0 then
+      Inc(Result); { Italic }
+    if LAfterLine > 0 then
+      Result := Result + LAfterLine * FTextDrawer.CharWidth;
   end;
 
   procedure PaintToken(AToken: string; ATokenLength, ACharsBefore, AFirst, ALast: Integer);
   var
     LText: string;
-    X: Integer;
     LOldPenColor: TColor;
   begin
     if (ALast > AFirst) and (LTokenRect.Right > LTokenRect.Left) then
     begin
-      X := GetCharWidth(AFirst, AMinimap);
       Dec(AFirst, ACharsBefore);
       if AMinimap then
         ATokenLength := Min(ATokenLength, LLastChar)
       else
-        ATokenLength := Min(ATokenLength, LVisibleChars);
+        ATokenLength := ATokenLength;
       LText := Copy(AToken, AFirst, ATokenLength);
 
-      FTextDrawer.ExtTextOut(X + 1, LTokenRect.Top, ETO_OPAQUE or ETO_CLIPPED, LTokenRect, PChar(LText), ATokenLength);
+     // FTextDrawer.ExtTextOut(LTokenRect.Left, LTokenRect.Top, ETO_OPAQUE or ETO_CLIPPED, LTokenRect, PChar(LText), ATokenLength);
+
+      Winapi.Windows.ExtTextOut(ACanvas.Handle, LTokenRect.Left, LTokenRect.Top, ETO_OPAQUE or ETO_CLIPPED, @LTokenRect,
+        PChar(LText), ATokenLength, nil);
 
       if LTokenHelper.MatchingPairUnderline then
       begin
@@ -10465,7 +10490,7 @@ var
     X1, X2: Integer;
   begin
     { Compute some helper variables. }
-    LFirstColumn := Max(1, LTokenHelper.CharsBefore + 1);
+    LFirstColumn := {Max(1,} LTokenHelper.CharsBefore + 1{)};
     LLastColumn := Min(LLastChar, LTokenHelper.CharsBefore + LTokenHelper.Length + 1);
     if LIsSelectionInsideLine then
     begin
@@ -10504,27 +10529,27 @@ var
         if LFirstUnselectedPartOfToken then
         begin
           SetDrawingColors(False);
-          LTokenRect.Right := GetCharWidth(LLineSelectionStart, AMinimap) + 1;
+          LTokenRect.Right := GetTextWidth(LLineSelectionStart, AMinimap) {+ 1};
           PaintToken(LTokenHelper.Text, LLineSelectionStart - 1, LTokenHelper.CharsBefore, LFirstColumn, LLineSelectionStart);
         end;
         { selected part of the token }
         SetDrawingColors(True);
         LSelectionStart := Max(LLineSelectionStart, LFirstColumn);
         LSelectionEnd := Min(LLineSelectionEnd, LLastColumn);
-        LTokenRect.Right := GetCharWidth(LSelectionEnd, AMinimap) + 1;
+        LTokenRect.Right := GetTextWidth(LSelectionEnd, AMinimap) {+ 1};
         PaintToken(LTokenHelper.Text, LSelectionEnd - LSelectionStart, LTokenHelper.CharsBefore, LSelectionStart, LSelectionEnd);
         { second unselected part of the token }
         if LSecondUnselectedPartOfToken then
         begin
           SetDrawingColors(False);
-          LTokenRect.Right := GetCharWidth(LLastColumn, AMinimap) + 1;
+          LTokenRect.Right := GetTextWidth(LLastColumn, AMinimap) {+ 1};
           PaintToken(LTokenHelper.Text, LLastColumn - LSelectionEnd, LTokenHelper.CharsBefore, LLineSelectionEnd, LLastColumn);
         end;
       end
       else
       begin
         SetDrawingColors(LSelected);
-        LTokenRect.Right := GetCharWidth(LLastColumn, AMinimap) + 1;
+        LTokenRect.Right := GetTextWidth(LLastColumn, AMinimap) {+ 1};
         PaintToken(LTokenHelper.Text, LTokenHelper.Length, LTokenHelper.CharsBefore, LFirstColumn, LLastColumn);
       end;
     end;
@@ -10544,8 +10569,8 @@ var
 
       if LIsSelectionInsideLine then
       begin
-        X1 := GetCharWidth(LLineSelectionStart, AMinimap);
-        X2 := GetCharWidth(LLineSelectionEnd, AMinimap);
+        X1 := GetTextWidth(LLineSelectionStart, AMinimap);
+        X2 := GetTextWidth(LLineSelectionEnd, AMinimap);
         if LTokenRect.Left < X1 then
         begin
           SetDrawingColors(soFromEndOfLine in FSelection.Options);
@@ -10662,10 +10687,9 @@ var
 
   procedure PaintLines;
   var
-    i, j: Integer;
+    i: Integer;
     LFirstColumn, LLastColumn: Integer;
-    LCurrentLineText, LFromLineText, LToLineText, LTempLineText: string;
-    LCurrentLineLength: Integer;
+    LFromLineText, LToLineText: string;
     LCurrentRow: Integer;
     LFoldRange: TBCEditorCodeFoldingRange;
     LHighlighterAttribute: TBCEditorHighlighterAttribute;
@@ -10681,7 +10705,6 @@ var
     LPreviousFirstColumn: Integer;
     LTextCaretY: Integer;
     LWrappedRowCount: Integer;
-    LPChar: PChar;
 
     function GetWordAtSelection(var ASelectedText: string): string;
     var
@@ -10882,23 +10905,6 @@ var
         end;
       end;
 
-      LCurrentLineLength := Length(LCurrentLineText);
-
-      // TODO
-      if LCurrentLineLength > FCharCountArrayLength then
-      begin
-        FCharCountArrayLength := LCurrentLineLength;
-        ReallocMem(FCharCountArray, LCurrentLineLength * SizeOf(Integer));
-      end;
-      for i := 0 to LCurrentLineLength - 1 do
-      begin
-        LPChar := @LCurrentLineText[i];
-        if Ord(LPChar^) < 128 then
-          FCharCountArray[i] := 1
-        else
-          FCharCountArray[i] := FTextDrawer.GetCharCount(LPChar);
-      end;
-
       LIsCurrentLine := False;
 
       LTokenPosition := 0;
@@ -11074,7 +11080,7 @@ begin
     if FWordWrap.Enabled then
       LLastChar := LVisibleChars + 1
     else
-      LLastChar := FLines.GetLengthOfLongestLine + 1;
+      LLastChar := LVisibleChars + FHorizontalScrollPosition div FCharWidth + 2
   end;
 
   if LLastLine >= LFirstLine then
@@ -13290,11 +13296,14 @@ begin
   try
     LVisibleX := DisplayCaretX;
     LColumn := FHorizontalScrollPosition div FCharWidth;
+    if LVisibleX = 1 then
+      LColumn := 0
+    else
     if LVisibleX < LColumn then
       LColumn := LVisibleX
     else
     if LVisibleX >= VisibleChars + LColumn then
-      LColumn := LVisibleX - VisibleChars + 1;
+      LColumn := LVisibleX - VisibleChars {+ 1};
     SetHorizontalScrollPosition(LColumn * FCharWidth);
 
     LCaretRow := DisplayCaretY;
