@@ -224,9 +224,6 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.pas">
             <BuildOrder>34</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LineSpacing.pas">
-            <BuildOrder>35</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.MatchingPair.Colors.pas">
             <BuildOrder>36</BuildOrder>
         </DelphiCompile>
@@ -261,6 +258,9 @@
             <BuildOrder>44</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Scroll.Hint.pas">
+            <BuildOrder>45</BuildOrder>
+        </DelphiCompile>
+				<DelphiCompile Include="..\Source\BCEditor.Editor.Scroll.Shadow.pas">
             <BuildOrder>45</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Scroll.pas">

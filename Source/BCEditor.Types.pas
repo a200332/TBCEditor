@@ -3,10 +3,12 @@ unit BCEditor.Types;
 interface
 
 uses
-  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, BCEditor.Highlighter.Attributes, System.SysUtils;
+  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, BCEditor.Highlighter.Attributes,
+  BCEditor.Consts, System.SysUtils;
 
 type
   TBCEditorArrayOfString = array of string;
+  TBCEditorArrayOfSingle = array of Single;
 
   TBCEditorCharMethod = function(AChar: Char): Boolean of object;
 
@@ -246,17 +248,23 @@ type
 
   TBCEditorMouseCursorEvent = procedure(ASender: TObject; const ALineCharPos: TBCEditorTextPosition; var ACursor: TCursor) of object;
 
+  TBCEditorEmptySpace = (
+    esNone,
+    esSpace,
+    esTab
+  );
+
   TBCEditorTokenHelper = record
-    Position: Integer;
-    Length: Integer;
-    VisualLength: Integer;
-    MaxLength: Integer;
+    Background: TColor;
     CharsBefore: Integer;
-    Text: string;
-    TabString: string;
-    Foreground, Background: TColor;
+    EmptySpace: TBCEditorEmptySpace;
     FontStyle: TFontStyles;
+    Foreground: TColor;
+    IsItalic: Boolean;
+    Length: Integer;
     MatchingPairUnderline: Boolean;
+    MaxLength: Integer;
+    Text: string;
   end;
 
   TBCEditorSpecialCharsEndOfLineStyle = (
@@ -272,10 +280,8 @@ type
   TBCEditorSpecialCharsOptions = set of TBCEditorSpecialCharsOption;
   TBCEditorSpecialCharsStyle = (scsDot, scsSolid);
 
-  //TBCEditorByteArray = array of Byte;
-  //PBCEditorByteArray = ^TBCEditorByteArray; { Can't use System.SysUtils PByteArray because it isn't dynamic }
-
-  TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean): string;
+  TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean;
+    const ATabChar: Char = BCEDITOR_SPACE_CHAR): string;
 
   TBCEditorLeftMarginLineNumberOption = (
     lnoIntens,
@@ -294,7 +300,9 @@ type
 
   TBCEditorMinimapOption = (
     moShowBookmarks,
-    moShowIndentGuides
+    moShowIndentGuides,
+    moShowSearchResults,
+    moShowSpecialChars
   );
   TBCEditorMinimapOptions = set of TBCEditorMinimapOption;
 
@@ -302,7 +310,8 @@ type
   TBCEditorSearchMapAlign = (saLeft, saRight);
 
   TBCEditorUndoOption = (
-    uoGroupUndo
+    uoGroupUndo,
+    uoUndoAfterSave
   );
   TBCEditorUndoOptions = set of TBCEditorUndoOption;
 
@@ -319,8 +328,6 @@ type
 
   TBCEditorCodeFoldingMarkStyle = (msSquare, msCircle);
   TBCEditorCodeFoldingChanges = (fcEnabled, fcRefresh, fcRescan);
-
-  TLineSpacingRule = (lsSingle, lsOneAndHalf, lsDouble, lsSpecified);
 
   TBCEditorCodeFoldingChangeEvent = procedure(Event: TBCEditorCodeFoldingChanges) of object;
 
