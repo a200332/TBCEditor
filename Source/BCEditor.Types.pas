@@ -66,12 +66,11 @@ type
   TBCEditorCaretMultiEditOptions = set of TBCEditorCaretMultiEditOption;
 
   TBCEditorScrollOption = (
-    soAutosizeMaxWidth, { Automatically resizes the MaxScrollWidth property when inserting text }
     soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
     soHintFollows, { The scroll hint follows the mouse when scrolling vertically }
     soPastEndOfFileMarker, { Allows the cursor to go past the end of file marker }
     soPastEndOfLine, { Allows the cursor to go past the last character into the white space at the end of a line }
-    soShowHint, { Shows a hint of the visible line numbers when scrolling vertically }
+    soShowVerticalScrollHint, { Shows a hint of the visible line numbers when scrolling vertically }
     soWheelClickMove { Scrolling by mouse move after wheel click. }
   );
   TBCEditorScrollOptions = set of TBCEditorScrollOption;
@@ -93,11 +92,8 @@ type
   TBCEditorSelectionOption = (
     soALTSetsColumnMode,
     soExpandRealNumbers,
-    soFromEndOfLine,
     soHighlightSimilarTerms,
     soTermsCaseSensitive,
-    soToEndOfLastLine,
-    soToEndOfLine,
     soTripleClickRowSelect
   );
   TBCEditorSelectionOptions = set of TBCEditorSelectionOption;
@@ -324,7 +320,7 @@ type
   TBCEditorChangeReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent,
     crCaret, crSelection, crNothing, crGroupBreak);
 
-  TBCEditorWordWrapStyle = (wwsClientWidth, wwsRightMargin, wwsSpecified);
+  TBCEditorWordWrapStyle = (wwsPageWidth, wwsRightMargin);
 
   TBCEditorCodeFoldingMarkStyle = (msSquare, msCircle);
   TBCEditorCodeFoldingChanges = (fcEnabled, fcRefresh, fcRescan);

@@ -249,9 +249,10 @@ begin
       Hide;
     BCEDITOR_SPACE_CHAR .. High(Char):
       begin
-        if (Owner as TBCBaseEditor).IsWordBreakChar(AKey) and Assigned(OnValidate) then
-          if AKey = BCEDITOR_SPACE_CHAR then
-            OnValidate(Self, [], BCEDITOR_NONE_CHAR);
+        if not (cpoAutoInvoke in FCompletionProposal.Options) then
+          if (Owner as TBCBaseEditor).IsWordBreakChar(AKey) and Assigned(OnValidate) then
+            if AKey = BCEDITOR_SPACE_CHAR then
+              OnValidate(Self, [], BCEDITOR_NONE_CHAR);
         CurrentString := FCurrentString + AKey;
         if (cpoAutoInvoke in FCompletionProposal.Options) and (Length(FItemIndexArray) = 0) or
           (Pos(AKey, FCompletionProposal.CloseChars) <> 0) then
@@ -712,12 +713,12 @@ begin
     SB_PAGEUP:
       TopLine := Max(0, TopLine - FCompletionProposal.VisibleLines);
     SB_THUMBPOSITION, SB_THUMBTRACK:
-      begin
-        if GetItems.Count > BCEDITOR_MAX_SCROLL_RANGE then
-          TopLine := MulDiv(FCompletionProposal.VisibleLines + GetItems.Count - 1, AMessage.Pos, BCEDITOR_MAX_SCROLL_RANGE)
-        else
-          TopLine := AMessage.Pos;
-      end;
+      //begin  TODO
+        //if GetItems.Count > BCEDITOR_MAX_SCROLL_RANGE then
+        //  TopLine := MulDiv(FCompletionProposal.VisibleLines + GetItems.Count - 1, AMessage.Pos, BCEDITOR_MAX_SCROLL_RANGE)
+        //else
+      TopLine := AMessage.Pos;
+      //end;
   end;
   Invalidate;
 end;

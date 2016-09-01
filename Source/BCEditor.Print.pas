@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Printers, BCEditor.Editor.Base, BCEditor.Types,
   BCEditor.Print.Types, BCEditor.Print.HeaderFooter, BCEditor.Print.PrinterInfo, BCEditor.Print.Margins,
-  BCEditor.Utils, BCEditor.Highlighter, BCEditor.Editor.Selection, BCEditor.TextDrawer;
+  BCEditor.Utils, BCEditor.Highlighter, BCEditor.Editor.Selection, BCEditor.PaintHelper;
 
 type
   TBCEditorPageLine = class
@@ -49,6 +49,7 @@ type
     FOldFont: TFont;
     FOnPrintLine: TBCEditorPrintLineEvent;
     FOnPrintStatus: TBCEditorPrintStatusEvent;
+    FPaintHelper: TBCEditorPaintHelper;
     FPageCount: Integer;
     FPageOffset: Integer;
     FPages: TList;
@@ -59,7 +60,6 @@ type
     FSelectedOnly: Boolean;
     FSelectionMode: TBCEditorSelectionMode;
     FTabWidth: Integer;
-    FTextDrawer: TBCEditorTextDrawer;
     FTitle: string;
     FWrap: Boolean;
     FYPos: Integer;
@@ -160,7 +160,7 @@ begin
     Name := 'Courier New';
     Size := 10;
   end;
-  FTextDrawer := TBCEditorTextDrawer.Create([fsBold], FFontDummy);
+  FPaintHelper := TBCEditorPaintHelper.Create([fsBold], FFontDummy);
 end;
 
 destructor TBCEditorPrint.Destroy;
@@ -177,7 +177,7 @@ begin
   for i := 0 to FPages.Count - 1 do
     TBCEditorPageLine(FPages[i]).Free;
   FPages.Free;
-  FTextDrawer.Free;
+  FPaintHelper.Free;
   FFontDummy.Free;
   inherited;
 end;
@@ -185,11 +185,9 @@ end;
 procedure TBCEditorPrint.SetLines(const AValue: TStrings);
 var
   i, j: Integer;
-  LTabConvertProc: TBCEditorTabConvertProc;
   LLine: string;
   LHasTabs: Boolean;
 begin
-  LTabConvertProc := GetTabConvertProc(FColumns);
   with FLines do
   begin
     BeginUpdate;
@@ -197,7 +195,7 @@ begin
       Clear;
       for i := 0 to AValue.Count - 1 do
       begin
-        LLine := LTabConvertProc(AValue[i], FTabWidth, LHasTabs);
+        LLine := ConvertTabs(AValue[i], FTabWidth, LHasTabs, FColumns);
         j := Pos(BCEDITOR_TAB_CHAR, LLine);
         while j > 0 do
         begin
@@ -274,8 +272,8 @@ begin
   CharWidth := LTextMetric.tmAveCharWidth;
   FLineHeight := LTextMetric.tmHeight + LTextMetric.tmExternalLeading;
 
-  FTextDrawer.SetBaseFont(FFont);
-  FTextDrawer.SetStyle(FFont.Style);
+  FPaintHelper.SetBaseFont(FFont);
+  FPaintHelper.SetStyle(FFont.Style);
 
   FMargins.InitPage(FCanvas, 1, FPrinterInfo, FLineNumbers, FLineNumbersInMargin, FLines.Count - 1 + FLineOffset);
   CalculatePages;
@@ -543,20 +541,20 @@ var
     begin
       LTempText := Copy(AText, LLast + 1, TBCEditorWrapPosition(AList[LCount]).Index - LLast);
       LLast := TBCEditorWrapPosition(AList[LCount]).Index;
-      ClippedTextOut(FMargins.PixelLeft + LFirstPosition * FTextDrawer.CharWidth, FYPos, LTempText);
+      ClippedTextOut(FMargins.PixelLeft + LFirstPosition * FPaintHelper.CharWidth, FYPos, LTempText);
       LFirstPosition := 0;
       LCount := LCount + 1;
       FYPos := FYPos + FLineHeight;
     end;
     LTempText := Copy(AText, LLast + 1, LTokenEnd - LLast);
-    ClippedTextOut(FMargins.PixelLeft + LFirstPosition * FTextDrawer.CharWidth, FYPos, LTempText);
+    ClippedTextOut(FMargins.PixelLeft + LFirstPosition * FPaintHelper.CharWidth, FYPos, LTempText);
     LTokenStart := LTokenPosition + Length(LToken) - Length(LTempText);
   end;
 
 var
   LTempText: string;
 begin
-  FTextDrawer.BeginDrawing(FCanvas.Handle);
+  FPaintHelper.BeginDrawing(FCanvas.Handle);
   with FMargins do
     LClipRect := Rect(PixelLeft, PixelTop, PixelRight, PixelBottom);
 
@@ -617,7 +615,7 @@ begin
           end;
         end;
       if not LHandled then
-        ClippedTextOut(FMargins.PixelLeft + (LTokenPosition - LTokenStart) * FTextDrawer.CharWidth, FYPos, LToken);
+        ClippedTextOut(FMargins.PixelLeft + (LTokenPosition - LTokenStart) * FPaintHelper.CharWidth, FYPos, LToken);
       FHighlighter.Next;
     end;
     RestoreCurrentFont;
@@ -651,7 +649,7 @@ begin
       LLines.Free;
     end
   end;
-  FTextDrawer.EndDrawing;
+  FPaintHelper.EndDrawing;
 end;
 
 procedure TBCEditorPrint.WriteLine(const AText: string);

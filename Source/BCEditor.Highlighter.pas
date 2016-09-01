@@ -32,7 +32,6 @@ type
     FMatchingPairs: TList;
     FMultiHighlighter: Boolean;
     FName: string;
-    //FPrepared: Boolean;
     FPreviousEndOfLine: Boolean;
     FRunPosition: LongInt;
     FSkipCloseKeyChars: TBCEditorCharSet;
@@ -129,8 +128,6 @@ begin
   FComments := TBCEditorHighlighterComments.Create;
 
   FCompletionProposalSkipRegions := TBCEditorSkipRegions.Create(TBCEditorSkipRegionItem);
-
-  //FPrepared := False;
 
   Info := TBCEditorHighlighterInfo.Create;
   FMainRules := TBCEditorRange.Create;
@@ -245,6 +242,7 @@ begin
       end;
 
   FTokenPosition := FRunPosition;
+
   if Assigned(FCurrentRange) then
   begin
     LCloseParent := FCurrentRange.CloseParent;
@@ -256,11 +254,12 @@ begin
         if LCloseParent then
           FCurrentRange := FCurrentRange.Parent;
     end;
-  end;
 
-  if Assigned(FCurrentRange) then
-  begin
-    LParser := FCurrentRange.SymbolList[AnsiChar(FCurrentRange.CaseFunct(FCurrentLine[FRunPosition]))];
+    if Ord(FCurrentLine[FRunPosition]) < 256 then
+      LParser := FCurrentRange.SymbolList[AnsiChar(FCurrentRange.CaseFunct(FCurrentLine[FRunPosition]))]
+    else
+      LParser := FCurrentRange.SymbolList['a'];
+
     if not Assigned(LParser) then
       Inc(FRunPosition)
     else
@@ -268,8 +267,12 @@ begin
     begin
       FCurrentToken := FCurrentRange.DefaultToken;
 
-      while not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) do
-        Inc(FRunPosition);
+      if Ord(FCurrentLine[FRunPosition - 1]) < 256 then
+      while not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) and (Ord(FCurrentLine[FRunPosition]) < 256) do
+        Inc(FRunPosition)
+      else
+      while not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) and (Ord(FCurrentLine[FRunPosition]) > 255) do
+        Inc(FRunPosition)
     end
     else
     if FCurrentRange.ClosingToken = FCurrentToken then
@@ -596,3 +599,4 @@ begin
 end;
 
 end.
+
