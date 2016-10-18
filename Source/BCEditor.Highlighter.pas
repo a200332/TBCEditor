@@ -100,8 +100,6 @@ implementation
 uses
   BCEditor.Highlighter.Import.JSON, System.Types, BCEditor.Editor.Base, System.IOUtils;
 
-{ TBCEditorHighlighter }
-
 procedure TBCEditorHighlighter.AddKeyChar(AKeyCharType: TBCEditorKeyCharType; AChar: Char);
 begin
   case AKeyCharType of
@@ -268,10 +266,10 @@ begin
       FCurrentToken := FCurrentRange.DefaultToken;
 
       if Ord(FCurrentLine[FRunPosition - 1]) < 256 then
-      while not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) and (Ord(FCurrentLine[FRunPosition]) < 256) do
+      while (Ord(FCurrentLine[FRunPosition]) < 256) and not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) do
         Inc(FRunPosition)
       else
-      while not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) and (Ord(FCurrentLine[FRunPosition]) > 255) do
+      while (Ord(FCurrentLine[FRunPosition]) > 255) and not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) do
         Inc(FRunPosition)
     end
     else
@@ -520,18 +518,14 @@ var
 begin
   FLoading := True;
   LEditor := FEditor as TBCBaseEditor;
-  LTopLine := 0;
   if Assigned(LEditor) then
   begin
     LTempLines := TStringList.Create;
     try
       if LEditor.Visible then
         LCaretPosition := LEditor.TextCaretPosition;
-      if Trim(LEditor.Lines.Text) <> '' then
-      begin
-        LTopLine := LEditor.TopLine;
-        LTempLines.Text := LEditor.Lines.Text;
-      end;
+      LTopLine := LEditor.TopLine;
+      LTempLines.AddStrings(LEditor.Lines);
       LEditor.Lines.Clear;
       with TBCEditorHighlighterImportJSON.Create(Self) do
       try
@@ -539,11 +533,8 @@ begin
       finally
         Free;
       end;
-      if Trim(LTempLines.Text) <> '' then
-      begin
-        LEditor.Lines.Text := LTempLines.Text;
-        LEditor.TopLine := LTopLine;
-      end;
+      LEditor.Lines.LoadFromStrings(LTempLines);
+      LEditor.TopLine := LTopLine;
       if LEditor.Visible then
         LEditor.TextCaretPosition := LCaretPosition;
     finally

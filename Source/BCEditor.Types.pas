@@ -29,8 +29,8 @@ type
 
   TBCEditorCaretChangedEvent = procedure(ASender: TObject; X, Y: Integer) of object;
 
-  TBCEditorBookmarkPanelPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; ARect: TRect; AFirstLine: Integer; ALastLine: Integer) of object;
-  TBCEditorBookmarkPanelLinePaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; ARect: TRect; ALineNumber: Integer) of object;
+  TBCEditorMarkPanelPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; ARect: TRect; AFirstLine: Integer; ALastLine: Integer) of object;
+  TBCEditorMarkPanelLinePaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; ARect: TRect; ALineNumber: Integer) of object;
 
   TBCEditorLinePaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; ARect: TRect; ALineNumber: Integer; const AIsMinimapLine: Boolean) of object;
 
@@ -94,6 +94,7 @@ type
     soExpandRealNumbers,
     soHighlightSimilarTerms,
     soTermsCaseSensitive,
+    soToEndOfLine,
     soTripleClickRowSelect
   );
   TBCEditorSelectionOptions = set of TBCEditorSelectionOption;
@@ -101,7 +102,8 @@ type
   TBCEditorSearchChanges = (
     scRefresh,
     scSearch,
-    scEngineUpdate
+    scEngineUpdate,
+    scInSelectionActive
   );
   TBCEditorSearchChangeEvent = procedure(Event: TBCEditorSearchChanges) of object;
 
@@ -112,7 +114,6 @@ type
     soEntireScope,
     soHighlightResults,
     soSearchOnTyping,
-    soSelectedOnly,
     soShowStringNotFound,
     soShowSearchMatchNotFound,
     soWholeWordsOnly,
@@ -144,7 +145,7 @@ type
   TBCEditorSearchEngine = (
     seNormal,
     seRegularExpression,
-    seWildCard
+    seWildcard
   );
 
   TBCEditorSearchMapOption = (
@@ -161,11 +162,13 @@ type
   TBCEditorCompletionProposalOptions = set of TBCEditorCompletionProposalOption;
 
   TBCEditorLeftMarginBookMarkPanelOption = (
-    bpoToggleBookmarkByClick
+    bpoToggleBookmarkByClick,
+    bpoToggleMarkByClick
   );
   TBCEditorLeftMarginBookMarkPanelOptions = set of TBCEditorLeftMarginBookMarkPanelOption;
 
   TBCEditorRightMarginOption = (
+    rmoAutoLinebreak,
     rmoMouseMove,
     rmoShowMovingHint
   );
@@ -247,6 +250,7 @@ type
   TBCEditorEmptySpace = (
     esNone,
     esSpace,
+    esSubstitute,
     esTab
   );
 
@@ -254,12 +258,12 @@ type
     Background: TColor;
     CharsBefore: Integer;
     EmptySpace: TBCEditorEmptySpace;
+    ExpandedCharsBefore: Integer;
     FontStyle: TFontStyles;
     Foreground: TColor;
     IsItalic: Boolean;
     Length: Integer;
     MatchingPairUnderline: Boolean;
-    MaxLength: Integer;
     Text: string;
   end;
 
@@ -271,7 +275,8 @@ type
 
   TBCEditorSpecialCharsOption = (
     scoTextColor,
-    scoMiddleColor
+    scoMiddleColor,
+    scoShowOnlyInSelection
   );
   TBCEditorSpecialCharsOptions = set of TBCEditorSpecialCharsOption;
   TBCEditorSpecialCharsStyle = (scsDot, scsSolid);
@@ -320,9 +325,10 @@ type
   TBCEditorChangeReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent,
     crCaret, crSelection, crNothing, crGroupBreak);
 
-  TBCEditorWordWrapStyle = (wwsPageWidth, wwsRightMargin);
+  TBCEditorWordWrapWidth = (wwwPage, wwwRightMargin);
 
-  TBCEditorCodeFoldingMarkStyle = (msSquare, msCircle);
+  TBCEditorCodeFoldingMarkStyle = (msCircle, msSquare, msTriangle);
+  TBCEditorCodeFoldingHintIndicatorMarkStyle = (imsThreeDots, imsTriangle);
   TBCEditorCodeFoldingChanges = (fcEnabled, fcRefresh, fcRescan);
 
   TBCEditorCodeFoldingChangeEvent = procedure(Event: TBCEditorCodeFoldingChanges) of object;
@@ -332,9 +338,9 @@ type
     cfoHighlightFoldingLine,
     cfoHighlightIndentGuides,
     cfoHighlightMatchingPair,
-    cfoShowCollapsedCodeHint,
     cfoShowCollapsedLine,
     cfoShowIndentGuides,
+    cfoShowTreeLine,
     cfoUncollapseByHintClick
   );
   TBCEditorCodeFoldingOptions = set of TBCEditorCodeFoldingOption;
@@ -343,8 +349,11 @@ type
 
   TBCEditorScrollHintFormat = (shfTopLineOnly, shfTopToBottom);
 
-  TBCEditorIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
-  TBCEditorIndicatorOptions = set of TBCEditorIndicatorOption;
+  TBCEditorMinimapIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
+  TBCEditorMinimapIndicatorOptions = set of TBCEditorMinimapIndicatorOption;
+
+  TBCEditorCodeFoldingHintIndicatorOption = (hioShowBorder, hioShowMark);
+  TBCEditorCodeFoldingHintIndicatorOptions = set of TBCEditorCodeFoldingHintIndicatorOption;
 
   TBCEditorQuadColor = packed record
   case Boolean of
@@ -353,6 +362,27 @@ type
   end;
   PBCEditorQuadColor = ^TBCEditorQuadColor;
 
+
+  TBCEditorCodeFoldingHintIndicatorPadding = class(TPadding)
+  protected
+    class procedure InitDefaults(Margins: TMargins); override;
+  published
+    property Left default 0;
+    property Top default 1;
+    property Right default 0;
+    property Bottom default 1;
+  end;
+
 implementation
+
+class procedure TBCEditorCodeFoldingHintIndicatorPadding.InitDefaults(Margins: TMargins);
+begin
+  with Margins do begin
+    Left := 0;
+    Right := 0;
+    Top := 1;
+    Bottom := 1;
+  end;
+end;
 
 end.

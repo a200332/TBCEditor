@@ -38,7 +38,7 @@ type
   PEditorStringRecordList = ^TBCEditorStringRecordList;
   TBCEditorStringRecordList = array [0 .. CMAXSTRINGS - 1] of TBCEditorStringRecord;
 
-  TStringListChangeEvent = procedure(ASender: TObject; AIndex: Integer; ACount: Integer) of object;
+  TStringListChangeEvent = procedure(ASender: TObject; const AIndex: Integer; const ACount: Integer) of object;
 
   TBCEditorLines = class(TStrings)
   strict private
@@ -99,6 +99,9 @@ type
     procedure LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil); override;
     procedure SaveToStream(AStream: TStream; AEncoding: TEncoding = nil); override;
     procedure TrimTrailingSpaces(AIndex: Integer);
+    procedure LoadFromBuffer(var ABuffer: TBytes; AEncoding: TEncoding = nil);
+    function GetTextLength: Integer;
+    procedure LoadFromStrings(var AStrings: TStringList);
     property Attributes[AIndex: Integer]: PBCEditorLineAttribute read GetAttributes write PutAttributes;
     property Columns: Boolean read FColumns write SetColumns;
     property Count: Integer read FCount;
@@ -116,10 +119,10 @@ type
     property OnPutted: TStringListChangeEvent read FOnPutted write FOnPutted;
     property Owner: TObject read FOwner write FOwner;
     property Ranges[AIndex: Integer]: TBCEditorLinesRange read GetRange write PutRange;
-    property Strings[AIndex: Integer]: string read Get write Put; default; //FI:C110 FixInsight ignore
+    property Strings[AIndex: Integer]: string read Get write Put; default;
     property Streaming: Boolean read FStreaming;
     property TabWidth: Integer read FTabWidth write SetTabWidth;
-    property Text: string read GetTextStr write SetTextStr; //FI:C110 FixInsight ignore
+    property Text: string read GetTextStr write SetTextStr;
   end;
 
   EBCEditorLinesException = class(Exception);
@@ -381,40 +384,50 @@ begin
     Result := nil;
 end;
 
+function TBCEditorLines.GetTextLength: Integer;
+var
+  i, LLineBreakLength: Integer;
+begin
+  Result := 0;
+  LLineBreakLength := Length(SLineBreak);
+  for i := 0 to FCount - 1 do
+  begin
+    if i = FCount - 1 then
+      LLineBreakLength := 0;
+    Inc(Result, Length(FList^[i].Value) + LLineBreakLength)
+  end;
+end;
+
 function TBCEditorLines.GetTextStr: string;
 var
-  i, LLength, LSize, LCount: Integer;
+  i, j, LLength, LSize, LLineBreakLength: Integer;
   LPValue: PChar;
-  LValue, LLineBreak: string;
+  LLineBreak: string;
 begin
-  LCount := GetCount;
-  LSize := 0;
+  LSize := GetTextLength;
   LLineBreak := SLineBreak;
-  for i := 0 to LCount - 1 do
-  begin
-    LLength := Length(LLineBreak);
-    if i = LCount - 1 then
-      LLength := 0;
-    Inc(LSize, Length(Get(i)) + LLength)
-  end;
+  LLineBreakLength := Length(LLineBreak);
   SetString(Result, nil, LSize);
   LPValue := Pointer(Result);
-  for i := 0 to LCount - 1 do
+  for i := 0 to FCount - 1 do
   begin
-    LValue := Get(i);
-    LLength := Length(LValue);
+    LLength := Length(FList^[i].Value);
     if LLength <> 0 then
     begin
-      System.Move(Pointer(LValue)^, LPValue^, LLength * SizeOf(Char));
-      Inc(LPValue, LLength);
+      System.Move(Pointer(FList^[i].Value)^, LPValue^, LLength * SizeOf(Char));
+      for j := 0 to LLength - 1 do
+      begin
+        if LPValue^ = BCEDITOR_SUBSTITUTE_CHAR then
+          LPValue^ := BCEDITOR_NONE_CHAR;
+        Inc(LPValue);
+      end;
     end;
-    if i = LCount - 1 then
+    if i = FCount - 1 then
       Exit;
-    LLength := Length(LLineBreak);
-    if LLength <> 0 then
+    if LLineBreakLength <> 0 then
     begin
-      System.Move(Pointer(LLineBreak)^, LPValue^, LLength * SizeOf(Char));
-      Inc(LPValue, LLength);
+      System.Move(Pointer(LLineBreak)^, LPValue^, LLineBreakLength * SizeOf(Char));
+      Inc(LPValue, LLineBreakLength);
     end;
   end;
 end;
@@ -536,6 +549,83 @@ begin
   end;
 end;
 
+procedure TBCEditorLines.LoadFromBuffer(var ABuffer: TBytes; AEncoding: TEncoding = nil);
+var
+  i: Integer;
+  LSize: Integer;
+  LStrBuffer: string;
+  LPStrBuffer: PChar;
+begin
+  FStreaming := True;
+
+  BeginUpdate;
+  try
+    LSize := TEncoding.GetBufferEncoding(ABuffer, AEncoding);
+    LStrBuffer := AEncoding.GetString(ABuffer, LSize, Length(ABuffer) - LSize);
+    SetLength(ABuffer, 0);
+    LPStrBuffer := PChar(LStrBuffer);
+    for i := 1 to Length(LStrBuffer) do
+    begin
+      if LPStrBuffer^ = BCEDITOR_NONE_CHAR then
+        LPStrBuffer^ := BCEDITOR_SUBSTITUTE_CHAR;
+      Inc(LPStrBuffer);
+    end;
+    SetTextStr(LStrBuffer);
+    SetLength(LStrBuffer, 0);
+  finally
+    EndUpdate;
+  end;
+
+  FStreaming := False;
+end;
+
+procedure TBCEditorLines.LoadFromStrings(var AStrings: TStringList);
+var
+  i: integer;
+begin
+  FStreaming := True;
+
+  BeginUpdate;
+  try
+    if Assigned(FOnBeforeSetText) then
+      FOnBeforeSetText(Self);
+    Clear;
+    FIndexOfLongestLine := -1;
+    FCount := AStrings.Count;
+    if FCount > 0 then
+    begin
+      SetCapacity(AStrings.Capacity);
+      for i := 0 to FCount-1 do
+      begin
+        with FList^[i] do
+        begin
+          Pointer(Value) := nil;
+          Value := AStrings[i];
+          Range := CNULLRANGE;
+          ExpandedLength := -1;
+          Flags := [sfExpandedLengthUnknown];
+          New(Attribute);
+          Attribute^.Foreground := clNone;
+          Attribute^.Background := clNone;
+          Attribute^.LineState := lsNone;
+        end;
+      end;
+    end;
+    AStrings.Clear;
+
+    if (FUpdateCount = 0) and Assigned(FOnInserted) then
+      FOnInserted(Self, 0, FCount);
+    if Assigned(FOnChange) then
+      FOnChange(Self);
+    if Assigned(FOnAfterSetText) then
+      FOnAfterSetText(Self);
+  finally
+    EndUpdate;
+  end;
+
+  FStreaming := False;
+end;
+
 procedure TBCEditorLines.LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil);
 var
   LSize: Integer;
@@ -553,6 +643,7 @@ begin
       AStream.Read(LBuffer[0], LSize);
       LSize := TEncoding.GetBufferEncoding(LBuffer, AEncoding);
       LStrBuffer := AEncoding.GetString(LBuffer, LSize, Length(LBuffer) - LSize);
+      SetLength(LBuffer, 0);
     end
     else
     begin
@@ -560,6 +651,7 @@ begin
       AStream.ReadBuffer(LStrBuffer[1], LSize);
     end;
     SetTextStr(LStrBuffer);
+    SetLength(LStrBuffer, 0);
   finally
     EndUpdate;
   end;
@@ -669,13 +761,13 @@ end;
 
 procedure TBCEditorLines.SetTextStr(const AValue: string);
 var
-  LValue: string;
   LLength: Integer;
   LPValue, LPStartValue, LPLastChar: PChar;
 begin
   if Assigned(FOnBeforeSetText) then
     FOnBeforeSetText(Self);
   Clear;
+  FIndexOfLongestLine := -1;
   LPValue := Pointer(AValue);
   if Assigned(LPValue) then
   begin
@@ -684,21 +776,35 @@ begin
     while LPValue <= LPLastChar do
     begin
       LPStartValue := LPValue;
-      while (LPValue^ <> BCEDITOR_CARRIAGE_RETURN) and (LPValue^ <> BCEDITOR_LINEFEED) and (LPValue^ <> WideChar($2028))
-        and (LPValue <= LPLastChar) do
+      while (LPValue <= LPLastChar) and (LPValue^ <> BCEDITOR_CARRIAGE_RETURN) and (LPValue^ <> BCEDITOR_LINEFEED) and
+        (LPValue^ <> BCEDITOR_LINE_SEPARATOR) do
         Inc(LPValue);
-      if LPValue <> LPStartValue then
+
+      if FCount = FCapacity then
+        Grow;
+
+      with FList^[FCount] do
       begin
-        SetString(LValue, LPStartValue, LPValue - LPStartValue);
-        InsertItem(FCount, LValue);
-      end
-      else
-        InsertItem(FCount, '');
+        Pointer(Value) := nil;
+        if LPValue = LPStartValue then
+          Value := ''
+        else
+          SetString(Value, LPStartValue, LPValue - LPStartValue);
+        Range := CNULLRANGE;
+        ExpandedLength := -1;
+        Flags := [sfExpandedLengthUnknown];
+        New(Attribute);
+        Attribute^.Foreground := clNone;
+        Attribute^.Background := clNone;
+        Attribute^.LineState := lsNone;
+      end;
+      Inc(FCount);
+
       if LPValue^ = BCEDITOR_CARRIAGE_RETURN then
         Inc(LPValue);
       if LPValue^ = BCEDITOR_LINEFEED then
         Inc(LPValue);
-      if LPValue^ = WideChar($2028) then
+      if LPValue^ = BCEDITOR_LINE_SEPARATOR then
         Inc(LPValue);
     end;
   end;

@@ -128,7 +128,6 @@
         <DCCReference Include="..\Source\BCEditor.Editor.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.ActiveLine.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Base.pas"/>
-        <DCCReference Include="..\Source\BCEditor.Editor.Bookmarks.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Caret.pas"/>
 				<DCCReference Include="..\Source\BCEditor.Editor.Caret.MultiEdit.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Caret.MultiEdit.Colors.pas"/>
@@ -142,6 +141,8 @@
         <DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Hint.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Form.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Indicator.Colors.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Indicator.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Ranges.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Colors.pas"/>
@@ -155,11 +156,13 @@
         <DCCReference Include="..\Source\BCEditor.Editor.KeyCommands.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.Bookmarks.pas"/>
-        <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.Bookmarks.Panel.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.Border.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.LineNumbers.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.LineState.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.Marks.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.MarksPanel.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.Marks.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.MatchingPair.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.MatchingPair.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Minimap.pas"/>
@@ -176,6 +179,7 @@
         <DCCReference Include="..\Source\BCEditor.Editor.Search.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Search.Highlighter.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Search.Highlighter.Colors.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.Search.InSelection.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Search.Map.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Search.Map.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Selection.pas"/>
@@ -190,6 +194,7 @@
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.Item.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.List.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.UnknownChars.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Utils.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.WordWrap.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.WordWrap.Colors.pas"/>

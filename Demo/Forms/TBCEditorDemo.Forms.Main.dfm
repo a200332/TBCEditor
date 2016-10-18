@@ -49,7 +49,7 @@ inherited MainForm: TMainForm
     ParentDoubleBuffered = False
     TabOrder = 1
     SkinData.SkinSection = 'TRANSPARENT'
-    object ObjectInspectorEh: TObjectInspectorEh
+    object ObjectInspector: TJvInspector
       AlignWithMargins = True
       Left = 0
       Top = 5
@@ -59,8 +59,14 @@ inherited MainForm: TMainForm
       Margins.Top = 5
       Margins.Right = 6
       Margins.Bottom = 5
+      ParentCustomHint = False
+      Style = isItemPainter
       Align = alClient
-      Options = [goVertLineEh, goEditingEh, goAlwaysShowEditorEh]
+      Divider = 150
+      ItemHeight = 16
+      Painter = JvInspectorDotNETPainter1
+      TabStop = True
+      TabOrder = 0
     end
   end
   object PanelLeft: TBCPanel [3]
@@ -100,6 +106,7 @@ inherited MainForm: TMainForm
       CodeFolding.Hint.Font.Height = -11
       CodeFolding.Hint.Font.Name = 'Courier New'
       CodeFolding.Hint.Font.Style = []
+      CodeFolding.Hint.Indicator.Glyph.Visible = False
       CompletionProposal.CloseChars = '()[]. '
       CompletionProposal.Columns = <
         item
@@ -128,19 +135,24 @@ inherited MainForm: TMainForm
       LeftMargin.Width = 55
       Lines.Strings = (
         '')
+      LineSpacing = 0
       MatchingPair.Enabled = True
       Minimap.Font.Charset = DEFAULT_CHARSET
       Minimap.Font.Color = clWindowText
       Minimap.Font.Height = -4
       Minimap.Font.Name = 'Courier New'
       Minimap.Font.Style = []
+      Minimap.Options = [moShowBookmarks]
       Minimap.Width = 140
       OnCaretChanged = EditorCaretChanged
       ParentCtl3D = False
       RightMargin.Position = 80
       RightMargin.Visible = True
+      Scroll.Shadow.Visible = True
       Search.Enabled = False
+      Search.InSelection.Background = clBlack
       SpecialChars.EndOfLine.Visible = True
+      SpecialChars.Selection.Visible = True
       SpecialChars.Style = scsDot
       SyncEdit.ShortCut = 24650
       TabOrder = 0
@@ -176,8 +188,7 @@ inherited MainForm: TMainForm
         FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
         FF00}
       WordWrap.Indicator.MaskColor = clFuchsia
-      WordWrap.Position = 20
-      WordWrap.Style = wwsSpecified
+      WordWrap.Width = wwwPage
     end
     object PanelSearch: TBCPanel
       AlignWithMargins = True
@@ -190,15 +201,16 @@ inherited MainForm: TMainForm
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 1
+      Visible = False
       SkinData.SkinSection = 'CHECKBOX'
       object BCSplitter1: TBCSplitter
-        Left = 200
+        Left = 227
         Top = 0
         Height = 21
         SkinData.SkinSection = 'SPLITTER'
       end
       object SpeedButtonFindPrevious: TBCSpeedButton
-        Left = 206
+        Left = 233
         Top = 0
         Width = 21
         Height = 21
@@ -210,7 +222,7 @@ inherited MainForm: TMainForm
         ImageIndex = 38
       end
       object SpeedButtonFindNext: TBCSpeedButton
-        Left = 227
+        Left = 254
         Top = 0
         Width = 21
         Height = 21
@@ -223,7 +235,7 @@ inherited MainForm: TMainForm
       end
       object SpeedButtonDivider: TBCSpeedButton
         AlignWithMargins = True
-        Left = 248
+        Left = 275
         Top = 1
         Width = 10
         Height = 19
@@ -238,7 +250,7 @@ inherited MainForm: TMainForm
         ImageIndex = 3
       end
       object SpeedButtonOptions: TBCSpeedButton
-        Left = 258
+        Left = 337
         Top = 0
         Width = 21
         Height = 21
@@ -313,8 +325,69 @@ inherited MainForm: TMainForm
         SkinData.SkinSection = 'CHECKBOX'
         Images = ImagesDataModule.ImageListSmall
       end
-      object ComboBoxSearchText: TBCComboBox
+      object SpeedButtonCaseSensitive: TBCSpeedButton
+        Left = 285
+        Top = 0
+        Width = 21
+        Height = 21
+        Action = ActionCaseSensitive
+        Align = alLeft
+        AllowAllUp = True
+        GroupIndex = 1
+        Flat = True
+        SkinData.SkinSection = 'TOOLBUTTON'
+        Images = ImagesDataModule.ImageListSmall
+        ImageIndex = 144
+      end
+      object SpeedButtonInSelection: TBCSpeedButton
+        Left = 306
+        Top = 0
+        Width = 21
+        Height = 21
+        Action = ActionInSelection
+        Align = alLeft
+        AllowAllUp = True
+        GroupIndex = 2
+        Flat = True
+        SkinData.SkinSection = 'TOOLBUTTON'
+        Images = ImagesDataModule.ImageListSmall
+        ImageIndex = 145
+      end
+      object BCSpeedButton1: TBCSpeedButton
+        AlignWithMargins = True
+        Left = 327
+        Top = 1
+        Width = 10
+        Height = 19
+        Margins.Left = 0
+        Margins.Top = 1
+        Margins.Right = 0
+        Margins.Bottom = 1
+        Align = alLeft
+        Flat = True
+        ButtonStyle = tbsDivider
+        SkinData.SkinSection = 'TOOLBUTTON'
+        ImageIndex = 3
+      end
+      object SpeedButtonSearchEngine: TBCSpeedButton
+        AlignWithMargins = True
         Left = 0
+        Top = 0
+        Width = 21
+        Height = 21
+        Margins.Left = 0
+        Margins.Top = 0
+        Margins.Right = 6
+        Margins.Bottom = 0
+        Action = ActionSearchEngine
+        Align = alLeft
+        Flat = True
+        SkinData.SkinSection = 'TOOLBUTTON'
+        Images = ImagesDataModule.ImageListSmall
+        ImageIndex = 143
+      end
+      object ComboBoxSearchText: TBCComboBox
+        Left = 27
         Top = 0
         Width = 200
         Height = 21
@@ -338,9 +411,9 @@ inherited MainForm: TMainForm
         UseMouseWheel = False
       end
       object PanelRight: TBCPanel
-        Left = 279
+        Left = 358
         Top = 0
-        Width = 448
+        Width = 369
         Height = 21
         Align = alClient
         BevelOuter = bvNone
@@ -349,7 +422,7 @@ inherited MainForm: TMainForm
         SkinData.SkinSection = 'CHECKBOX'
         object LabelSearchResultCount: TsLabel
           AlignWithMargins = True
-          Left = 441
+          Left = 362
           Top = 0
           Width = 4
           Height = 21
@@ -367,21 +440,14 @@ inherited MainForm: TMainForm
         end
       end
     end
-    object Button1: TButton
-      Left = 556
-      Top = 240
-      Width = 75
-      Height = 25
-      Caption = 'Button1'
-      TabOrder = 2
-      OnClick = Button1Click
-    end
   end
   inherited SkinManager: TBCSkinManager
     Effects.AllowGlowing = False
     IsDefault = True
     MenuSupport.UseExtraLine = False
+    SkinInfo = 'N/A'
     ThirdParty.ThirdEdits = ' '#13#10'TBCEditorPrintPreview'#13#10
+    ThirdParty.ThirdListViews = ' '#13#10'TJvInspector'#13#10
     ThirdParty.ThirdVirtualTrees = 'TVirtualDrawTree'#13#10
     Left = 166
     Top = 26
@@ -420,7 +486,7 @@ inherited MainForm: TMainForm
       end
       item
         Align = tbaRight
-        Caption = 'Object Pascal'
+        Caption = 'ANSI'
         DropdownMenu = PopupMenuDummy
         FontData.Font.Charset = DEFAULT_CHARSET
         FontData.Font.Color = clWindowText
@@ -429,10 +495,10 @@ inherited MainForm: TMainForm
         FontData.Font.Style = []
         Height = 22
         Index = 2
-        Name = 'TitleBarItemHighlighter'
+        Name = 'TitleBarItemEncoding'
         ShowHint = False
         Style = bsMenu
-        Width = 101
+        Width = 56
         OnClick = TitleBarItems2Click
       end
       item
@@ -443,6 +509,36 @@ inherited MainForm: TMainForm
         FontData.Font.Name = 'Tahoma'
         FontData.Font.Style = []
         Index = 3
+        Name = 'TitleBarItemSpacing1'
+        ShowHint = False
+        Style = bsSpacing
+        Width = 6
+      end
+      item
+        Align = tbaRight
+        Caption = 'Object Pascal'
+        DropdownMenu = PopupMenuDummy
+        FontData.Font.Charset = DEFAULT_CHARSET
+        FontData.Font.Color = clWindowText
+        FontData.Font.Height = -11
+        FontData.Font.Name = 'Tahoma'
+        FontData.Font.Style = []
+        Height = 22
+        Index = 4
+        Name = 'TitleBarItemHighlighter'
+        ShowHint = False
+        Style = bsMenu
+        Width = 101
+        OnClick = TitleBarItems4Click
+      end
+      item
+        Align = tbaRight
+        FontData.Font.Charset = DEFAULT_CHARSET
+        FontData.Font.Color = clWindowText
+        FontData.Font.Height = -11
+        FontData.Font.Name = 'Tahoma'
+        FontData.Font.Style = []
+        Index = 5
         Name = 'TitleBarItemSpacing2'
         ShowHint = False
         Style = bsSpacing
@@ -458,12 +554,12 @@ inherited MainForm: TMainForm
         FontData.Font.Name = 'Tahoma'
         FontData.Font.Style = []
         Height = 22
-        Index = 4
+        Index = 6
         Name = 'TitleBarItemColors'
         ShowHint = False
         Style = bsMenu
         Width = 68
-        OnClick = TitleBarItems4Click
+        OnClick = TitleBarItems6Click
       end
       item
         Align = tbaRight
@@ -472,7 +568,7 @@ inherited MainForm: TMainForm
         FontData.Font.Height = -11
         FontData.Font.Name = 'Tahoma'
         FontData.Font.Style = []
-        Index = 5
+        Index = 7
         Name = 'TitleBarItemSpacing3'
         ShowHint = False
         Style = bsSpacing
@@ -482,8 +578,8 @@ inherited MainForm: TMainForm
     Top = 22
   end
   inherited SkinProvider: TsSkinProvider
-    Left = 250
-    Top = 30
+    Left = 248
+    Top = 26
   end
   inherited ApplicationEvents: TApplicationEvents
     OnMessage = ApplicationEventsMessage
@@ -492,8 +588,8 @@ inherited MainForm: TMainForm
   end
   inherited ActionList: TActionList
     Images = ImagesDataModule.ImageListSmall
-    Left = 178
-    Top = 92
+    Left = 164
+    Top = 88
     object ActionSearch: TAction
       Caption = 'ActionSearch'
       ShortCut = 16454
@@ -535,6 +631,23 @@ inherited MainForm: TMainForm
     object ActionClose: TAction
       Hint = 'Close'
       OnExecute = ActionCloseExecute
+    end
+    object ActionSearchEngine: TAction
+      Hint = 'Select search engine'
+      ImageIndex = 143
+      OnExecute = ActionSearchEngineExecute
+    end
+    object ActionCaseSensitive: TAction
+      GroupIndex = 1
+      Hint = 'Case sensitive'
+      ImageIndex = 144
+      OnExecute = ActionCaseSensitiveExecute
+    end
+    object ActionInSelection: TAction
+      GroupIndex = 2
+      Hint = 'In selection'
+      ImageIndex = 145
+      OnExecute = ActionInSelectionExecute
     end
   end
   inherited MainMenu: TMainMenu
@@ -667,11 +780,41 @@ inherited MainForm: TMainForm
         Strings.Strings = (
           '.xml')
       end>
-    Left = 324
-    Top = 108
+    Left = 344
+    Top = 114
   end
   object OpenDialog: TsOpenDialog
     Left = 342
     Top = 52
+  end
+  object JvInspectorDotNETPainter1: TJvInspectorDotNETPainter
+    CategoryFont.Charset = DEFAULT_CHARSET
+    CategoryFont.Color = clBtnText
+    CategoryFont.Height = -11
+    CategoryFont.Name = 'Tahoma'
+    CategoryFont.Style = []
+    NameFont.Charset = DEFAULT_CHARSET
+    NameFont.Color = clWindowText
+    NameFont.Height = -11
+    NameFont.Name = 'Tahoma'
+    NameFont.Style = []
+    ValueFont.Charset = DEFAULT_CHARSET
+    ValueFont.Color = clNavy
+    ValueFont.Height = -11
+    ValueFont.Name = 'Tahoma'
+    ValueFont.Style = []
+    DrawNameEndEllipsis = False
+    HideSelectFont.Charset = DEFAULT_CHARSET
+    HideSelectFont.Color = clHighlightText
+    HideSelectFont.Height = -11
+    HideSelectFont.Name = 'Tahoma'
+    HideSelectFont.Style = []
+    SelectedFont.Charset = DEFAULT_CHARSET
+    SelectedFont.Color = clHighlightText
+    SelectedFont.Height = -11
+    SelectedFont.Name = 'Tahoma'
+    SelectedFont.Style = []
+    Left = 820
+    Top = 250
   end
 end

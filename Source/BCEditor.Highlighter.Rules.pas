@@ -294,24 +294,17 @@ begin
 
       ARun := PreviousPosition;
 
-      if not Assigned(FindTokenNode) then
+      if not Assigned(FindTokenNode)
+      or not Assigned(FindTokenNode.Token)
+      or ((FindTokenNode.Token.Attribute.EscapeChar <> BCEDITOR_NONE_CHAR)
+      and (StartPosition > 0) and (APLine[StartPosition - 1] = FindTokenNode.Token.Attribute.EscapeChar)) then
         Continue;
-      if not Assigned(FindTokenNode.Token) then
-        Continue;
-      if FindTokenNode.Token.Attribute.EscapeChar <> BCEDITOR_NONE_CHAR then
-        if (StartPosition > 0) and (APLine[StartPosition - 1] = FindTokenNode.Token.Attribute.EscapeChar) then
-          Continue;
 
       if APLine[ARun] <> BCEDITOR_NONE_CHAR then
         Inc(ARun);
 
-      if FindTokenNode.BreakType = btAny then
-      begin
-        AToken := FindTokenNode.Token;
-        Exit(True);
-      end;
-
-      if CharInSet(APLine[ARun], ACurrentRange.Delimiters) then
+      if (FindTokenNode.BreakType = btAny)
+      or (CharInSet(APLine[ARun], ACurrentRange.Delimiters)) then
       begin
         AToken := FindTokenNode.Token;
         Exit(True);
@@ -322,18 +315,18 @@ begin
 
   AllowedDelimiters := ACurrentRange.Delimiters;
   for i := 0 to Sets.Count - 1 do
-    AllowedDelimiters := AllowedDelimiters - TBCEditorSet(Sets[i]).CharSet;
+    AllowedDelimiters := AllowedDelimiters - TBCEditorSet(Sets.List[i]).CharSet;
 
   for i := 0 to Sets.Count - 1 do
   begin
     ARun := StartPosition;
     repeat
       Inc(ARun);
-    until not CharInSet(APLine[ARun], TBCEditorSet(Sets[i]).CharSet) or (APLine[ARun] = BCEDITOR_NONE_CHAR);
+    until not CharInSet(APLine[ARun], TBCEditorSet(Sets.List[i]).CharSet) or (APLine[ARun] = BCEDITOR_NONE_CHAR);
 
     if CharInSet(APLine[ARun], AllowedDelimiters) then
     begin
-      AToken := TBCEditorToken.Create(TBCEditorSet(Sets[i]).Attribute);
+      AToken := TBCEditorToken.Create(TBCEditorSet(Sets.List[i]).Attribute);
       AToken.Temporary := True;
       Exit(True);
     end;
@@ -341,7 +334,7 @@ begin
   ARun := StartPosition + 1;
 end;
 
-constructor TBCEditorDefaultParser.Create(AToken: TBCEditorToken); //FI:W525 FixInsight ignore
+constructor TBCEditorDefaultParser.Create(AToken: TBCEditorToken);
 begin
   FToken := AToken;
 end;
@@ -517,7 +510,7 @@ end;
 
 function TBCEditorRange.GetSet(AIndex: Integer): TBCEditorSet;
 begin
-  Result := TBCEditorSet(FSets[AIndex]);
+  Result := TBCEditorSet(FSets.List[AIndex]);
 end;
 
 procedure TBCEditorRange.AddTokenRange(const AOpenToken: string; AOpenTokenBreakType: TBCEditorBreakType; const ACloseToken: string;
@@ -713,11 +706,11 @@ begin
       LAnsiChar := AnsiChar(CaseFunct(Char(i)));
       for j := 0 to FSets.Count - 1 do
       begin
-        if CharInSet(LAnsiChar, TBCEditorSet(FSets[j]).CharSet) then
+        if CharInSet(LAnsiChar, TBCEditorSet(FSets.List[j]).CharSet) then
           if not Assigned(SymbolList[LAnsiChar]) then
-            FSymbolList[LAnsiChar] := TBCEditorParser.Create(TBCEditorSet(FSets[j]))
+            FSymbolList[LAnsiChar] := TBCEditorParser.Create(TBCEditorSet(FSets.List[j]))
           else
-            TBCEditorParser(SymbolList[LAnsiChar]).AddSet(TBCEditorSet(FSets[j]));
+            TBCEditorParser(SymbolList[LAnsiChar]).AddSet(TBCEditorSet(FSets.List[j]));
       end;
     end;
 

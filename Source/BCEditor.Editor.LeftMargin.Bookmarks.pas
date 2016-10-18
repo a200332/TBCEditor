@@ -3,58 +3,41 @@ unit BCEditor.Editor.LeftMargin.Bookmarks;
 interface
 
 uses
-  Vcl.Controls, System.Classes, Vcl.Graphics, BCEditor.Editor.LeftMargin.Bookmarks.Panel;
+  Vcl.Controls, System.Classes, Vcl.Graphics;
 
 type
   TBCEditorLeftMarginBookMarks = class(TPersistent)
   strict private
     FImages: TImageList;
+    FLeftMargin: Integer;
     FOnChange: TNotifyEvent;
     FOwner: TComponent;
-    FPanel: TBCEditorLeftMarginBookMarkPanel;
     FShortCuts: Boolean;
     FVisible: Boolean;
     procedure DoChange;
     procedure SetImages(const AValue: TImageList);
-    procedure SetOnChange(AValue: TNotifyEvent);
     procedure SetVisible(AValue: Boolean);
   public
     constructor Create(AOwner: TComponent);
-    destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
   published
     property Images: TImageList read FImages write SetImages;
-    property OnChange: TNotifyEvent read FOnChange write SetOnChange;
-    property Panel: TBCEditorLeftMarginBookMarkPanel read FPanel write FPanel;
+    property LeftMargin: Integer read FLeftMargin write FLeftMargin default 2;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
     property ShortCuts: Boolean read FShortCuts write FShortCuts default True;
     property Visible: Boolean read FVisible write SetVisible default True;
   end;
 
 implementation
 
-{ TBCEditorBookMarkOptions }
-
 constructor TBCEditorLeftMarginBookMarks.Create(AOwner: TComponent);
 begin
   inherited Create;
 
   FOwner := AOwner;
-  FPanel := TBCEditorLeftMarginBookMarkPanel.Create;
+  FLeftMargin := 2;
   FShortCuts := True;
   FVisible := True;
-end;
-
-destructor TBCEditorLeftMarginBookMarks.Destroy;
-begin
-  FPanel.Free;
-
-  inherited;
-end;
-
-procedure TBCEditorLeftMarginBookMarks.SetOnChange(AValue: TNotifyEvent);
-begin
-  FOnChange := AValue;
-  FPanel.OnChange := AValue;
 end;
 
 procedure TBCEditorLeftMarginBookMarks.Assign(ASource: TPersistent);
@@ -63,6 +46,7 @@ begin
   with ASource as TBCEditorLeftMarginBookMarks do
   begin
     Self.FImages := FImages;
+    Self.FLeftMargin := FLeftMargin;
     Self.FShortCuts := FShortCuts;
     Self.FVisible := FVisible;
     if Assigned(Self.FOnChange) then

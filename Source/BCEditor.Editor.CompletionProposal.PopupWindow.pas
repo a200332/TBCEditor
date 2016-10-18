@@ -7,10 +7,10 @@ uses
   BCEditor.Types, BCEditor.Editor.CompletionProposal.Columns, BCEditor.Editor.PopupWindow,
   BCEditor.Editor.CompletionProposal;
 
-{$IFDEF USE_VCL_STYLES}
+{$if defined(USE_VCL_STYLES)}
 const
   CM_UPDATE_VCLSTYLE_SCROLLBARS= CM_BASE + 2050;
-{$ENDIF}
+{$endif}
 
 type
   TBCEditorValidateEvent = procedure(ASender: TObject; Shift: TShiftState; EndToken: Char) of object;
@@ -38,7 +38,6 @@ type
     procedure EditorKeyPress(ASender: TObject; var AKey: Char);
     procedure HandleDblClick(ASender: TObject);
     procedure HandleOnValidate(ASender: TObject; AShift: TShiftState; AEndToken: Char);
-    procedure MoveLine(ALineCount: Integer);
     procedure MoveSelectedLine(ALineCount: Integer);
     procedure RemoveKeyHandlers;
     procedure SetCurrentString(const AValue: string);
@@ -69,9 +68,8 @@ implementation
 
 uses
   Winapi.Windows, System.SysUtils, System.UITypes, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands,
-  BCEditor.Editor.Utils, BCEditor.Consts, System.Math, Vcl.Dialogs{$IFDEF USE_VCL_STYLES}, Vcl.Themes{$ENDIF};
-
-{ TBCEditorCompletionProposalPopupWindow }
+  BCEditor.Editor.Utils, BCEditor.Consts, System.Math, Vcl.Dialogs
+  {$if defined(USE_VCL_STYLES) or not defined(USE_VCL_STYLES) and not defined(USE_ALPHASKINS)}, Vcl.Themes{$endif};
 
 constructor TBCEditorCompletionProposalPopupWindow.Create(AOwner: TComponent);
 begin
@@ -199,9 +197,9 @@ begin
           end;
       end;
     VK_PRIOR:
-      MoveLine(-FCompletionProposal.VisibleLines);
+      MoveSelectedLine(-FCompletionProposal.VisibleLines);
     VK_NEXT:
-      MoveLine(FCompletionProposal.VisibleLines);
+      MoveSelectedLine(FCompletionProposal.VisibleLines);
     VK_END:
       TopLine := Length(FItemIndexArray) - 1;
     VK_HOME:
@@ -335,24 +333,6 @@ begin
     end;
   end;
   Canvas.Draw(0, 0, FBitmapBuffer);
-end;
-
-procedure TBCEditorCompletionProposalPopupWindow.MoveLine(ALineCount: Integer);
-begin
-  if ALineCount > 0 then
-  begin
-    if TopLine < Length(FItemIndexArray) - ALineCount then
-      TopLine := TopLine + ALineCount
-    else
-      TopLine := Length(FItemIndexArray) - 1;
-  end
-  else
-  begin
-    if TopLine + ALineCount > 0 then
-      TopLine := TopLine + ALineCount
-    else
-      TopLine := 0;
-  end;
 end;
 
 procedure TBCEditorCompletionProposalPopupWindow.MoveSelectedLine(ALineCount: Integer);
@@ -689,9 +669,9 @@ begin
   if Visible then
     SendMessage(Handle, WM_SETREDRAW, -1, 0);
 
-{$IFDEF USE_VCL_STYLES}
+{$if defined(USE_VCL_STYLES)}
   Perform(CM_UPDATE_VCLSTYLE_SCROLLBARS, 0, 0);
-{$ENDIF}
+{$endif}
 end;
 
 procedure TBCEditorCompletionProposalPopupWindow.WMVScroll(var AMessage: TWMScroll);

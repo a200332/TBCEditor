@@ -1,4 +1,4 @@
-Version 1.6.0. 
+Version 1.8.0
 
 Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
 
@@ -6,7 +6,7 @@ Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
 
 <h3>Description</h3>
 
-A syntax highlighting edit control for RAD Studio (Delphi/C++ Builder) with code folding, completion proposal, matching pair, minimap, sync edit, multi-caret editing, word wrap, support for non-fixed-width fonts (version 1.7.0), etc. External highlighter and color scheme files are in JSON format which can be also loaded from a stream.
+A syntax highlighting edit control for RAD Studio (Delphi/C++ Builder) with code folding, completion proposal, matching pair, minimap, sync edit, multi-caret editing, word wrap, support for non-fixed-width fonts, etc. External highlighter and color scheme files are in JSON format which can be also loaded from a stream.
 
 <h3>Build requirements</h3>
 
@@ -39,17 +39,17 @@ USE_VCL_STYLES | Use VCL styles. A set of graphical details that define the look
 
 <h3>Demo</h3>
 
-TBCEditor Control Demo v. 1.7.0 beta. 
+TBCEditor Control Demo v. 1.8.1. 
 
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
-The latest update: 31.08.2016 22:36, UTC+02:00
+The latest update: 15.10.2016 22:33, UTC+02:00
 
 Demo source build requires 
 
-- <a href="http://www.alphaskins.com/">AlphaSkins</a>  
-- <a href="http://www.ehlib.com/">EhLib</a>
+- <a href="http://www.alphaskins.com/">AlphaSkins</a> (commercial) 
+- <a href="http://wiki.delphi-jedi.org/index.php?title=JEDI_Code_Library">JCL</a> /  <a href="http://jvcl.delphi-jedi.org/">JVCL</a>
 - <a href="https://github.com/bonecode/Common">Common</a>
 
 <h3>Documentation</h3>
@@ -64,14 +64,17 @@ Documentation will be written after the project stabilizes and dust settles. Thi
 
 <h3>Screenshots</h3>
 
-![bceditor1](https://cloud.githubusercontent.com/assets/11475177/11452990/a3774372-9602-11e5-8a0b-7ad2b568e4b2.png)
-![bceditor0](https://cloud.githubusercontent.com/assets/11475177/11832901/3ac6cfc4-a3c6-11e5-984e-2e174beacd74.png)
-![bceditor2](https://cloud.githubusercontent.com/assets/11475177/11452991/a3785e88-9602-11e5-801c-d8e9a7b8ab64.png)
-![bceditor3](https://cloud.githubusercontent.com/assets/11475177/11452992/a37b154c-9602-11e5-882c-5a73809be517.png)
-![bceditor4](https://cloud.githubusercontent.com/assets/11475177/11452987/a36de61a-9602-11e5-80e9-abd797af7a71.png)
-![bceditor5](https://cloud.githubusercontent.com/assets/11475177/11452988/a3716a2e-9602-11e5-994b-0934bb8e5a76.png)
-![bceditor6](https://cloud.githubusercontent.com/assets/11475177/11452989/a375d938-9602-11e5-8cbf-103f6a44db13.png)
-![bceditor7](https://cloud.githubusercontent.com/assets/11475177/12049668/bb345a32-aef2-11e5-8a4e-715c26d154f6.png)
+![bceditor0](https://cloud.githubusercontent.com/assets/11475177/19395785/2734e6dc-9248-11e6-9d12-7bfc6c536776.png)
+![bceditor1](https://cloud.githubusercontent.com/assets/11475177/19396521/2fbd3d14-924c-11e6-8e90-48694445139b.png)
+![bceditor2](https://cloud.githubusercontent.com/assets/11475177/19396658/c835e2a8-924c-11e6-9af6-b347c07d1311.png)
+![bceditor3](https://cloud.githubusercontent.com/assets/11475177/19397748/c80998ba-9251-11e6-854a-9427ad13b6ca.png)
+![bceditor4](https://cloud.githubusercontent.com/assets/11475177/19397755/cb0f63c8-9251-11e6-8f50-784b2489ab3d.png)
+![bceditor5](https://cloud.githubusercontent.com/assets/11475177/19397760/ce344e24-9251-11e6-9912-6d6e715af5e3.png)
+![bceditor6](https://cloud.githubusercontent.com/assets/11475177/19397763/d1629736-9251-11e6-9f57-b7df2ecb3ecd.png)
+![bceditor7](https://cloud.githubusercontent.com/assets/11475177/19397768/d5f101fc-9251-11e6-8cb6-5ee0591906d4.png)
+![bceditor8](https://cloud.githubusercontent.com/assets/11475177/19411292/86276920-9307-11e6-91c5-04b123d2b595.png)
+![bceditor9](https://cloud.githubusercontent.com/assets/11475177/19411293/8ac86a7e-9307-11e6-8651-56b03b4dd280.png)
+
 
 
 
