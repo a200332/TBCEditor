@@ -9,6 +9,7 @@ type
   TBCEditorCharSet = set of AnsiChar;
 
 const
+  BCEDITOR_VERSION = '1.8.3';
   BCEDITOR_BOOKMARK_IMAGE_COUNT = 10;
   BCEDITOR_CLIPBOARD_MAX_RETRIES = 5;
   BCEDITOR_CLIPBOARD_DELAY_STEP_MS = 200;
@@ -38,8 +39,9 @@ const
   BCEDITOR_CTRL_BACKSPACE = #127;
   BCEDITOR_PILCROW_CHAR = Char($00B6);
   BCEDITOR_LINE_SEPARATOR = Char($2028);
-  BCEDITOR_WORD_BREAK_CHARACTERS = ['.', ',', ';', ':', '"', '''', '!', '?', '[', ']', '(', ')', '{', '}', '^', '-',
+  BCEDITOR_WORD_BREAK_CHARACTERS = ['.', ',', ';', ':', '"', '''', '!', '?', '[', ']', '(', ')', '{', '}', '^',
     '=', '+', '-', '*', '/', '\', '|', ' '];
+  BCEDITOR_EXTRA_WORD_BREAK_CHARACTERS = ['´', '`', '°', '&', '$', '@', '§', '%', '#', '~', '<', '>'];
   BCEDITOR_DEFAULT_DELIMITERS: TBCEditorCharSet = ['*', '/', '+', '-', '=', '\', '|', '&', '(', ')', '[', ']', '{', '}',
     '`', '~', '!', '@', ',', '$', '%', '^', '?', ':', ';', '''', '"', '.', '>', '<', '#'];
   BCEDITOR_ABSOLUTE_DELIMITERS: TBCEditorCharSet = [BCEDITOR_NONE_CHAR, BCEDITOR_TAB_CHAR, BCEDITOR_LINEFEED,

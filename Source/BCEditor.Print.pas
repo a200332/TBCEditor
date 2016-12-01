@@ -95,8 +95,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure LoadFromStream(AStream: TStream);
-    procedure Print;
-    procedure PrintRange(AStartPage, AEndPage: Integer);
+    procedure Print(const AStartPage: Integer = 1; const AEndPage: Integer = -1);
     procedure PrintToCanvas(ACanvas: TCanvas; PageNumber: Integer);
     procedure SaveToStream(AStream: TStream);
     procedure UpdatePages(ACanvas: TCanvas);
@@ -314,7 +313,7 @@ end;
 
 procedure TBCEditorPrint.CalculatePages;
 var
-  LTempText, LText: string;
+  LText: string;
   i, j: Integer;
   LList: TList;
   LYPos: Integer;
@@ -336,16 +335,8 @@ begin
     TBCEditorPageLine(FPages[i]).Free;
   FPages.Clear;
   FMaxWidth := FMargins.PixelRight - FMargins.PixelLeft;
-  LTempText := '';
-  FMaxColumn := 0;
-  while TextWidth(FCanvas, LTempText) < FMaxWidth do
-  begin
-    LTempText := LTempText + 'W';
-    FMaxColumn := FMaxColumn + 1;
-  end;
-  FMaxColumn := FMaxColumn - 1;
-  LTempText := StringOfChar('W', FMaxColumn);
-  FMaxWidth := TextWidth(FCanvas, LTempText);
+  FMaxColumn := FMaxWidth div TextWidth(FCanvas, 'W') - 1;
+  FMaxWidth := TextWidth(FCanvas, StringOfChar('W', FMaxColumn)); // TODO: This does not work with non-fixed width fonts
   FPageCount := 1;
   LPageLine := TBCEditorPageLine.Create;
   LPageLine.FirstLine := 0;
@@ -363,21 +354,6 @@ begin
   end;
   for i := LStartLine to LEndLine do
   begin
-    if not FSelectedOnly then
-      LText := FLines[i]
-    else
-    begin
-      if (FSelectionMode = smColumn) or (i = FBlockBeginPosition.Line - 1) then
-        LSelectionStart := FBlockBeginPosition.Char
-      else
-        LSelectionStart := 1;
-      if (FSelectionMode = smColumn) or (i = FBlockEndPosition.Line - 1) then
-        LSelectionLength := FBlockEndPosition.Char - LSelectionStart
-      else
-        LSelectionLength := MaxInt;
-      LText := Copy(FLines[i], LSelectionStart, LSelectionLength);
-    end;
-
     if LYPos + FLineHeight > FMargins.PixelBottom then
     begin
       LYPos := FMargins.PixelTop;
@@ -387,29 +363,46 @@ begin
       FPages.Add(LPageLine);
     end;
 
-    if Wrap and (TextWidth(FCanvas, LText) > FMaxWidth) then
+    if Wrap then
     begin
-      LList := TList.Create;
-      try
-        if WrapTextEx(LText, [' ', '-', BCEDITOR_TAB_CHAR, ','], FMaxColumn, LList) then
-          CountWrapped
+      if not FSelectedOnly then
+        LText := FLines[i]
+      else
+      begin
+        if (FSelectionMode = smColumn) or (i = FBlockBeginPosition.Line - 1) then
+          LSelectionStart := FBlockBeginPosition.Char
         else
-        begin
-          if WrapTextEx(LText, [';', ')', '.'], FMaxColumn, LList) then
+          LSelectionStart := 1;
+        if (FSelectionMode = smColumn) or (i = FBlockEndPosition.Line - 1) then
+          LSelectionLength := FBlockEndPosition.Char - LSelectionStart
+        else
+          LSelectionLength := MaxInt;
+        LText := Copy(FLines[i], LSelectionStart, LSelectionLength);
+      end;
+
+      if TextWidth(FCanvas, LText) > FMaxWidth then
+      begin
+        LList := TList.Create;
+        try
+          if WrapTextEx(LText, [' ', '-', BCEDITOR_TAB_CHAR, ','], FMaxColumn, LList) then
             CountWrapped
           else
+          begin
+            if WrapTextEx(LText, [';', ')', '.'], FMaxColumn, LList) then
+              CountWrapped
+            else
             while Length(LText) > 0 do
             begin
-              LTempText := Copy(LText, 1, FMaxColumn);
               Delete(LText, 1, FMaxColumn);
               if Length(LText) > 0 then
                 LYPos := LYPos + FLineHeight;
             end;
+          end;
+          for j := 0 to LList.Count - 1 do
+            TBCEditorWrapPosition(LList[j]).Free;
+        finally
+          LList.Free;
         end;
-        for j := 0 to LList.Count - 1 do
-          TBCEditorWrapPosition(LList[j]).Free;
-      finally
-        LList.Free;
       end;
     end;
 
@@ -553,6 +546,7 @@ var
 
 var
   LTempText: string;
+  LLeft: Integer;
 begin
   FPaintHelper.BeginDrawing(FCanvas.Handle);
   with FMargins do
@@ -561,16 +555,23 @@ begin
   if Highlight and Assigned(FHighlighter) and (FLines.Count > 0) then
   begin
     SaveCurrentFont;
-    FHighlighter.SetCurrentRange(FLines.Objects[FLineNumber - 1]);
+     if FLineNumber = 0 then
+      FHighlighter.ResetCurrentRange
+    else
+      FHighlighter.SetCurrentRange(FLines.Objects[FLineNumber - 1]);
     FHighlighter.SetCurrentLine(AText);
     LToken := '';
     LTokenStart := 0;
     LCount := 0;
+    LLeft := FMargins.PixelLeft;
     while not FHighlighter.GetEndOfLine do
     begin
       FHighlighter.GetToken(LToken);
       LTokenPosition := FHighlighter.GetTokenPosition;
       LHighlighterAttribute := FHighlighter.GetTokenAttribute;
+
+      FCanvas.Font.Color := FFontColor;
+      FCanvas.Brush.Color := FDefaultBackground;
 
       if Assigned(LHighlighterAttribute) then
       begin
@@ -585,24 +586,16 @@ begin
           if LColor = clNone then
             LColor := FDefaultBackground;
           FCanvas.Brush.Color := LColor;
-        end
-        else
-        begin
-          FCanvas.Font.Color := FFontColor;
-          FCanvas.Brush.Color := FDefaultBackground;
         end;
-      end
-      else
-      begin
-        FCanvas.Font.Color := FFontColor;
-        FCanvas.Brush.Color := FDefaultBackground;
       end;
+
       LHandled := False;
       if Assigned(AList) then
         if LCount < AList.Count then
         begin
           if LTokenPosition >= TBCEditorWrapPosition(AList[LCount]).Index then
           begin
+            LLeft := FMargins.PixelLeft;
             LCount := LCount + 1;
             LTokenStart := LTokenPosition;
             FYPos := FYPos + FLineHeight;
@@ -615,7 +608,10 @@ begin
           end;
         end;
       if not LHandled then
-        ClippedTextOut(FMargins.PixelLeft + (LTokenPosition - LTokenStart) * FPaintHelper.CharWidth, FYPos, LToken);
+      begin
+        ClippedTextOut(LLeft, FYPos, LToken);
+        Inc(LLeft, TextWidth(FCanvas, LToken));
+      end;
       FHighlighter.Next;
     end;
     RestoreCurrentFont;
@@ -729,18 +725,15 @@ begin
   PrintPage(PageNumber);
 end;
 
-procedure TBCEditorPrint.Print;
-begin
-  PrintRange(1, -1);
-end;
-
-procedure TBCEditorPrint.PrintRange(AStartPage, AEndPage: Integer);
+procedure TBCEditorPrint.Print(const AStartPage: Integer = 1; const AEndPage: Integer = -1);
 var
   i, j: Integer;
+  LEndPage: Integer;
 begin
   if FSelectedOnly and not FSelectionAvailable then
     Exit;
 
+  LEndPage := AEndPage;
   FPrinting := True;
   FAbort := False;
   if FDocumentTitle <> '' then
@@ -748,25 +741,28 @@ begin
   else
     Printer.Title := FTitle;
   Printer.BeginDoc;
-  PrintStatus(psBegin, AStartPage, FAbort);
-  UpdatePages(Printer.Canvas);
-
-  for i := 1 to Copies do
+  if Printer.Printing then
   begin
-    j := AStartPage;
-    if AEndPage < 0 then
-      AEndPage := FPageCount;
-    while (j <= AEndPage) and (not FAbort) do
+    PrintStatus(psBegin, AStartPage, FAbort);
+    UpdatePages(Printer.Canvas);
+
+    for i := 1 to Copies do
     begin
-      PrintPage(j);
-      if ((j < AEndPage) or (i < Copies)) and not FAbort then
-        Printer.NewPage;
-      Inc(j);
+      j := AStartPage;
+      if LEndPage < 0 then
+        LEndPage := FPageCount;
+      while (j <= LEndPage) and (not FAbort) do
+      begin
+        PrintPage(j);
+        if ((j < LEndPage) or (i < Copies)) and not FAbort then
+          Printer.NewPage;
+        Inc(j);
+      end;
     end;
+    if not FAbort then
+      PrintStatus(psEnd, LEndPage, FAbort);
+    Printer.EndDoc;
   end;
-  if not FAbort then
-    PrintStatus(psEnd, AEndPage, FAbort);
-  Printer.EndDoc;
   FPrinting := False;
 end;
 
