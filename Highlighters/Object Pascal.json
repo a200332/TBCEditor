@@ -2,8 +2,8 @@
    "Highlighter": {
       "Info": {
          "General": {
-            "Version": "1.8.3",
-            "Date": "10.11.2016",
+            "Version": "2.0.0",
+            "Date": "10.01.2017",
             "Sample": [
                "// Hello World in Pascal\r\n",
                "\r\n",
@@ -389,7 +389,7 @@
                               "default",
                               "index",
                               "read",
-															"stored",
+                              "stored",
                               "write"
                            ],
                            "Attributes": {
@@ -702,7 +702,8 @@
                   "CloseToken": "$ENDREGION",
                   "Properties": {
                      "OpenTokenEnd": "}",
-                     "ShowGuideLine": false
+                     "ShowGuideLine": false,
+										 "BeginWithBreakChar": true
                   }
                }
             ]

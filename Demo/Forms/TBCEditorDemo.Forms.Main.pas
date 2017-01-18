@@ -63,6 +63,8 @@ type
     SpeedButtonSearchEngine: TBCSpeedButton;
     Splitter: TBCSplitter;
     SplitterSearch: TBCSplitter;
+    SpeedButtonFindAll: TBCSpeedButton;
+    ActionFindAll: TAction;
     procedure ActionCaseSensitiveExecute(Sender: TObject);
     procedure ActionCloseExecute(Sender: TObject);
     procedure ActionFileOpenExecute(Sender: TObject);
@@ -84,10 +86,10 @@ type
     procedure SelectedEncodingClick(const AIndex: Integer);
     procedure SelectedHighlighterClick(AHighlighterName: string);
     procedure SelectedHighlighterColorClick(AHighlighterColorName: string);
-    procedure SelectedSearchEngineClick(ASearchEngine: TBCEditorSearchEngine);
     procedure TitleBarItems2Click(Sender: TObject);
     procedure TitleBarItems4Click(Sender: TObject);
     procedure TitleBarItems6Click(Sender: TObject);
+    procedure ActionFindAllExecute(Sender: TObject);
   private
     FHighlighterColorStrings: TStringList;
     FHighlighterStrings: TStringList;
@@ -100,10 +102,9 @@ type
     procedure ClearText;
     procedure DoSearchTextChange;
     procedure InitializeEditorPrint(AEditorPrint: TBCEditorPrint);
-    procedure LockFormPaint;
     procedure PrintPreview;
+    procedure SelectedSearchEngineClick(const ASearchEngine: TBCEditorSearchEngine);
     procedure SetMatchesFound;
-    procedure UnlockFormPaint;
   end;
 
 var
@@ -116,6 +117,13 @@ implementation
 uses
   BCCommon.Form.Print.Preview, BCEditor.Print.Types, BCCommon.Dialog.SkinSelect, BCCommon.FileUtils, BCCommon.Utils,
   BCCommon.Dialog.Options.Search, BCCommon.Encoding, BCEditor.Consts, acPopupController, sVclUtils;
+
+const
+  INFOTEXT_MODIFIED = 'Modified';
+  KEYSTATE_INSERT = 0;
+  KEYSTATE_INSERT_TEXT = 'Insert';
+  KEYSTATE_OVERWRITE = 1;
+  KEYSTATE_OVERWRITE_TEXT = 'Overwrite';
 
 procedure TMainForm.ActionSkinsExecute(Sender: TObject);
 begin
@@ -133,19 +141,22 @@ begin
   else
     Editor.Margins.Bottom := 5;
   if Editor.Modified then
-    InfoText := 'Modified'
+    InfoText := INFOTEXT_MODIFIED
   else
     InfoText := '';
 
+  GetKeyboardState(KeyState);
+  case KeyState[VK_INSERT] of
+    KEYSTATE_INSERT:
+      if StatusBar.Panels[1].Text <> KEYSTATE_INSERT_TEXT then
+       StatusBar.Panels[1].Text := KEYSTATE_INSERT_TEXT;
+    KEYSTATE_OVERWRITE:
+      if StatusBar.Panels[1].Text <> KEYSTATE_OVERWRITE_TEXT then
+        StatusBar.Panels[1].Text := KEYSTATE_OVERWRITE_TEXT;
+  end;
+
   if StatusBar.Panels[2].Text <> InfoText then
     StatusBar.Panels[2].Text := InfoText;
-  GetKeyboardState(KeyState);
-  if KeyState[VK_INSERT] = 0 then
-    if StatusBar.Panels[1].Text <> 'Insert' then
-      StatusBar.Panels[1].Text := 'Insert';
-  if KeyState[VK_INSERT] = 1 then
-    if StatusBar.Panels[1].Text <> 'Overwrite' then
-      StatusBar.Panels[1].Text := 'Overwrite';
 end;
 
 procedure TMainForm.DoSearchTextChange;
@@ -210,9 +221,9 @@ begin
   FPopupEncodingDialog.Left := LPoint.X;
   FPopupEncodingDialog.Top := LPoint.Y;
 
-  LockFormPaint;
+  SkinProvider.SkinData.BeginUpdate;
   FPopupEncodingDialog.Execute(TitleBar.Items[TITLE_BAR_ENCODING].Caption);
-  UnlockFormPaint;
+  SkinProvider.SkinData.EndUpdate;
 end;
 
 procedure TMainForm.TitleBarItems4Click(Sender: TObject);
@@ -231,9 +242,9 @@ begin
   FPopupHighlighterDialog.Left := LPoint.X;
   FPopupHighlighterDialog.Top := LPoint.Y;
 
-  LockFormPaint;
+  SkinProvider.SkinData.BeginUpdate;
   FPopupHighlighterDialog.Execute(FHighlighterStrings, TitleBar.Items[TITLE_BAR_HIGHLIGHTER].Caption);
-  UnlockFormPaint;
+  SkinProvider.SkinData.EndUpdate;
 end;
 
 procedure TMainForm.TitleBarItems6Click(Sender: TObject);
@@ -252,9 +263,9 @@ begin
   FPopupHighlighterColorDialog.Left := LPoint.X;
   FPopupHighlighterColorDialog.Top := LPoint.Y;
 
-  LockFormPaint;
+  SkinProvider.SkinData.BeginUpdate;
   FPopupHighlighterColorDialog.Execute(FHighlighterColorStrings, TitleBar.Items[TITLE_BAR_COLORS].Caption);
-  UnlockFormPaint;
+  SkinProvider.SkinData.EndUpdate;
 end;
 
 procedure TMainForm.ClearText;
@@ -299,6 +310,12 @@ begin
   AEditorPrint.Colors := True;
   AEditorPrint.Editor := Editor;
   AEditorPrint.Title := Editor.DocumentName;
+end;
+
+procedure TMainForm.ActionFindAllExecute(Sender: TObject);
+begin
+  inherited;
+  Editor.FindAll;
 end;
 
 procedure TMainForm.ActionFindNextExecute(Sender: TObject);
@@ -399,6 +416,8 @@ begin
   FHighlighterStrings := GetHighlighters;
   FHighlighterColorStrings := GetHighlighterColors;
 
+  Editor.Encoding := TEncoding.ANSI;
+
   SelectedHighlighterClick('Object Pascal');
   SelectedHighlighterColorClick('Default');
 end;
@@ -446,12 +465,12 @@ begin
     FPopupSearchEngineDialog.PopupParent := Self;
     FPopupSearchEngineDialog.OnSelectSearchEngine := SelectedSearchEngineClick;
   end;
-  LockFormPaint;
+  SkinProvider.SkinData.BeginUpdate;
   FPopupSearchEngineDialog.Execute(Editor.Search.Engine);
-  UnlockFormPaint;
+  SkinProvider.SkinData.EndUpdate;
 end;
 
-procedure TMainForm.SelectedSearchEngineClick(ASearchEngine: TBCEditorSearchEngine);
+procedure TMainForm.SelectedSearchEngineClick(const ASearchEngine: TBCEditorSearchEngine);
 begin
   Editor.Search.Engine := ASearchEngine;
 end;
@@ -498,18 +517,6 @@ begin
     Invalidate;
   end;
   TitleBar.Items[TITLE_BAR_COLORS].Caption := Editor.Highlighter.Colors.Name;
-end;
-
-procedure TMainForm.LockFormPaint;
-begin
-  SkinProvider.SkinData.BeginUpdate;
-  SkinProvider.Form.Perform(WM_SETREDRAW, 0, 0);
-end;
-
-procedure TMainForm.UnlockFormPaint;
-begin
-  SkinProvider.SkinData.EndUpdate;
-  SkinProvider.Form.Perform(WM_SETREDRAW, 1, 0);
 end;
 
 end.

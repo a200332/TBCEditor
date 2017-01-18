@@ -1,4 +1,4 @@
-Version 1.8.3
+Latest release version <a href="https://github.com/bonecode/TBCEditor/releases">1.9.0</a>
 
 Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
 
@@ -37,12 +37,12 @@ USE_VCL_STYLES | Use VCL styles. A set of graphical details that define the look
 
 <h3>Demo</h3>
 
-TBCEditor Control Demo v. 1.8.3.
+TBCEditor Control Demo v. 2.0.0 (dev).
 
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
-The latest update: 12.11.2016 17:51, UTC+02:00
+The latest update: 17.01.2017 22:17, UTC+02:00
 
 Demo source build requires 
 

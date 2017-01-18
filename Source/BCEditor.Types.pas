@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, BCEditor.Highlighter.Attributes,
-  BCEditor.Consts, System.SysUtils;
+  BCEditor.Consts, System.SysUtils, BCEditor.Editor.CompletionProposal.Columns;
 
 type
   TBCEditorArrayOfString = array of string;
@@ -14,7 +14,9 @@ type
 
   TBCEditorCaretStyle = (csVerticalLine, csThinVerticalLine, csHorizontalLine, csThinHorizontalLine, csHalfBlock, csBlock);
 
-  TBCEditorCompletionProposalEvent = procedure(Sender: TObject; AItems: TStrings; const AInput: string) of object;
+  TBCEditorCompletionProposalEvent = procedure(Sender: TObject; AColumns: TBCEditorCompletionProposalColumns; const AInput: string; const AKey: Word; const AShift: TShiftState) of object;
+  TBCEditorCompletionProposalSelectedEvent = procedure(Sender: TObject; var ASelectedItem: string) of object;
+  TBCEditorCompletionProposalValidateEvent = procedure(ASender: TObject; Shift: TShiftState; EndToken: Char) of object;
 
   TBCEditorDropFilesEvent = procedure(ASender: TObject; APos: TPoint; AFiles: TStrings) of object;
 
@@ -37,8 +39,11 @@ type
   TBCEditorCustomLineColorsEvent = procedure(ASender: TObject; ALine: Integer; var AUseColors: Boolean;
     var AForeground: TColor; var ABackground: TColor) of object;
 
+  TBCEditorTokenAddon = (taNone, taDoubleUnderline, taUnderline, taWaveLine);
+
   TBCEditorCustomTokenAttributeEvent = procedure(ASender: TObject; const AText: string; const ALine: Integer;
-    const APosition: Integer; var AForegroundColor: TColor; var ABackgroundColor: TColor; var AStyles: TFontStyles) of object;
+    const APosition: Integer; var AForegroundColor: TColor; var ABackgroundColor: TColor; var AStyles: TFontStyles;
+    var ATokenAddon: TBCEditorTokenAddon; var ATokenAddonColor: TColor) of object;
 
   TBCEditorCreateFileStreamEvent = procedure(ASender: TObject; const AFileName: string; var AStream: TStream) of object;
 
@@ -64,6 +69,8 @@ type
     meoShowGhost { Ghost caret follows mouse cursor when moved }
   );
   TBCEditorCaretMultiEditOptions = set of TBCEditorCaretMultiEditOption;
+
+  TBCEditorTextEntryMode = (temInsert, temOverwrite);
 
   TBCEditorScrollOption = (
     soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
@@ -154,9 +161,12 @@ type
 
   TBCEditorCompletionProposalOption = (
     cpoAutoInvoke,
+    cpoAutoConstraints,
+    cpoAddHighlighterKeywords,
     cpoCaseSensitive,
     cpoFiltered,
-    cpoParseItemsFromText
+    cpoParseItemsFromText,
+    cpoResizeable
   );
   TBCEditorCompletionProposalOptions = set of TBCEditorCompletionProposalOption;
 
@@ -261,6 +271,7 @@ type
 
   TBCEditorTokenHelper = record
     Background: TColor;
+    Border: TColor;
     CharsBefore: Integer;
     EmptySpace: TBCEditorEmptySpace;
     ExpandedCharsBefore: Integer;
@@ -268,7 +279,8 @@ type
     Foreground: TColor;
     IsItalic: Boolean;
     Length: Integer;
-    MatchingPairUnderline: Boolean;
+    TokenAddon: TBCEditorTokenAddon;
+    TokenAddonColor: TColor;
     Text: string;
   end;
 
@@ -325,7 +337,7 @@ type
 
   TBCEditorKeyCharType = (ctFoldOpen, ctFoldClose, ctSkipOpen, ctSkipClose);
 
-  TBCEditorSortOrder = (soToggle, soAsc, soDesc);
+  TBCEditorSortOrder = (soAsc, soDesc, soRandom);
 
   TBCEditorChangeReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent,
     crCaret, crSelection, crNothing, crGroupBreak);
@@ -369,7 +381,6 @@ type
   end;
   PBCEditorQuadColor = ^TBCEditorQuadColor;
 
-
   TBCEditorCodeFoldingHintIndicatorPadding = class(TPadding)
   protected
     class procedure InitDefaults(Margins: TMargins); override;
@@ -382,9 +393,12 @@ type
 
 implementation
 
+{ TBCEditorCodeFoldingHintIndicatorPadding }
+
 class procedure TBCEditorCodeFoldingHintIndicatorPadding.InitDefaults(Margins: TMargins);
 begin
-  with Margins do begin
+  with Margins do
+  begin
     Left := 0;
     Right := 0;
     Top := 1;

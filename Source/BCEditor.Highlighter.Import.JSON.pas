@@ -57,11 +57,11 @@ end;
 
 function StrToSet(const AString: string): TBCEditorCharSet;
 var
-  i: Integer;
+  LIndex: Integer;
 begin
   Result := [];
-  for i := 1 to Length(AString) do
-    Result := Result + [AString[i]];
+  for LIndex := 1 to Length(AString) do
+    Result := Result + [AString[LIndex]];
 end;
 
 function StrToStrDef(const AString: string; const AStringDef: string): string;
@@ -112,13 +112,13 @@ end;
 
 function StrToRangeType(const AString: string): TBCEditorRangeType;
 var
-  i: Integer;
+  LIndex: Integer;
 begin
-  i := GetEnumValue(TypeInfo(TBCEditorRangeType), 'tt' + AString);
-  if i = -1 then
+  LIndex := GetEnumValue(TypeInfo(TBCEditorRangeType), 'tt' + AString);
+  if LIndex = -1 then
     Result := ttUnspecified
   else
-    Result := TBCEditorRangeType(i);
+    Result := TBCEditorRangeType(LIndex);
 end;
 
 { TBCEditorHighlighterImportJSON }
@@ -131,7 +131,7 @@ end;
 
 procedure TBCEditorHighlighterImportJSON.ImportInfo(AInfoObject: TJsonObject);
 var
-  i: Integer;
+  LIndex: Integer;
   LSampleArray: TJsonArray;
   LHighlighterInfo: TBCEditorHighlighterInfo;
   LObject: TJsonObject;
@@ -145,8 +145,8 @@ begin
     LHighlighterInfo.General.Version := LObject['Version'].Value;
     LHighlighterInfo.General.Date := LObject['Date'].Value;
     LSampleArray := LObject.A['Sample'];
-    for i := 0 to LSampleArray.Count - 1 do
-      LHighlighterInfo.General.Sample := LHighlighterInfo.General.Sample + LSampleArray.S[i];
+    for LIndex := 0 to LSampleArray.Count - 1 do
+      LHighlighterInfo.General.Sample := LHighlighterInfo.General.Sample + LSampleArray.S[LIndex];
     { Author }
     LObject := AInfoObject['Author'];
     LHighlighterInfo.Author.Name := LObject['Name'].Value;
@@ -228,6 +228,7 @@ begin
       LEditor.RightMargin.Colors.Edge := StringToColorDef(LColorsObject['RightEdge'].Value, LEditor.RightMargin.Colors.Edge);
       LEditor.RightMargin.Colors.MovingEdge := StringToColorDef(LColorsObject['RightMovingEdge'].Value, LEditor.RightMargin.Colors.MovingEdge);
       LEditor.Search.Highlighter.Colors.Background := StringToColorDef(LColorsObject['SearchHighlighterBackground'].Value, LEditor.Search.Highlighter.Colors.Background);
+      LEditor.Search.Highlighter.Colors.Border := StringToColorDef(LColorsObject['SearchHighlighterBorder'].Value, LEditor.Search.Highlighter.Colors.Border);
       LEditor.Search.Highlighter.Colors.Foreground := StringToColorDef(LColorsObject['SearchHighlighterForeground'].Value, LEditor.Search.Highlighter.Colors.Foreground);
       LEditor.Search.InSelection.Background := StringToColorDef(LColorsObject['SearchInSelectionBackground'].Value, LEditor.Search.InSelection.Background);
       LEditor.Search.Map.Colors.ActiveLine := StringToColorDef(LColorsObject['SearchMapActiveLine'].Value, LEditor.Search.Map.Colors.ActiveLine);
@@ -248,7 +249,7 @@ begin
       LEditor.Font.Name := StrToStrDef(LFontsObject['Text'].Value, LEditor.Font.Name);
       LEditor.Minimap.Font.Name := StrToStrDef(LFontsObject['Minimap'].Value, LEditor.Minimap.Font.Name);
       LEditor.CodeFolding.Hint.Font.Name := StrToStrDef(LFontsObject['CodeFoldingHint'].Value, LEditor.CodeFolding.Hint.Font.Name);
-      LEditor.CompletionProposal.Font.Name := StrToStrDef(LFontsObject['CompletionProposal'].Value, LEditor.CompletionProposal.Font.Name);
+      LEditor.CompletionProposal.Columns[0].Font.Name := StrToStrDef(LFontsObject['CompletionProposal'].Value, LEditor.CompletionProposal.Columns[0].Font.Name);
     end;
     LFontSizesObject := AEditorObject['FontSizes'].ObjectValue;
     if Assigned(LFontSizesObject) then
@@ -257,7 +258,7 @@ begin
       LEditor.Font.Size := StrToIntDef(LFontSizesObject['Text'].Value, LEditor.Font.Size);
       LEditor.Minimap.Font.Size := StrToIntDef(LFontSizesObject['Minimap'].Value, LEditor.Minimap.Font.Size);
       LEditor.CodeFolding.Hint.Font.Size := StrToIntDef(LFontSizesObject['CodeFoldingHint'].Value, LEditor.CodeFolding.Hint.Font.Size);
-      LEditor.CompletionProposal.Font.Size := StrToIntDef(LFontSizesObject['CompletionProposal'].Value, LEditor.CompletionProposal.Font.Size);
+      LEditor.CompletionProposal.Columns[0].Font.Size := StrToIntDef(LFontSizesObject['CompletionProposal'].Value, LEditor.CompletionProposal.Columns[0].Font.Size);
     end;
   end;
 end;
@@ -278,15 +279,15 @@ end;
 procedure TBCEditorHighlighterImportJSON.ImportKeyList(AKeyList: TBCEditorKeyList; KeyListObject: TJsonObject;
   const AElementPrefix: string);
 var
-  i: Integer;
+  LIndex: Integer;
   LWordArray: TJsonArray;
 begin
   if Assigned(KeyListObject) then
   begin
     AKeyList.TokenType := StrToRangeType(KeyListObject['Type'].Value);
     LWordArray := KeyListObject.A['Words'];
-    for i := 0 to LWordArray.Count - 1 do
-      AKeyList.KeyList.Add(LWordArray.S[i]);
+    for LIndex := 0 to LWordArray.Count - 1 do
+      AKeyList.KeyList.Add(LWordArray.S[LIndex]);
     ImportAttributes(AKeyList.Attribute, KeyListObject['Attributes'].ObjectValue, AElementPrefix);
   end;
 end;
@@ -305,7 +306,7 @@ procedure TBCEditorHighlighterImportJSON.ImportRange(ARange: TBCEditorRange; Ran
   AParentRange: TBCEditorRange = nil; ASkipBeforeSubRules: Boolean = False;
   const AElementPrefix: string = ''); { Recursive method }
 var
-  i, j: Integer;
+  LIndex, LIndex2: Integer;
   LFileName, LOpenToken, LCloseToken: string;
   LNewRange: TBCEditorRange;
   LNewKeyList: TBCEditorKeyList;
@@ -337,12 +338,12 @@ begin
         begin
           LSubRulesObject := LTokenRangeObject['SubRules'].ObjectValue;
           if Assigned(LSubRulesObject) then
-          for i := 0 to LSubRulesObject.Count - 1 do
+          for LIndex := 0 to LSubRulesObject.Count - 1 do
           begin
-            if LSubRulesObject.Names[i] = 'Range' then
-            for j := 0 to LSubRulesObject.Items[i].ArrayValue.Count - 1 do
+            if LSubRulesObject.Names[LIndex] = 'Range' then
+            for LIndex2 := 0 to LSubRulesObject.Items[LIndex].ArrayValue.Count - 1 do
             begin
-              LJSONSubRulesObject := LSubRulesObject.Items[i].ArrayValue.O[j];
+              LJSONSubRulesObject := LSubRulesObject.Items[LIndex].ArrayValue.O[LIndex2];
               if LJSONSubRulesObject.S['Name'] = RangeObject['IncludeRange'].Value then
               begin
                 ImportRange(ARange, LJSONSubRulesObject, nil, False, LElementPrefix);
@@ -378,8 +379,8 @@ begin
           if LAlternativeCloseArray.Count > 0 then
           begin
             ARange.AlternativeCloseArrayCount := LAlternativeCloseArray.Count;
-            for i := 0 to ARange.AlternativeCloseArrayCount - 1 do
-              ARange.AlternativeCloseArray[i] := LAlternativeCloseArray.Items[i].Value;
+            for LIndex := 0 to ARange.AlternativeCloseArrayCount - 1 do
+              ARange.AlternativeCloseArray[LIndex] := LAlternativeCloseArray.Items[LIndex].Value;
           end;
           ARange.OpenBeginningOfLine := LPropertiesObject.B['OpenBeginningOfLine'];
         end;
@@ -409,29 +410,29 @@ begin
 
       if Assigned(LSubRulesObject) then
       begin
-        for i := 0 to LSubRulesObject.Count - 1 do
+        for LIndex := 0 to LSubRulesObject.Count - 1 do
         begin
-          if LSubRulesObject.Names[i] = 'Range' then
-          for j := 0 to LSubRulesObject.Items[i].ArrayValue.Count - 1 do
+          if LSubRulesObject.Names[LIndex] = 'Range' then
+          for LIndex2 := 0 to LSubRulesObject.Items[LIndex].ArrayValue.Count - 1 do
           begin
             LNewRange := TBCEditorRange.Create;
-            ImportRange(LNewRange, LSubRulesObject.Items[i].ArrayValue.O[j], ARange); { ARange is for the MainRules include }
+            ImportRange(LNewRange, LSubRulesObject.Items[LIndex].ArrayValue.O[LIndex2], ARange); { ARange is for the MainRules include }
             ARange.AddRange(LNewRange);
           end
           else
-          if LSubRulesObject.Names[i] = 'KeyList' then
-          for j := 0 to LSubRulesObject.Items[i].ArrayValue.Count - 1 do
+          if LSubRulesObject.Names[LIndex] = 'KeyList' then
+          for LIndex2 := 0 to LSubRulesObject.Items[LIndex].ArrayValue.Count - 1 do
           begin
             LNewKeyList := TBCEditorKeyList.Create;
-            ImportKeyList(LNewKeyList, LSubRulesObject.Items[i].ArrayValue.O[j], AElementPrefix);
+            ImportKeyList(LNewKeyList, LSubRulesObject.Items[LIndex].ArrayValue.O[LIndex2], AElementPrefix);
             ARange.AddKeyList(LNewKeyList);
           end
           else
-          if LSubRulesObject.Names[i] = 'Set' then
-          for j := 0 to LSubRulesObject.Items[i].ArrayValue.Count - 1 do
+          if LSubRulesObject.Names[LIndex] = 'Set' then
+          for LIndex2 := 0 to LSubRulesObject.Items[LIndex].ArrayValue.Count - 1 do
           begin
             LNewSet := TBCEditorSet.Create;
-            ImportSet(LNewSet, LSubRulesObject.Items[i].ArrayValue.O[j], AElementPrefix);
+            ImportSet(LNewSet, LSubRulesObject.Items[LIndex].ArrayValue.O[LIndex2], AElementPrefix);
             ARange.AddSet(LNewSet);
           end
         end;
@@ -442,7 +443,7 @@ end;
 
 procedure TBCEditorHighlighterImportJSON.ImportCompletionProposal(ACompletionProposalObject: TJsonObject);
 var
-  i: Integer;
+  LIndex: Integer;
   LSkipRegionItem: TBCEditorSkipRegionItem;
   LJsonDataValue: PJsonDataValue;
   LFileName: string;
@@ -455,9 +456,9 @@ begin
     Exit;
   { Skip regions }
   LSkipRegionArray := ACompletionProposalObject['SkipRegion'].ArrayValue;
-  for i := 0 to LSkipRegionArray.Count - 1 do
+  for LIndex := 0 to LSkipRegionArray.Count - 1 do
   begin
-    LJsonDataValue := LSkipRegionArray.Items[i];
+    LJsonDataValue := LSkipRegionArray.Items[LIndex];
 
     if FHighlighter.MultiHighlighter then
     begin
@@ -492,7 +493,7 @@ end;
 procedure TBCEditorHighlighterImportJSON.ImportCodeFoldingSkipRegion(ACodeFoldingRegion: TBCEditorCodeFoldingRegion;
   ACodeFoldingObject: TJsonObject);
 var
-  i: Integer;
+  LIndex: Integer;
   LJsonDataValue: PJsonDataValue;
   LSkipRegionType: TBCEditorSkipRegionItemType;
   LRegionItem: TBCEditorCodeFoldingRegionItem;
@@ -507,9 +508,9 @@ begin
   if ACodeFoldingObject.Contains('SkipRegion') then
   begin
     LSkipRegionArray := ACodeFoldingObject['SkipRegion'].ArrayValue;
-    for i := 0 to LSkipRegionArray.Count - 1 do
+    for LIndex := 0 to LSkipRegionArray.Count - 1 do
     begin
-      LJsonDataValue := LSkipRegionArray.Items[i];
+      LJsonDataValue := LSkipRegionArray.Items[LIndex];
       LOpenToken := LJsonDataValue.ObjectValue['OpenToken'].Value;
       LCloseToken := LJsonDataValue.ObjectValue['CloseToken'].Value;
 
@@ -565,7 +566,7 @@ end;
 procedure TBCEditorHighlighterImportJSON.ImportCodeFoldingFoldRegion(ACodeFoldingRegion: TBCEditorCodeFoldingRegion;
   ACodeFoldingObject: TJsonObject);
 var
-  i, j: Integer;
+  LIndex, LIndex2: Integer;
   LJsonDataValue: PJsonDataValue;
   LRegionItem: TBCEditorCodeFoldingRegionItem;
   LMemberObject: TJsonObject;
@@ -580,9 +581,9 @@ begin
   if ACodeFoldingObject.Contains('FoldRegion') then
   begin
     LFoldRegionArray := ACodeFoldingObject['FoldRegion'].ArrayValue;
-    for i := 0 to LFoldRegionArray.Count - 1 do
+    for LIndex := 0 to LFoldRegionArray.Count - 1 do
     begin
-      LJsonDataValue := LFoldRegionArray.Items[i];
+      LJsonDataValue := LFoldRegionArray.Items[LIndex];
       LOpenToken := LJsonDataValue.ObjectValue['OpenToken'].Value;
       LCloseToken := LJsonDataValue.ObjectValue['CloseToken'].Value;
 
@@ -622,18 +623,22 @@ begin
         LRegionItem.OpenTokenCanBeFollowedBy := LMemberObject['OpenTokenCanBeFollowedBy'].Value;
         LRegionItem.TokenEndIsPreviousLine := LMemberObject.B['TokenEndIsPreviousLine'];
         LRegionItem.NoSubs := LMemberObject.B['NoSubs'];
+        LRegionItem.BeginWithBreakChar := LMemberObject.B['BeginWithBreakChar'];
 
         LSkipIfFoundAfterOpenTokenArray := LMemberObject['SkipIfFoundAfterOpenToken'].ArrayValue;
         if LSkipIfFoundAfterOpenTokenArray.Count > 0 then
         begin
           LRegionItem.SkipIfFoundAfterOpenTokenArrayCount := LSkipIfFoundAfterOpenTokenArray.Count;
-          for j := 0 to LRegionItem.SkipIfFoundAfterOpenTokenArrayCount - 1 do
-            LRegionItem.SkipIfFoundAfterOpenTokenArray[j] := LSkipIfFoundAfterOpenTokenArray.Items[j].Value;
+          for LIndex2 := 0 to LRegionItem.SkipIfFoundAfterOpenTokenArrayCount - 1 do
+            LRegionItem.SkipIfFoundAfterOpenTokenArray[LIndex2] := LSkipIfFoundAfterOpenTokenArray.Items[LIndex2].Value;
         end;
 
+        if LMemberObject.Contains('BreakCharFollows') then
+          LRegionItem.BreakCharFollows := LMemberObject.B['BreakCharFollows'];
         LRegionItem.BreakIfNotFoundBeforeNextRegion := LMemberObject['BreakIfNotFoundBeforeNextRegion'].Value;
         LRegionItem.OpenTokenEnd := LMemberObject['OpenTokenEnd'].Value;
         LRegionItem.ShowGuideLine := StrToBoolDef(LMemberObject['ShowGuideLine'].Value, True);
+        LRegionItem.OpenTokenBreaksLine := LMemberObject.B['OpenTokenBreaksLine'];
       end;
       if LOpenToken <> '' then
         FHighlighter.AddKeyChar(ctFoldOpen, LOpenToken[1]);
@@ -662,6 +667,9 @@ begin
 
     if LCodeFoldingObject.Contains('EscapeChar') then
       ACodeFoldingRegion.EscapeChar := LCodeFoldingObject['EscapeChar'].Value[1];
+
+    if LCodeFoldingObject.Contains('FoldTags') then
+      ACodeFoldingRegion.FoldTags := LCodeFoldingObject.B['FoldTags'];
 
     if LCodeFoldingObject.Contains('StringEscapeChar') then
       ACodeFoldingRegion.StringEscapeChar := LCodeFoldingObject['StringEscapeChar'].Value[1];
@@ -698,7 +706,7 @@ end;
 
 procedure TBCEditorHighlighterImportJSON.ImportMatchingPair(AMatchingPairObject: TJsonObject);
 var
-  i: Integer;
+  LIndex: Integer;
   LTokenMatch: PBCEditorMatchingPairToken;
   LJsonDataValue: PJsonDataValue;
   LFileName: string;
@@ -711,9 +719,9 @@ begin
     Exit;
   { Matching token pairs }
   LArray := AMatchingPairObject['Pairs'].ArrayValue;
-  for i := 0 to LArray.Count - 1 do
+  for LIndex := 0 to LArray.Count - 1 do
   begin
-    LJsonDataValue := LArray.Items[i];
+    LJsonDataValue := LArray.Items[LIndex];
 
     if FHighlighter.MultiHighlighter then
     begin
@@ -744,7 +752,7 @@ end;
 
 procedure TBCEditorHighlighterImportJSON.ImportElements(AColorsObject: TJsonObject);
 var
-  i: Integer;
+  LIndex: Integer;
   LElement: PBCEditorHighlighterElement;
   LJsonDataValue: PJsonDataValue;
   LElementsArray: TJsonArray;
@@ -753,9 +761,9 @@ begin
     Exit;
 
   LElementsArray :=  AColorsObject['Elements'].ArrayValue;
-  for i := 0 to LElementsArray.Count - 1 do
+  for LIndex := 0 to LElementsArray.Count - 1 do
   begin
-    LJsonDataValue := LElementsArray.Items[i];
+    LJsonDataValue := LElementsArray.Items[LIndex];
     New(LElement);
     LElement.Background := StringToColorDef(LJsonDataValue.ObjectValue['Background'].Value, clWindow);
     LElement.Foreground := StringToColorDef(LJsonDataValue.ObjectValue['Foreground'].Value, clWindowText);

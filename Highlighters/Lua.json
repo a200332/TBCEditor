@@ -2,8 +2,8 @@
    "Highlighter": {
       "Info": {
          "General": {
-            "Version": "1.8.3",
-            "Date": "10.11.2016",
+            "Version": "2.0.0",
+            "Date": "20.12.2016",
             "Sample": [
                "-- Hello World in Lua\r\n",
                "\r\n",
@@ -404,13 +404,29 @@
                },
                {
                   "OpenToken": "--",
-                  "RegionType": "SingleLine"
+                  "RegionType": "SingleLine",
+                  "NextCharIsNot": "["
                }
             ],
             "FoldRegion": [
                {
                   "OpenToken": "{",
-                  "CloseToken": "}"
+                  "CloseToken": "}",
+                  "Properties": {
+                     "BreakCharFollows": false
+                  }
+               },
+               {
+                  "OpenToken": "[[",
+                  "CloseToken": "]]"
+               },
+               {
+                  "OpenToken": "--[[",
+                  "CloseToken": "]]"
+               },
+               {
+                  "OpenToken": "--[=",
+                  "CloseToken": "=]"
                },
                {
                   "OpenToken": "FUNCTION",
