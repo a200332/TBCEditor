@@ -146,7 +146,10 @@
         <DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Ranges.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Colors.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Items.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Title.Colors.pas"/>
+				<DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Title.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.PopupWindow.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.Trigger.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.DB.pas"/>
@@ -191,10 +194,15 @@
         <DCCReference Include="..\Source\BCEditor.Editor.SyncEdit.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.SyncEdit.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Tabs.pas"/>
+        <DCCReference Include="..\Source\BCEditor.Editor.TokenInfo.pas"/>
+        <DCCReference Include="..\Source\BCEditor.Editor.TokenInfo.Colors.pas"/>
+        <DCCReference Include="..\Source\BCEditor.Editor.TokenInfo.Title.pas"/>
+        <DCCReference Include="..\Source\BCEditor.Editor.TokenInfo.Title.Colors.pas"/>
+        <DCCReference Include="..\Source\BCEditor.Editor.TokenInfo.PopupWindow.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.Item.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.List.pas"/>
-				<DCCReference Include="..\Source\BCEditor.Editor.UnknownChars.pas"/>
+        <DCCReference Include="..\Source\BCEditor.Editor.UnknownChars.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Utils.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.WordWrap.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.WordWrap.Colors.pas"/>

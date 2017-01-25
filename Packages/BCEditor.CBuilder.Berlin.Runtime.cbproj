@@ -182,7 +182,16 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Colors.pas">
             <BuildOrder>18</BuildOrder>
         </DelphiCompile>
+				<DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Items.pas">
+            <BuildOrder>19</BuildOrder>
+        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.pas">
+            <BuildOrder>19</BuildOrder>
+        </DelphiCompile>
+				<DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Title.Colors.pas">
+            <BuildOrder>19</BuildOrder>
+        </DelphiCompile>
+				<DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Title.pas">
             <BuildOrder>19</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.pas">
@@ -321,6 +330,21 @@
             <BuildOrder>57</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Tabs.pas">
+            <BuildOrder>58</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="..\Source\BCEditor.Editor.TokenInfo.pas">
+            <BuildOrder>58</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="..\Source\BCEditor.Editor.TokenInfo.Colors.pas">
+            <BuildOrder>58</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="..\Source\BCEditor.Editor.TokenInfo.Title.pas">
+            <BuildOrder>58</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="..\Source\BCEditor.Editor.TokenInfo.Title.Colors.pas">
+            <BuildOrder>58</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="..\Source\BCEditor.Editor.TokenInfo.PopupWindow.pas">
             <BuildOrder>58</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Undo.Item.pas">

@@ -14,7 +14,8 @@ uses
   BCEditor.Editor.Tabs, BCEditor.Editor.Undo, BCEditor.Editor.Undo.List, BCEditor.Editor.WordWrap,
   BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter, BCEditor.Highlighter.Attributes,
   BCEditor.KeyboardHandler, BCEditor.Lines, BCEditor.Search, BCEditor.PaintHelper, BCEditor.Editor.SyncEdit,
-  BCEditor.Utils, BCEditor.Editor.UnknownChars {$if defined(USE_ALPHASKINS)}, sCommonData, acSBUtils{$endif};
+  BCEditor.Editor.TokenInfo, BCEditor.Utils, BCEditor.Editor.UnknownChars, BCEditor.Editor.TokenInfo.PopupWindow
+  {$if defined(USE_ALPHASKINS)}, sCommonData, acSBUtils{$endif};
 
 const
   BCEDITOR_DEFAULT_OPTIONS = [eoAutoIndent, eoDragDropEditing];
@@ -121,6 +122,7 @@ type
     FOnBeforeMarkPlaced: TBCEditorMarkEvent;
     FOnBeforeCompletionProposalExecute: TBCEditorCompletionProposalEvent;
     FOnBeforeDeleteMark: TBCEditorMarkEvent;
+    FOnBeforeTokenInfoExecute: TBCEditorTokenInfoEvent;
     FOnMarkPanelLinePaint: TBCEditorMarkPanelLinePaintEvent;
     FOnCaretChanged: TBCEditorCaretChangedEvent;
     FOnChange: TNotifyEvent;
@@ -192,6 +194,10 @@ type
     FSyncEdit: TBCEditorSyncEdit;
     FTabs: TBCEditorTabs;
     FTextEntryMode: TBCEditorTextEntryMode;
+    FTokenInfo: TBCEditorTokenInfo;
+    FTokenInfoPopupWindow: TBCEditorTokenInfoPopupWindow;
+    FTokenInfoTimer: TTimer;
+    FTokenInfoTokenRect: TRect;
     FTopLine: Integer;
     FUndo: TBCEditorUndo;
     FUndoList: TBCEditorUndoList;
@@ -323,6 +329,7 @@ type
     procedure DoToggleBookmark;
     procedure DoToggleMark;
     procedure DoToggleSelectedCase(const ACommand: TBCEditorCommand);
+    procedure DoTokenInfo;
     procedure DoTrimTrailingSpaces(const ATextLine: Integer);
     procedure DoWordLeft(const ACommand: TBCEditorCommand);
     procedure DoWordRight(const ACommand: TBCEditorCommand);
@@ -351,6 +358,7 @@ type
     procedure MoveLineUp;
     procedure MultiCaretTimerHandler(ASender: TObject);
     procedure OnCodeFoldingDelayTimer(ASender: TObject);
+    procedure OnTokenInfoTimer(ASender: TObject);
     procedure OpenLink(const AURI: string; ARangeType: TBCEditorRangeType);
     procedure RemoveDuplicateMultiCarets;
     procedure RightMarginChanged(ASender: TObject);
@@ -392,6 +400,7 @@ type
     procedure SetTextCaretX(const AValue: Integer);
     procedure SetTextCaretY(const AValue: Integer);
     procedure SetTextEntryMode(const AValue: TBCEditorTextEntryMode);
+    procedure SetTokenInfo(const AValue: TBCEditorTokenInfo);
     procedure SetTopLine(const AValue: Integer);
     procedure SetUndo(const AValue: TBCEditorUndo);
     procedure SetUnknownChars(const AValue: TBCEditorUnknownChars);
@@ -472,6 +481,7 @@ type
     procedure DragOver(ASource: TObject; X, Y: Integer; AState: TDragState; var AAccept: Boolean); override;
     procedure FreeHintForm(var AForm: TBCEditorCodeFoldingHintForm);
     procedure FreeCompletionProposalPopupWindow;
+    procedure FreeTokenInfoPopupWindow;
     procedure HideCaret;
     procedure IncPaintLock;
     procedure KeyDown(var AKey: Word; AShift: TShiftState); override;
@@ -539,7 +549,7 @@ type
     function FindPrevious(const AHandleNotFound: Boolean = True): Boolean;
     function FindNext(const AHandleNotFound: Boolean = True): Boolean;
     function GetBookmark(const AIndex: Integer; var ATextPosition: TBCEditorTextPosition): Boolean;
-    function GetPositionOfMouse(out ATextPosition: TBCEditorTextPosition): Boolean;
+    function GetTextPositionOfMouse(out ATextPosition: TBCEditorTextPosition): Boolean;
     function GetWordAtPixels(const X, Y: Integer): string;
     function IsCommentChar(const AChar: Char): Boolean;
     function IsTextPositionInSelection(const ATextPosition: TBCEditorTextPosition): Boolean;
@@ -688,10 +698,11 @@ type
     property OnAfterDeleteBookmark: TNotifyEvent read FOnAfterDeleteBookmark write FOnAfterDeleteBookmark;
     property OnAfterDeleteMark: TNotifyEvent read FOnAfterDeleteMark write FOnAfterDeleteMark;
     property OnAfterLinePaint: TBCEditorLinePaintEvent read FOnAfterLinePaint write FOnAfterLinePaint;
+    property OnBeforeCompletionProposalExecute: TBCEditorCompletionProposalEvent read FOnBeforeCompletionProposalExecute write FOnBeforeCompletionProposalExecute;
+    property OnBeforeDeleteMark: TBCEditorMarkEvent read FOnBeforeDeleteMark write FOnBeforeDeleteMark;
     property OnBeforeMarkPanelPaint: TBCEditorMarkPanelPaintEvent read FOnBeforeMarkPanelPaint write FOnBeforeMarkPanelPaint;
     property OnBeforeMarkPlaced: TBCEditorMarkEvent read FOnBeforeMarkPlaced write FOnBeforeMarkPlaced;
-    property OnBeforeDeleteMark: TBCEditorMarkEvent read FOnBeforeDeleteMark write FOnBeforeDeleteMark;
-    property OnBeforeCompletionProposalExecute: TBCEditorCompletionProposalEvent read FOnBeforeCompletionProposalExecute write FOnBeforeCompletionProposalExecute;
+    property OnBeforeTokenInfoExecute: TBCEditorTokenInfoEvent read FOnBeforeTokenInfoExecute write FOnBeforeTokenInfoExecute;
     property OnMarkPanelLinePaint: TBCEditorMarkPanelLinePaintEvent read FOnMarkPanelLinePaint write FOnMarkPanelLinePaint;
     property OnCaretChanged: TBCEditorCaretChangedEvent read FOnCaretChanged write FOnCaretChanged;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
@@ -742,6 +753,7 @@ type
     property Text: string read GetText write SetText;
     property TextBetween[const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition]: string read GetTextBetween write SetTextBetween;
     property TextEntryMode: TBCEditorTextEntryMode read FTextEntryMode write SetTextEntryMode default temInsert;
+    property TokenInfo: TBCEditorTokenInfo read FTokenInfo write SetTokenInfo;
     property TopLine: Integer read FTopLine write SetTopLine;
     property Undo: TBCEditorUndo read FUndo write SetUndo;
     property UndoList: TBCEditorUndoList read FUndoList;
@@ -765,7 +777,7 @@ uses
   BCEditor.Editor.LeftMargin.Border, BCEditor.Editor.LeftMargin.LineNumbers, BCEditor.Editor.Scroll.Hint,
   BCEditor.Editor.Search.Map, BCEditor.Editor.Undo.Item, BCEditor.Editor.Utils, BCEditor.Encoding, BCEditor.Language,
   BCEditor.Highlighter.Rules, BCEditor.Export.HTML, Vcl.Themes, BCEditor.StyleHooks, BCEditor.Search.Normal,
-  BCEditor.Search.RegularExpressions, BCEditor.Search.WildCard, BCEditor.Editor.CompletionProposal.Columns
+  BCEditor.Search.RegularExpressions, BCEditor.Search.WildCard, BCEditor.Editor.CompletionProposal.Columns.Items
   {$if defined(USE_ALPHASKINS)}, Winapi.CommCtrl, sVCLUtils, sMessages, sConst, sSkinProps{$endif};
 
 type
@@ -968,6 +980,11 @@ begin
   { Sync edit }
   FSyncEdit := TBCEditorSyncEdit.Create;
   FSyncEdit.OnChange := SyncEditChanged;
+  { Token info }
+  FTokenInfo := TBCEditorTokenInfo.Create;
+  FTokenInfoTimer := TTimer.Create(Self);
+  FTokenInfoTimer.Enabled := False;
+  FTokenInfoTimer.OnTimer := OnTokenInfoTimer;
   { LeftMargin }
   FLeftMargin := TBCEditorLeftMargin.Create(Self);
   FLeftMargin.OnChange := LeftMarginChanged;
@@ -1007,6 +1024,7 @@ begin
   if Assigned(FChainedEditor) or (FLines <> FOriginalLines) then
     RemoveChainedEditor;
   FreeCompletionProposalPopupWindow;
+  FreeTokenInfoPopupWindow;
   { Do not use FreeAndNil, it first nils and then frees causing problems with code accessing FHookedCommandHandlers
     while destruction }
   FHookedCommandHandlers.Free;
@@ -1044,6 +1062,8 @@ begin
   FMatchingPair.Free;
   FCompletionProposal.Free;
   FSyncEdit.Free;
+  FTokenInfoTimer.Free;
+  FTokenInfo.Free;
   if Assigned(FMinimapShadowAlphaByteArray) then
   begin
     FreeMem(FMinimapShadowAlphaByteArray);
@@ -2161,6 +2181,7 @@ var
     LCharsBefore: Integer;
     LPToken: PChar;
     LTokenLength: Integer;
+    LLine: string;
   begin
     if not Visible then
       Exit;
@@ -2170,7 +2191,8 @@ var
       FHighlighter.ResetCurrentRange
     else
       FHighlighter.SetCurrentRange(FLines.Ranges[LCurrentLine - 2]);
-    FHighlighter.SetCurrentLine(FLines[LCurrentLine - 1]);
+    LLine := FLines[LCurrentLine - 1];
+    FHighlighter.SetCurrentLine(LLine);
     LWidth := 0;
     LLength := 0;
     LCharsBefore := 0;
@@ -2187,7 +2209,7 @@ var
         FPaintHelper.SetStyle(LHighlighterAttribute.FontStyles);
       LTokenWidth := GetTokenWidth(LTokenText, LTokenLength, LCharsBefore);
 
-      if LWidth + LTokenWidth > LMaxWidth then
+      if LTokenWidth > LMaxWidth then
       begin
         LTokenWidth := 0;
         LPToken := PChar(LTokenText);
@@ -2226,6 +2248,15 @@ var
         if LNextTokenText = '' then
           FHighlighter.Next;
         Continue;
+      end
+      else
+      if LWidth + LTokenWidth > LMaxWidth then
+      begin
+        FWordWrapLineLengths[LCacheLength] := LLength;
+        AddLineNumberIntoCache;
+        LLength := 0;
+        LWidth := 0;
+        Continue;
       end;
 
       Inc(LCharsBefore, GetTokenCharCount(LTokenText, LCharsBefore));
@@ -2233,8 +2264,11 @@ var
       Inc(LWidth, LTokenWidth);
       FHighlighter.Next;
     end;
-    FWordWrapLineLengths[LCacheLength] := LLength;
-    AddLineNumberIntoCache;
+    if (LLength > 0) or (LLine = '') then
+    begin
+      FWordWrapLineLengths[LCacheLength] := LLength;
+      AddLineNumberIntoCache;
+    end;
   end;
 
 begin
@@ -2430,7 +2464,7 @@ var
   LTextPosition: TBCEditorTextPosition;
 begin
   Result := '';
-  if GetPositionOfMouse(LTextPosition) then
+  if GetTextPositionOfMouse(LTextPosition) then
     Result := GetWordAtTextPosition(LTextPosition);
 end;
 
@@ -2511,9 +2545,9 @@ begin
       Result := FTabs.Width;
     Result := Result * FPaintHelper.FontStock.CharWidth + (ALength - 1) * FPaintHelper.FontStock.CharWidth * FTabs.Width;
   end
-  {else
-  if FPaintHelper.FixedSizeFont and (Word(AToken[1]) < 256) then
-    Exit(FPaintHelper.FontStock.CharWidth * ALength)  }
+  else
+  if FPaintHelper.FixedSizeFont and ((FEncoding = System.SysUtils.TEncoding.ANSI) or (FEncoding = System.SysUtils.TEncoding.ASCII)) then
+    Exit(FPaintHelper.FontStock.CharWidth * ALength)
   else
   begin
     GetTextExtentPoint32(FPaintHelper.StockBitmap.Canvas.Handle, AToken, ALength, LSize);
@@ -3118,10 +3152,10 @@ begin
       end
       else
       begin
-        while (Result.Char > 0) and not IsWordBreakChar(LLine[Result.Char]) do
+        while (Result.Char > 1) and not IsWordBreakChar(LLine[Result.Char]) do
           Dec(Result.Char);
 
-        if Result.Char > 0 then
+        if Result.Char > 1 then
           Inc(Result.Char)
       end;
     end;
@@ -4171,6 +4205,48 @@ begin
     end;
     if LWasSelectionAvailable or (ACommand < ecUpperCaseBlock) then
       TextCaretPosition := LOldCaretPosition;
+  end;
+end;
+
+procedure TBCBaseEditor.DoTokenInfo;
+
+  function MouseInTokenInfoRect: Boolean;
+  var
+    LPoint, LPointLeftTop, LPointRightBottom: TPoint;
+    LRect: TRect;
+  begin
+    Winapi.Windows.GetCursorPos(LPoint);
+    LRect := FTokenInfoTokenRect;
+    Result := PtInRect(LRect, LPoint);
+    if not Result then
+    begin
+      with FTokenInfoPopupWindow.ClientRect do
+      begin
+        LPointLeftTop := Point(Left, Top);
+        LPointRightBottom := Point(Left + Width, Top + Height);
+      end;
+      with FTokenInfoPopupWindow do
+      begin
+        LPointLeftTop := ClientToScreen(LPointLeftTop);
+        LPointRightBottom := ClientToScreen(LPointRightBottom);
+      end;
+      LRect := Rect(LPointLeftTop.X, LPointLeftTop.Y, LPointRightBottom.X, LPointRightBottom.Y);
+      Result := PtInRect(LRect, LPoint);
+    end;
+  end;
+
+begin
+  if Assigned(FTokenInfoPopupWindow) then
+  begin
+    if not MouseInTokenInfoRect then
+      FreeTokenInfoPopupWindow;
+  end
+  else
+  with FTokenInfoTimer do
+  begin
+    Enabled := False;
+    Interval := FTokenInfo.DelayInterval;
+    Enabled := True;
   end;
 end;
 
@@ -5733,6 +5809,51 @@ begin
     RescanCodeFoldingRanges;
 end;
 
+procedure TBCBaseEditor.OnTokenInfoTimer(ASender: TObject);
+var
+  LToken: string;
+  LPoint: TPoint;
+  LTextPosition, LPreviousTextPosition: TBCEditorTextPosition;
+  LSize: TSize;
+  LShowInfo: Boolean;
+begin
+  FTokenInfoTimer.Enabled := False;
+
+  if GetTextPositionOfMouse(LTextPosition) then
+  begin
+    LPreviousTextPosition := PreviousWordPosition(LTextPosition);
+    if LPreviousTextPosition.Line = LTextPosition.Line then
+      LTextPosition := LPreviousTextPosition
+    else
+      LTextPosition.Char := 1;
+    LToken := GetWordAtTextPosition(LTextPosition);
+    if LToken <> '' then
+    begin
+      FTokenInfoPopupWindow := TBCEditorTokenInfoPopupWindow.Create(Self);
+      with FTokenInfoPopupWindow do
+      begin
+        Assign(FTokenInfo);
+
+        LShowInfo := True;
+        if Assigned(FOnBeforeTokenInfoExecute) then
+          FOnBeforeTokenInfoExecute(Self, LToken, Content, TitleContent, LShowInfo);
+
+        if LShowInfo then
+        begin
+          LPoint := Self.ClientToScreen(DisplayPositionToPixels(TextToDisplayPosition(LTextPosition)));
+          FTokenInfoTokenRect.Left := LPoint.X;
+          FTokenInfoTokenRect.Top := LPoint.Y;
+          Inc(LPoint.Y, GetLineHeight);
+          FTokenInfoTokenRect.Bottom := LPoint.Y;
+          GetTextExtentPoint32(FPaintHelper.StockBitmap.Canvas.Handle, LToken, Length(LToken), LSize);
+          FTokenInfoTokenRect.Right := FTokenInfoTokenRect.Left + LSize.cx;
+          Execute(LPoint);
+        end;
+      end;
+    end;
+  end
+end;
+
 procedure TBCBaseEditor.OpenLink(const AURI: string; ARangeType: TBCEditorRangeType);
 var
   LURI: string;
@@ -6312,6 +6433,16 @@ var
           begin
             LTokenAttributes := LTokenAttributes + UpCase(LPText^);
             Inc(LPText);
+            if CharInSet(LPText^, ['"', '''']) then
+            begin
+              LTokenAttributes := LTokenAttributes + UpCase(LPText^);
+              Inc(LPText);
+              while (LPText^ <> BCEDITOR_NONE_CHAR) and not CharInSet(LPText^, ['"', '''']) do
+              begin
+                LTokenAttributes := LTokenAttributes + UpCase(LPText^);
+                Inc(LPText);
+              end;
+            end;
           end;
 
           LOpenToken := '<' + LTokenName + LTokenAttributes + LPText^;
@@ -6634,6 +6765,11 @@ begin
     Font.Color := AValue;
     Invalidate;
   end;
+end;
+
+procedure TBCBaseEditor.SetTokenInfo(const AValue: TBCEditorTokenInfo);
+begin
+  FTokenInfo.Assign(AValue);
 end;
 
 procedure TBCBaseEditor.SetTextEntryMode(const AValue: TBCEditorTextEntryMode);
@@ -7449,6 +7585,7 @@ begin
   AMessage.Result := 0;
 
   FreeCompletionProposalPopupWindow;
+  FreeTokenInfoPopupWindow;
 
   inherited;
 
@@ -7543,6 +7680,8 @@ begin
   inherited;
 
   FreeCompletionProposalPopupWindow;
+  FreeTokenInfoPopupWindow;
+
   if FMultiCaretPosition.Row <> -1 then
   begin
     FMultiCaretPosition.Row := -1;
@@ -7686,6 +7825,7 @@ begin
   AMessage.Result := 0;
 
   FreeCompletionProposalPopupWindow;
+  FreeTokenInfoPopupWindow;
 
   case AMessage.ScrollCode of
     SB_TOP:
@@ -8231,7 +8371,7 @@ begin
     LCurrentInput := GetCurrentInput;
     if Assigned(FOnBeforeCompletionProposalExecute) then
       FOnBeforeCompletionProposalExecute(Self, FCompletionProposal.Columns, LCurrentInput, AKey, AShift);
-    Execute(LCurrentInput, LPoint.X, LPoint.Y);
+    Execute(LCurrentInput, LPoint);
   end;
 end;
 
@@ -8585,6 +8725,20 @@ begin
     FCompletionProposalPopupWindow := nil; { Prevent WMKillFocus to free it again }
     LCompletionProposalPopupWindow.Hide;
     LCompletionProposalPopupWindow.Free;
+  end;
+end;
+
+procedure TBCBaseEditor.FreeTokenInfoPopupWindow;
+var
+  LTokenInfoPopupWindow: TBCEditorTokenInfoPopupWindow;
+begin
+  if Assigned(FTokenInfoPopupWindow) then
+  begin
+    LTokenInfoPopupWindow := FTokenInfoPopupWindow;
+    FTokenInfoPopupWindow := nil; { Prevent WMKillFocus to free it again }
+    LTokenInfoPopupWindow.Hide;
+    LTokenInfoPopupWindow.Free;
+    FTokenInfoTokenRect.Empty;
   end;
 end;
 
@@ -9014,15 +9168,20 @@ begin
         LPoint.X := FCompletionProposalPopupWindow.Left;
         LPoint.Y := FCompletionProposalPopupWindow.Top;
         LPoint := ScreenToClient(LPoint);
-        FCompletionProposal.Constraints.MaxHeight := Height - LPoint.Y - GetSystemMetrics(SM_CYVSCROLL) - 5;
-        FCompletionProposal.Constraints.MaxWidth := Width - LPoint.X - GetSystemMetrics(SM_CYHSCROLL) - 5;
+        with FCompletionProposal.Constraints do
+        begin
+          MinHeight := 0;
+          MinWidth := 0;
+          MaxHeight := Height - LPoint.Y - GetSystemMetrics(SM_CYVSCROLL) - 5;
+          MaxWidth := Width - LPoint.X - GetSystemMetrics(SM_CYHSCROLL) - 5;
+        end;
       end;
       Exit;
     end
     else
       FreeCompletionProposalPopupWindow;
 
-    if FCaret.MultiEdit.Enabled then
+    if FCaret.MultiEdit.Enabled and not FMouseOverURI then
     begin
       if ssCtrl in AShift then
       begin
@@ -9268,6 +9427,9 @@ begin
     if Assigned(FMultiCarets) and (FMultiCarets.Count > 0) then
       Exit;
   end;
+
+  if FTokenInfo.Enabled then
+    DoTokenInfo;
 
   if AShift = [] then
     FCompletionProposalResize := False;
@@ -11332,11 +11494,12 @@ var
       end;
     end
     else
+    if LText <> '' then
     begin
       SetDrawingColors(LSelected);
       LTokenLength := Length(LText);
       LTokenRect.Right := LTokenRect.Left + GetTokenWidth(LText, LTokenLength, LTokenHelper.ExpandedCharsBefore);
-      PaintToken(LText, LTokenLength);
+      PaintToken(LText, LTokenLength)
     end;
 
     if (not LSelected or LIsPartOfTokenSelected) and not AMinimap or AMinimap and (moShowSearchResults in FMinimap.Options) then
@@ -11925,7 +12088,7 @@ var
 
             if FWordWrap.Enabled then
             begin
-              if LLinePosition + LTokenLength > LLastColumn then
+              if LTokenLength > LLastColumn then
               begin
                 LNextTokenText := Copy(LTokenText, LLastColumn - LLinePosition + 1, LTokenLength);
                 LTokenText := Copy(LTokenText, 1, LLastColumn - LLinePosition);
@@ -11934,6 +12097,11 @@ var
                 PrepareToken;
                 LFirstColumn := 1;
                 LAddWrappedCount := True;
+                Break;
+              end;
+              if LLinePosition + LTokenLength > LLastColumn then
+              begin
+                LFirstColumn := 1;
                 Break;
               end;
             end
@@ -12405,17 +12573,17 @@ var
   var
     LTextCaretPosition: TBCEditorTextPosition;
 
-    function CountLines(P: PChar): Integer;
+    function CountLines(APText: PChar): Integer;
     begin
       Result := 0;
-      while P^ <> BCEDITOR_NONE_CHAR do
+      while APText^ <> BCEDITOR_NONE_CHAR do
       begin
-        if P^ = BCEDITOR_CARRIAGE_RETURN then
-          Inc(P);
-        if P^ = BCEDITOR_LINEFEED then
-          Inc(P);
+        if APText^ = BCEDITOR_CARRIAGE_RETURN then
+          Inc(APText);
+        if APText^ = BCEDITOR_LINEFEED then
+          Inc(APText);
         Inc(Result);
-        P := GetEndOfLine(P);
+        APText := GetEndOfLine(APText);
       end;
     end;
 
@@ -13067,16 +13235,18 @@ begin
   end;
 end;
 
-function TBCBaseEditor.GetPositionOfMouse(out ATextPosition: TBCEditorTextPosition): Boolean;
+function TBCBaseEditor.GetTextPositionOfMouse(out ATextPosition: TBCEditorTextPosition): Boolean;
 var
   LCursorPoint: TPoint;
 begin
   Result := False;
+
   Winapi.Windows.GetCursorPos(LCursorPoint);
   LCursorPoint := ScreenToClient(LCursorPoint);
   if (LCursorPoint.X < 0) or (LCursorPoint.Y < 0) or (LCursorPoint.X > Self.Width) or (LCursorPoint.Y > Self.Height) then
     Exit;
   ATextPosition := PixelsToTextPosition(LCursorPoint.X, LCursorPoint.Y);
+
   Result := True;
 end;
 

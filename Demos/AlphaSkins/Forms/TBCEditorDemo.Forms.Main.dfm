@@ -64,6 +64,7 @@ inherited MainForm: TMainForm
       Margins.Right = 5
       Margins.Bottom = 5
       Align = alClient
+      DefaultNodeHeight = 13
       DragOperations = []
       EditDelay = 0
       Header.AutoSizeIndex = 1
@@ -134,13 +135,20 @@ inherited MainForm: TMainForm
       CompletionProposal.CloseChars = '()[]. '
       CompletionProposal.Columns = <
         item
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -12
+          Font.Name = 'Courier New'
+          Font.Style = []
+          Items = <>
+          Title.Font.Charset = DEFAULT_CHARSET
+          Title.Font.Color = clWindowText
+          Title.Font.Height = -12
+          Title.Font.Name = 'Courier New'
+          Title.Font.Style = []
         end>
-      CompletionProposal.Font.Charset = DEFAULT_CHARSET
-      CompletionProposal.Font.Color = clWindowText
-      CompletionProposal.Font.Height = -11
-      CompletionProposal.Font.Name = 'Courier New'
-      CompletionProposal.Font.Style = []
-      CompletionProposal.Options = [cpoFiltered, cpoParseItemsFromText, cpoResizeable]
+      CompletionProposal.Options = [cpoAutoConstraints, cpoAddHighlighterKeywords, cpoFiltered, cpoParseItemsFromText, cpoResizeable]
+      CompletionProposal.SecondaryShortCut = 0
       CompletionProposal.ShortCut = 16416
       CompletionProposal.Trigger.Chars = '.'
       CompletionProposal.Trigger.Enabled = False
@@ -177,6 +185,17 @@ inherited MainForm: TMainForm
       SpecialChars.Style = scsDot
       SyncEdit.ShortCut = 24650
       TabOrder = 0
+      TokenInfo.Enabled = True
+      TokenInfo.Font.Charset = DEFAULT_CHARSET
+      TokenInfo.Font.Color = clWindowText
+      TokenInfo.Font.Height = -11
+      TokenInfo.Font.Name = 'Courier New'
+      TokenInfo.Font.Style = []
+      TokenInfo.Title.Font.Charset = DEFAULT_CHARSET
+      TokenInfo.Title.Font.Color = clWindowText
+      TokenInfo.Title.Font.Height = -11
+      TokenInfo.Title.Font.Name = 'Courier New'
+      TokenInfo.Title.Font.Style = []
       WordWrap.Indicator.Bitmap.Data = {
         7E030000424D7E0300000000000036000000280000000F0000000E0000000100
         2000000000004803000000000000000000000000000000000000FF00FF00FF00
@@ -456,7 +475,7 @@ inherited MainForm: TMainForm
           Left = 342
           Top = 0
           Width = 3
-          Height = 21
+          Height = 13
           Margins.Left = 0
           Margins.Top = 0
           Margins.Bottom = 0
@@ -467,13 +486,15 @@ inherited MainForm: TMainForm
     end
   end
   inherited SkinManager: TBCSkinManager
+    Effects.AllowAnimation = False
+    Effects.AllowAeroBluring = False
     Effects.AllowGlowing = False
     IsDefault = True
     MenuSupport.UseExtraLine = False
     Options.ChangeSysColors = True
     SkinInfo = 'N/A'
     ThirdParty.ThirdEdits = ' '#13#10'TBCEditorPrintPreview'#13#10
-    ThirdParty.ThirdVirtualTrees = 'TBCObjectInspector'#13#10
+    ThirdParty.ThirdVirtualTrees = 'TBCObjectInspector'#13#10'TVirtualDrawTree'#13#10
     Left = 166
     Top = 26
   end
@@ -603,6 +624,7 @@ inherited MainForm: TMainForm
     Top = 22
   end
   inherited SkinProvider: TsSkinProvider
+    AllowAnimation = False
     Left = 248
     Top = 26
   end

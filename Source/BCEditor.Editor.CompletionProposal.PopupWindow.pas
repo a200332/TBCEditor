@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Messages, System.Classes, System.Types, Vcl.Forms, Vcl.Controls, Vcl.Graphics, BCEditor.Utils,
-  BCEditor.Types, BCEditor.Editor.CompletionProposal.Columns, BCEditor.Editor.PopupWindow,
+  BCEditor.Types, BCEditor.Editor.CompletionProposal.Columns.Items, BCEditor.Editor.PopupWindow,
   BCEditor.Editor.CompletionProposal;
 
 {$if defined(USE_VCL_STYLES)}
@@ -16,7 +16,7 @@ type
   TBCEditorCompletionProposalPopupWindow = class(TBCEditorPopupWindow)
   strict private
     FAdjustCompletionStart: Boolean;
-    FBitmapBuffer: TBitmap;
+    FBitmapBuffer: Vcl.Graphics.TBitmap;
     FCanFree: Boolean;
     FCaseSensitive: Boolean;
     FCompletionProposal: TBCEditorCompletionProposal;
@@ -62,7 +62,7 @@ type
     function GetCurrentInput: string;
     procedure Assign(ASource: TPersistent); override;
     procedure MouseWheel(AShift: TShiftState; AWheelDelta: Integer; AMousePos: TPoint);
-    procedure Execute(const ACurrentString: string; const ALeft: Integer; const ATop: Integer);
+    procedure Execute(const ACurrentString: string; const APoint: TPoint);
     property CanFree: Boolean read FCanFree;
     property CurrentString: string read FCurrentString write SetCurrentString;
     property Items: TBCEditorCompletionProposalColumnItems read GetItems;
@@ -75,31 +75,28 @@ implementation
 
 uses
   Winapi.Windows, System.SysUtils, System.UITypes, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands,
-  BCEditor.Editor.Utils, BCEditor.Consts, System.Math, Vcl.Dialogs
+  BCEditor.Editor.Utils, BCEditor.Consts, System.Math, Vcl.Dialogs, BCEditor.Editor.CompletionProposal.Columns
   {$if defined(USE_VCL_STYLES) or not defined(USE_VCL_STYLES) and not defined(USE_ALPHASKINS)}, Vcl.Themes{$endif};
 
 constructor TBCEditorCompletionProposalPopupWindow.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
+  FCanFree := True;
+  FCaseSensitive := False;
+  FFiltered := False;
+  FItemHeight := 0;
+  FMargin := 2;
+  FValueSet := False;
   Visible := False;
 
   AddKeyHandlers;
 
+  FItems := TStringList.Create;
   FBitmapBuffer := Vcl.Graphics.TBitmap.Create;
-  FFiltered := False;
-  FCaseSensitive := False;
-
-  FItemHeight := 0;
-  FMargin := 2;
 
   FOnValidate := HandleOnValidate;
   OnDblClick := HandleDblClick;
-
-  FValueSet := False;
-
-  FCanFree := True;
-  FItems := TStringList.Create;
 end;
 
 destructor TBCEditorCompletionProposalPopupWindow.Destroy;
@@ -504,7 +501,7 @@ begin
   Invalidate;
 end;
 
-procedure TBCEditorCompletionProposalPopupWindow.Execute(const ACurrentString: string; const ALeft: Integer; const ATop: Integer);
+procedure TBCEditorCompletionProposalPopupWindow.Execute(const ACurrentString: string; const APoint: TPoint);
 var
   LPoint: TPoint;
 
@@ -513,8 +510,8 @@ var
     LWidth: Integer;
     LHeight: Integer;
   begin
-    LPoint.X := ALeft - TextWidth(FBitmapBuffer.Canvas, ACurrentString);
-    LPoint.Y := ATop;
+    LPoint.X := APoint.X - TextWidth(FBitmapBuffer.Canvas, ACurrentString);
+    LPoint.Y := APoint.Y;
 
     LWidth := FFormWidth;
     LHeight := FItemHeight * FCompletionProposal.VisibleLines + FTitleHeight + 2;
@@ -732,7 +729,9 @@ end;
 
 function TBCEditorCompletionProposalPopupWindow.GetItems: TBCEditorCompletionProposalColumnItems;
 begin
-  Result := FCompletionProposal.Columns[FCompletionProposal.CompletionColumnIndex].Items;
+  Result := nil;
+  if FCompletionProposal.CompletionColumnIndex <  FCompletionProposal.Columns.Count then
+    Result := FCompletionProposal.Columns[FCompletionProposal.CompletionColumnIndex].Items;
 end;
 
 procedure TBCEditorCompletionProposalPopupWindow.UpdateScrollBar;

@@ -1,4 +1,4 @@
-Latest release version <a href="https://github.com/bonecode/TBCEditor/releases">1.9.0</a>
+The latest release version <a href="https://github.com/bonecode/TBCEditor/releases">1.9.0</a>
 
 Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
 
@@ -42,13 +42,7 @@ TBCEditor Control Demo v. 2.0.0 (dev).
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
-The latest update: 17.01.2017 22:17, UTC+02:00
-
-Demo source build requires 
-
-- <a href="http://www.alphaskins.com/">AlphaSkins</a> (commercial) 
-- <a href="https://github.com/bonecode/Common">Common</a>
-- <a href="https://github.com/bonecode/Components/tree/master/BCControls">BCControls</a>
+The latest update: 18.01.2017 19:16, UTC+02:00
 
 <h3>Documentation</h3>
 
