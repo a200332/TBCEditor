@@ -11,20 +11,28 @@ unit BCEditor.Editor.TokenInfo.PopupWindow;
 interface
 
 uses
-  System.Classes, System.Types, Vcl.Graphics, BCEditor.Lines, BCEditor.Editor.PopupWindow, BCEditor.Editor.TokenInfo;
+  System.Classes, System.Types, Vcl.Graphics, BCEditor.Types, BCEditor.Lines, BCEditor.Editor.PopupWindow,
+  BCEditor.Editor.TokenInfo;
 
 type
-  TBCEditorTokenInfoEvent = procedure(ASender: TObject; const AToken: string; AContent: TBCEditorLines; ATitleContent: TBCEditorLines; var AShowInfo: Boolean) of object;
+  TBCEditorTokenInfoEvent = procedure(ASender: TObject; const ATextPosition: TBCEditorTextPosition;
+    const AToken: string; AContent: TBCEditorLines; ATitleContent: TBCEditorLines; var AShowInfo: Boolean) of object;
+
+  TBCEditorTokenInfoTextStyle = (tsBold, tsItalic, tsReference);
+  TBCEditorTokenInfoTextStyles = set of TBCEditorTokenInfoTextStyle;
 
   TBCEditorTokenInfoPopupWindow = class(TBCEditorPopupWindow)
   strict private
     FBitmapBuffer: Vcl.Graphics.TBitmap;
     FContent: TBCEditorLines;
     FContentTextTokensList: TList;
+    FMaxHeight: Integer;
+    FMaxWidth: Integer;
     FTitleContent: TBCEditorLines;
     FTitleContentTextTokensList: TList;
     FTokenInfo: TBCEditorTokenInfo;
     procedure ParseText(AText: TBCEditorLines; ATokens: TList; AFont: TFont);
+    procedure SetStyles(const AStyles: TBCEditorTokenInfoTextStyles);
   protected
     procedure Paint; override;
   public
@@ -40,12 +48,12 @@ type
 implementation
 
 uses
-  BCEditor.Consts;
+  Winapi.Windows, BCEditor.Consts, BCEditor.Utils, System.UITypes;
+
+const
+  MARGIN_LEFT = 3;
 
 type
-  TBCEditorTokenInfoTextStyle = (tsBold, tsItalic, tsReference);
-  TBCEditorTokenInfoTextStyles = set of TBCEditorTokenInfoTextStyle;
-
   TBCEditorTokenInfoTextToken = record
     Value: string;
     Styles: TBCEditorTokenInfoTextStyles;
@@ -61,16 +69,14 @@ begin
   inherited Create(AOwner);
 
   FContent := TBCEditorLines.Create(nil);
+  FContent.Clear;
   FContentTextTokensList := TList.Create;
 
   FTitleContent := TBCEditorLines.Create(nil);
+  FTitleContent.Clear;
   FTitleContentTextTokensList := TList.Create;
 
   FBitmapBuffer := Vcl.Graphics.TBitmap.Create;
-
-  // TODO remove these
-  Width := 300;
-  Height := 300;
 end;
 
 destructor TBCEditorTokenInfoPopupWindow.Destroy;
@@ -103,8 +109,11 @@ begin
     FTokenInfo := ASource as TBCEditorTokenInfo;
     with FTokenInfo do
     begin
-      // TODO
-
+      if not (tioAutoSize in Options) then
+      begin
+        Self.Width := Width;
+        Self.Height := Height;
+      end;
     end
   end
   else
@@ -113,31 +122,141 @@ end;
 
 procedure TBCEditorTokenInfoPopupWindow.Execute(const APoint: TPoint);
 begin
+  FMaxHeight := 0;
+  FMaxWidth := 0;
+
+  if FTokenInfo.Title.Visible then
+    ParseText(FTitleContent, FTitleContentTextTokensList, FTokenInfo.Title.Font);
   ParseText(FContent, FContentTextTokensList, FTokenInfo.Font);
-  ParseText(FTitleContent, FTitleContentTextTokensList, FTokenInfo.Title.Font);
+
+  if tioAutoSize in FTokenInfo.Options then
+  begin
+    // TODO if height goes over the bottom, show scroll bar
+    Height := FMaxHeight + 2;
+    Width := FMaxWidth + 2;
+  end;
+
+  Height := Height;
+  Width := Width + 2 * MARGIN_LEFT;
 
   Show(APoint);
 end;
 
+procedure TBCEditorTokenInfoPopupWindow.SetStyles(const AStyles: TBCEditorTokenInfoTextStyles);
+begin
+  FBitmapBuffer.Canvas.Font.Style := [];
+  if tsBold in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsBold];
+  if tsItalic in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsItalic];
+  if tsReference in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsUnderline];
+end;
+
 procedure TBCEditorTokenInfoPopupWindow.Paint;
+var
+  LIndex: Integer;
+  LPTextToken: PBCEditorTokenInfoTextToken;
+  LPreviousStyles: TBCEditorTokenInfoTextStyles;
+  LLeft, LTop, LPreviousTop: Integer;
+  LText: string;
+  LRect: TRect;
+
+  procedure PaintToken;
+  begin
+    SetStyles(LPreviousStyles);
+
+    if tsReference in LPreviousStyles then
+      FBitmapBuffer.Canvas.Font.Color := FTokenInfo.Title.Colors.Reference;
+
+    FBitmapBuffer.Canvas.TextOut(LLeft, LTop, LText);
+  end;
+
 begin
   with FBitmapBuffer do
   begin
-    Canvas.Brush.Color := clRed;
+    Canvas.Brush.Color := FTokenInfo.Colors.Background;
     Height := 0;
     Width := ClientWidth;
     Height := ClientHeight;
+    LLeft := MARGIN_LEFT;
+    LTop := 0;
+    LRect := Rect(0, 0, 0, 0);
+
+    if FTitleContentTextTokensList.Count > 0 then
+    begin
+      Canvas.Brush.Color := FTokenInfo.Title.Colors.Background;
+
+      LRect.Width := ClientWidth;
+      LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[FTitleContentTextTokensList.Count - 1]);
+      LRect.Height := LPTextToken^.Rect.Bottom;
+
+      Winapi.Windows.ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+
+      LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[0]);
+      LPreviousStyles := LPTextToken^.Styles;
+      LPreviousTop := LPTextToken^.Rect.Top;
+      for LIndex := 0 to FTitleContentTextTokensList.Count - 1 do
+      begin
+        Canvas.Font.Assign(FTokenInfo.Title.Font);
+
+        LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[LIndex]);
+
+        if (LPreviousStyles <> LPTextToken^.Styles) or (LPreviousTop <> LPTextToken^.Rect.Top) then
+        begin
+          PaintToken;
+          LText := '';
+          LLeft := LPTextToken^.Rect.Left;
+          LTop := LPTextToken^.Rect.Top;
+        end;
+        LPreviousStyles := LPTextToken^.Styles;
+        LPreviousTop :=  LPTextToken^.Rect.Top;
+        LText := LText + LPTextToken^.Value;
+      end;
+      if LText <> '' then
+        PaintToken;
+    end;
+
+    if FContentTextTokensList.Count > 0 then
+    begin
+      LText := '';
+      LLeft := MARGIN_LEFT;
+
+      Canvas.Brush.Color := FTokenInfo.Colors.Background;
+
+      LPTextToken := PBCEditorTokenInfoTextToken(FContentTextTokensList[0]);
+      LPreviousStyles := LPTextToken^.Styles;
+      LPreviousTop := LPTextToken^.Rect.Top;
+      LTop := LPTextToken^.Rect.Top;
+      for LIndex := 0 to FContentTextTokensList.Count - 1 do
+      begin
+        Canvas.Font.Assign(FTokenInfo.Font);
+
+        LPTextToken := PBCEditorTokenInfoTextToken(FContentTextTokensList[LIndex]);
+
+        if (LPreviousStyles <> LPTextToken^.Styles) or (LPreviousTop <> LPTextToken^.Rect.Top) then
+        begin
+          PaintToken;
+          LText := '';
+          LLeft := LPTextToken^.Rect.Left;
+          LTop := LPTextToken^.Rect.Top;
+        end;
+        LPreviousStyles := LPTextToken^.Styles;
+        LPreviousTop :=  LPTextToken^.Rect.Top;
+        LText := LText + LPTextToken^.Value;
+      end;
+      if LText <> '' then
+        PaintToken;
+    end;
   end;
   Canvas.Draw(0, 0, FBitmapBuffer);
 end;
 
 procedure TBCEditorTokenInfoPopupWindow.ParseText(AText: TBCEditorLines; ATokens: TList; AFont: TFont);
 const
-  TOKEN_REFERENCE = 0;
-  TOKEN_BOLD = 1;
-  TOKEN_ITALIC = 2;
-  OPEN_TOKENS: array of string = ['<A HREF="', '<B>', '<I>'];
-  CLOSE_TOKENS: array of string = ['</A>', '</B>', '</I>'];
+  CTOKEN_REFERENCE = 0;
+  CTOKEN_BOLD = 1;
+  CTOKEN_ITALIC = 2;
 var
   LIndex: Integer;
   LPText, LPToken, LPBookmark: PChar;
@@ -147,6 +266,18 @@ var
   LCurrentRect: TRect;
   LCurrentReference: string;
   LTextHeight: Integer;
+  LOpenTokens: array [0..2] of string;
+  LCloseTokens: array [0..2] of string;
+
+  procedure AddTokens;
+  begin
+    LOpenTokens[CTOKEN_REFERENCE] := '<A HREF="';
+    LOpenTokens[CTOKEN_BOLD] := '<B>';
+    LOpenTokens[CTOKEN_ITALIC] := '<I>';
+    LCloseTokens[CTOKEN_REFERENCE] := '</A>';
+    LCloseTokens[CTOKEN_BOLD] := '</B>';
+    LCloseTokens[CTOKEN_ITALIC] := '</I>';
+  end;
 
   procedure ClearCurrentValue;
   begin
@@ -160,7 +291,10 @@ var
     New(LPTextToken);
     LPTextToken^.Value := LCurrentValue;
     LPTextToken^.Styles := LCurrentStyles;
+    SetStyles(LCurrentStyles);
     LCurrentRect.Right := LCurrentRect.Left + FBitmapBuffer.Canvas.TextWidth(LCurrentValue);
+    if LCurrentRect.Right > FMaxWidth then
+      FMaxWidth := LCurrentRect.Right;
     LPTextToken^.Rect := LCurrentRect;
     LPTextToken^.Reference := LCurrentReference;
     ATokens.Add(LPTextToken);
@@ -171,77 +305,83 @@ var
   procedure NextLine;
   begin
     AddTextToken;
-    LCurrentRect.Left := 0;
+    LCurrentRect.Left := MARGIN_LEFT;
+    Inc(FMaxHeight, LTextHeight);
     Inc(LCurrentRect.Top, LTextHeight);
     Inc(LCurrentRect.Bottom, LTextHeight);
   end;
 
 begin
+  if AText.Text = '' then
+    Exit;
+
+  AddTokens;
+
   FBitmapBuffer.Canvas.Font.Assign(AFont);
-  LTextHeight := FBitmapBuffer.Canvas.TextHeight('X');
-  LCurrentRect.Left := 0;
-  LCurrentRect.Top := 0;
+  LTextHeight := FBitmapBuffer.Canvas.TextHeight('X') + 2;
+  LCurrentRect.Left := MARGIN_LEFT;
+  LCurrentRect.Top := FMaxHeight;
   LCurrentRect.Bottom := LTextHeight;
+  Inc(FMaxHeight, LTextHeight);
   LPText := PChar(AText.Text);
   ClearCurrentValue;
   while LPText^ <> BCEDITOR_NONE_CHAR do
   begin
     if LPText^ = '<' then
+    for LIndex := 0 to Length(LOpenTokens) - 1 do
     begin
-      for LIndex := 0 to Length(OPEN_TOKENS) - 1 do
+      LPToken := PChar(LOpenTokens[LIndex]);
+      LPBookmark := LPText;
+      while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPToken^ <> BCEDITOR_NONE_CHAR) and (CaseUpper(LPText^) = LPToken^) do
       begin
-        LPToken := PChar(OPEN_TOKENS[LIndex]);
-        LPBookmark := LPText;
-        while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPToken^ <> BCEDITOR_NONE_CHAR) and (UpCase(LPText^) = LPToken^) do
-        begin
-          Inc(LPText);
-          Inc(LPToken);
-        end;
-        if LPToken^ = BCEDITOR_NONE_CHAR then
-        begin
-          if LCurrentValue <> '' then
-            AddTextToken;
+        Inc(LPText);
+        Inc(LPToken);
+      end;
+      if LPToken^ = BCEDITOR_NONE_CHAR then
+      begin
+        if LCurrentValue <> '' then
+          AddTextToken;
 
-          case LIndex of
-            TOKEN_REFERENCE:
+        case LIndex of
+          CTOKEN_REFERENCE:
+            begin
+              while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPText^ <> '"') do
               begin
-                while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPText^ <> '"') do
-                begin
-                  LCurrentReference := LCurrentReference + LPText^;
-                  Inc(LPText);
-                end;
-                Inc(LPText); // '>'
-                Include(LCurrentStyles, tsReference);
+                LCurrentReference := LCurrentReference + LPText^;
+                Inc(LPText);
               end;
-            TOKEN_BOLD:
-              Include(LCurrentStyles, tsBold);
-            TOKEN_ITALIC:
-              Include(LCurrentStyles, tsItalic);
-          end;
-          Break;
-        end
-        else
-          LPText := LPBookmark;
-      end;
-
-      for LIndex := 0 to Length(CLOSE_TOKENS) - 1 do
-      begin
-        LPToken := PChar(CLOSE_TOKENS[LIndex]);
-        LPBookmark := LPText;
-        while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPToken^ <> BCEDITOR_NONE_CHAR) and (UpCase(LPText^) = LPToken^) do
-        begin
-          Inc(LPText);
-          Inc(LPToken);
+              Inc(LPText, 2); // '">'
+              Include(LCurrentStyles, tsReference);
+            end;
+          CTOKEN_BOLD:
+            Include(LCurrentStyles, tsBold);
+          CTOKEN_ITALIC:
+            Include(LCurrentStyles, tsItalic);
         end;
-        if LPToken^ = BCEDITOR_NONE_CHAR then
-        begin
-          if LCurrentValue <> '' then
-            AddTextToken;
-          Break;
-        end
-        else
-          LPText := LPBookmark;
+        Break;
+      end
+      else
+        LPText := LPBookmark;
+    end;
+
+    if LPText^ = '<' then
+    for LIndex := 0 to Length(LCloseTokens) - 1 do
+    begin
+      LPToken := PChar(LCloseTokens[LIndex]);
+      LPBookmark := LPText;
+      while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPToken^ <> BCEDITOR_NONE_CHAR) and (CaseUpper(LPText^) = LPToken^) do
+      begin
+        Inc(LPText);
+        Inc(LPToken);
       end;
+      if LPToken^ = BCEDITOR_NONE_CHAR then
+      begin
+        if LCurrentValue <> '' then
+          AddTextToken;
+        Break;
+      end
+      else
+        LPText := LPBookmark;
     end;
 
     if LPText^ = BCEDITOR_CARRIAGE_RETURN then
@@ -253,9 +393,14 @@ begin
       Continue;
     end;
 
-    LCurrentValue := LCurrentValue + LPText^;
-    Inc(LPText);
+    if LPText^ <> BCEDITOR_NONE_CHAR then
+    begin
+      LCurrentValue := LCurrentValue + LPText^;
+      Inc(LPText);
+    end;
   end;
+  if LCurrentValue <> '' then
+    AddTextToken;
 end;
 
 end.

@@ -101,7 +101,8 @@ end;
 
 destructor TBCEditorCompletionProposalPopupWindow.Destroy;
 begin
-  FCompletionProposal.VisibleLines := ClientHeight div FItemHeight;
+  if FItemHeight <> 0 then
+    FCompletionProposal.VisibleLines := ClientHeight div FItemHeight;
   FCompletionProposal.Width := Width;
 
   FCanFree := False;
@@ -360,6 +361,8 @@ begin
         Canvas.LineTo(LRect.Right - 1, LRect.Bottom - 1);
         LColumnWidth := LColumnWidth + LColumn.Width;
       end;
+      LRect.Right := ClientRect.Right;
+      LRect.Left := 0;
       LRect.Top := LRect.Bottom;
       LRect.Bottom := LRect.Top + FItemHeight;
     end;
@@ -374,13 +377,11 @@ begin
         Canvas.Brush.Color := FCompletionProposal.Colors.SelectedBackground;
         Canvas.Pen.Color := FCompletionProposal.Colors.SelectedBackground;
         Canvas.Rectangle(LRect);
-        Canvas.Font.Color := FCompletionProposal.Colors.SelectedText;
       end
       else
       begin
         Canvas.Brush.Color := FCompletionProposal.Colors.Background;
         Canvas.Pen.Color := FCompletionProposal.Colors.Background;
-        Canvas.Font.Color := FCompletionProposal.Colors.Foreground;
       end;
       LColumnWidth := 0;
       for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
@@ -388,6 +389,12 @@ begin
         LItemIndex := FItemIndexArray[TopLine + LIndex];
         LColumn := FCompletionProposal.Columns[LColumnIndex];
         Canvas.Font.Assign(LColumn.Font);
+
+        if LIndex + TopLine = FSelectedLine then
+          Canvas.Font.Color := FCompletionProposal.Colors.SelectedText
+        else
+          Canvas.Font.Color := FCompletionProposal.Colors.Foreground;
+
         if LItemIndex < LColumn.Items.Count then
         begin
           LLeft := 0;
@@ -425,9 +432,9 @@ procedure TBCEditorCompletionProposalPopupWindow.SetCurrentString(const AValue: 
     LCompareString := Copy(GetItems[AIndex].Value, 1, Length(AValue));
 
     if FCaseSensitive then
-      Result := WideCompareStr(LCompareString, AValue) = 0
+      Result := CompareStr(LCompareString, AValue) = 0
     else
-      Result := WideCompareText(LCompareString, AValue) = 0;
+      Result := CompareStr(LCompareString, AValue) = 0;
   end;
 
   procedure RecalcList;
@@ -624,6 +631,8 @@ begin
     CurrentString := ACurrentString;
     if Length(FItemIndexArray) > 0 then
     begin
+      if cpoShowShadow in FCompletionProposal.Options then
+        ActivateDropShadow(Handle);
       UpdateScrollBar;
       Show(LPoint);
     end;

@@ -113,8 +113,10 @@ begin
   if FLockCount = 0 then
   begin
     FChanged := AReason in BCEDITOR_MODIFYING_CHANGE_REASONS;
+
     if FChanged then
       Inc(FChangeCount);
+
     LNewItem := TBCEditorUndoItem.Create;
     with LNewItem do
     begin
@@ -209,7 +211,8 @@ begin
   begin
     Result := FItems[LIndex];
     FItems.Delete(LIndex);
-    if Result.ChangeReason in BCEDITOR_MODIFYING_CHANGE_REASONS then
+    FChanged := Result.ChangeReason in BCEDITOR_MODIFYING_CHANGE_REASONS;
+    if FChanged then
       Dec(FChangeCount);
   end;
 end;
@@ -256,10 +259,10 @@ end;
 
 procedure TBCEditorUndoList.AddGroupBreak;
 var
-  LDummyTextPosition: TBCEditorTextPosition;
+  LTextPosition: TBCEditorTextPosition;
 begin
   if (LastChangeBlockNumber = 0) and (LastChangeReason <> crGroupBreak) then
-    AddChange(crGroupBreak, LDummyTextPosition, LDummyTextPosition, LDummyTextPosition, '', smNormal);
+    AddChange(crGroupBreak, LTextPosition, LTextPosition, LTextPosition, '', smNormal);
 end;
 
 function TBCEditorUndoList.GetItems(const AIndex: Integer): TBCEditorUndoItem;

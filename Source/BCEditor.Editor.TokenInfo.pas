@@ -3,7 +3,8 @@ unit BCEditor.Editor.TokenInfo;
 interface
 
 uses
-  System.Classes, Vcl.Graphics, BCEditor.Types, BCEditor.Editor.TokenInfo.Colors, BCEditor.Editor.TokenInfo.Title;
+  System.Classes, Vcl.Controls, Vcl.Graphics, BCEditor.Types, BCEditor.Editor.TokenInfo.Colors,
+  BCEditor.Editor.TokenInfo.Title;
 
 const
   BCEDITOR_TOKEN_INFO_DEFAULT_OPTIONS = [tioAutoSize];

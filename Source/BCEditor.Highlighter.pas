@@ -10,6 +10,7 @@ uses
 type
   TBCEditorHighlighter = class(TObject)
   strict private
+    FAllDelimiters: TBCEditorCharSet;
     FAttributes: TStringList;
     FBeginningOfLine: Boolean;
     FCodeFoldingRangeCount: Integer;
@@ -142,6 +143,8 @@ begin
 
   FTemporaryCurrentTokens := TList.Create;
 
+  FAllDelimiters := BCEDITOR_DEFAULT_DELIMITERS + BCEDITOR_ABSOLUTE_DELIMITERS;
+
   FLoading := False;
 end;
 
@@ -203,6 +206,7 @@ var
   LParser: TBCEditorAbstractParser;
   LKeyword: PChar;
   LCloseParent: Boolean;
+  LDelimiters: TBCEditorCharSet;
 begin
   while FTemporaryCurrentTokens.Count > 0 do
   begin
@@ -265,11 +269,16 @@ begin
     begin
       FCurrentToken := FCurrentRange.DefaultToken;
 
+      if FCurrentRange.UseDelimitersForText then
+        LDelimiters := FCurrentRange.Delimiters
+      else
+        LDelimiters := FAllDelimiters;
+
       if Ord(FCurrentLine[FRunPosition - 1]) < 256 then
-      while (Ord(FCurrentLine[FRunPosition]) < 256) and not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) do
+      while (Ord(FCurrentLine[FRunPosition]) < 256) and not CharInSet(FCurrentLine[FRunPosition], LDelimiters) do
         Inc(FRunPosition)
       else
-      while (Ord(FCurrentLine[FRunPosition]) > 255) and not CharInSet(FCurrentLine[FRunPosition], FCurrentRange.Delimiters) do
+      while (Ord(FCurrentLine[FRunPosition]) > 255) and not CharInSet(FCurrentLine[FRunPosition], LDelimiters) do
         Inc(FRunPosition)
     end
     else

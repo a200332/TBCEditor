@@ -183,6 +183,7 @@ end;
 
 procedure TBCEditorHighlighterImportJSON.ImportColorsEditorProperties(AEditorObject: TJsonObject);
 var
+  LIndex: Integer;
   LColorsObject, LFontsObject, LFontSizesObject: TJsonObject;
   LEditor: TBCBaseEditor;
 begin
@@ -249,7 +250,9 @@ begin
       LEditor.Font.Name := StrToStrDef(LFontsObject['Text'].Value, LEditor.Font.Name);
       LEditor.Minimap.Font.Name := StrToStrDef(LFontsObject['Minimap'].Value, LEditor.Minimap.Font.Name);
       LEditor.CodeFolding.Hint.Font.Name := StrToStrDef(LFontsObject['CodeFoldingHint'].Value, LEditor.CodeFolding.Hint.Font.Name);
-      LEditor.CompletionProposal.Columns[0].Font.Name := StrToStrDef(LFontsObject['CompletionProposal'].Value, LEditor.CompletionProposal.Columns[0].Font.Name);
+      if cpoUseHighlighterColumnFont in LEditor.CompletionProposal.Options then
+        for LIndex := 0 to LEditor.CompletionProposal.Columns.Count - 1 do
+          LEditor.CompletionProposal.Columns[LIndex].Font.Name := StrToStrDef(LFontsObject['CompletionProposal'].Value, LEditor.CompletionProposal.Columns[0].Font.Name);
     end;
     LFontSizesObject := AEditorObject['FontSizes'].ObjectValue;
     if Assigned(LFontSizesObject) then
@@ -258,7 +261,9 @@ begin
       LEditor.Font.Size := StrToIntDef(LFontSizesObject['Text'].Value, LEditor.Font.Size);
       LEditor.Minimap.Font.Size := StrToIntDef(LFontSizesObject['Minimap'].Value, LEditor.Minimap.Font.Size);
       LEditor.CodeFolding.Hint.Font.Size := StrToIntDef(LFontSizesObject['CodeFoldingHint'].Value, LEditor.CodeFolding.Hint.Font.Size);
-      LEditor.CompletionProposal.Columns[0].Font.Size := StrToIntDef(LFontSizesObject['CompletionProposal'].Value, LEditor.CompletionProposal.Columns[0].Font.Size);
+      if cpoUseHighlighterColumnFont in LEditor.CompletionProposal.Options then
+        for LIndex := 0 to LEditor.CompletionProposal.Columns.Count - 1 do
+          LEditor.CompletionProposal.Columns[LIndex].Font.Size := StrToIntDef(LFontSizesObject['CompletionProposal'].Value, LEditor.CompletionProposal.Columns[0].Font.Size);
     end;
   end;
 end;
@@ -375,6 +380,8 @@ begin
           ARange.CloseOnTerm := LPropertiesObject.B['CloseOnTerm'];
           ARange.SkipWhitespace := LPropertiesObject.B['SkipWhitespace'];
           ARange.CloseParent := LPropertiesObject.B['CloseParent'];
+          ARange.UseDelimitersForText := LPropertiesObject.B['UseDelimitersForText'];
+
           LAlternativeCloseArray := LPropertiesObject['AlternativeClose'].ArrayValue;
           if LAlternativeCloseArray.Count > 0 then
           begin
@@ -655,6 +662,8 @@ procedure TBCEditorHighlighterImportJSON.ImportCodeFoldingOptions(ACodeFoldingRe
 var
   LCodeFoldingObject: TJsonObject;
 begin
+  FHighlighter.MatchingPairHighlight := True;
+
   if ACodeFoldingObject.Contains('Options') then
   begin
     LCodeFoldingObject := ACodeFoldingObject['Options'].ObjectValue;
