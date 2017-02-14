@@ -3,7 +3,8 @@ unit BCEditor.Editor.PopupWindow;
 interface
 
 uses
-  Winapi.Messages, System.Classes, System.Types, Vcl.Controls{$if defined(USE_ALPHASKINS)}, sCommonData, acSBUtils,
+  Winapi.Messages, System.Classes, System.Types, Vcl.Forms,
+  Vcl.Controls{$if defined(USE_ALPHASKINS)}, sCommonData, acSBUtils,
   sStyleSimply{$endif};
 
 type
@@ -15,11 +16,13 @@ type
 {$endif}
     FOriginalHeight: Integer;
     FOriginalWidth: Integer;
+    FPopupParent: TCustomForm;
+    procedure SetPopupParent(Value: TCustomForm);
     procedure WMEraseBkgnd(var AMessage: TMessage); message WM_ERASEBKGND;
-    procedure WMMouseActivate(var AMessage: TWMMouseActivate); message WM_MOUSEACTIVATE;
 {$if defined(USE_VCL_STYLES)}
     procedure WMNCPaint(var AMessage: TWMNCPaint); message WM_NCPAINT;
 {$endif}
+    procedure WMActivate(var Msg: TWMActivate); message WM_ACTIVATE;
   protected
     FActiveControl: TWinControl;
     procedure CreateParams(var Params: TCreateParams); override;
@@ -33,6 +36,7 @@ type
     procedure SetOriginalSize;
     procedure WndProc(var AMessage: TMessage); override;
     property ActiveControl: TWinControl read FActiveControl;
+    property PopupParent: TCustomForm read FPopupParent write SetPopupParent;
 {$if defined(USE_ALPHASKINS)}
     property SkinData: TsScrollWndData read FCommonData write FCommonData;
 {$endif}
@@ -57,8 +61,8 @@ begin
   ControlStyle := ControlStyle + [csNoDesignVisible, csReplicatable];
 
   Ctl3D := False;
+  FPopupParent := nil;
   ParentCtl3D := False;
-  Parent := AOwner as TWinControl;
   Visible := False;
 end;
 
@@ -97,6 +101,20 @@ begin
   FOriginalWidth := Width;
 end;
 
+procedure TBCEditorPopupWindow.SetPopupParent(Value: TCustomForm);
+begin
+  if (Value <> FPopupParent) then
+  begin
+    if FPopupParent <> nil then
+      FPopupParent.RemoveFreeNotification(Self);
+    FPopupParent := Value;
+    if Value <> nil then
+      Value.FreeNotification(Self);
+    if HandleAllocated and not (csDesigning in ComponentState) then
+      RecreateWnd;
+  end;
+end;
+
 procedure TBCEditorPopupWindow.IncSize(const AWidth: Integer; const AHeight: Integer);
 var
   LHeight: Integer;
@@ -120,7 +138,7 @@ end;
 
 procedure TBCEditorPopupWindow.Hide;
 begin
-  SetWindowPos(Handle, 0, 0, 0, 0, 0, SWP_NOZORDER or SWP_NOMOVE or SWP_NOSIZE or SWP_NOACTIVATE or SWP_HIDEWINDOW);
+  SetWindowPos(Handle, 0, 0, 0, 0, 0, SWP_HIDEWINDOW or SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER);
   Visible := False;
 end;
 
@@ -129,21 +147,19 @@ begin
   inherited CreateParams(Params);
 
   Params.Style := WS_POPUP or WS_BORDER;
+  Params.WindowClass.Style := Params.WindowClass.Style or CS_DROPSHADOW;
+
+  if (Assigned(PopupParent)) then
+    Params.WndParent := PopupParent.Handle;
 end;
 
 procedure TBCEditorPopupWindow.Show(Origin: TPoint);
 begin
   SetBounds(Origin.X, Origin.Y, Width, Height);
 
-  SetWindowPos(Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE or SWP_NOACTIVATE or SWP_SHOWWINDOW or
-    SWP_NOSENDCHANGING or SWP_NOOWNERZORDER or SWP_NOMOVE);
+  SetWindowPos(Handle, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW or SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER);
 
   Visible := True;
-end;
-
-procedure TBCEditorPopupWindow.WMMouseActivate(var AMessage: TWMMouseActivate);
-begin
-  AMessage.Result := MA_NOACTIVATE;
 end;
 
 procedure TBCEditorPopupWindow.WMEraseBkgnd(var AMessage: TMessage);
@@ -182,6 +198,17 @@ begin
     StyleServices.PaintBorder(Self, False);
 end;
 {$endif}
+
+procedure TBCEditorPopupWindow.WMActivate(var Msg: TWMActivate);
+begin
+  if ((Msg.Active <> WA_INACTIVE) and Assigned(PopupParent)) then
+    SendMessage(PopupParent.Handle, WM_NCACTIVATE, WPARAM(TRUE), 0);
+
+  inherited;
+
+  if Msg.Active = WA_INACTIVE then
+    Hide();
+end;
 
 procedure TBCEditorPopupWindow.WndProc(var AMessage: TMessage);
 begin

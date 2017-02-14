@@ -133,6 +133,8 @@ const
   { Comments }
   ecLineComment = 900;
   ecBlockComment = 901;
+  { CompletionProposal }
+  ecCompletionProposal = 910;
 
   ecUserFirst = 1001;
 

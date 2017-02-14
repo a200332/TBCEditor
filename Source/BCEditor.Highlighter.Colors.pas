@@ -28,6 +28,7 @@ type
     function GetElement(const Name: string): PBCEditorHighlighterElement;
     procedure Clear;
     procedure LoadFromFile(const AFileName: string);
+    procedure LoadFromResource(const ResName: string; const ResType: PChar);
     procedure LoadFromStream(AStream: TStream);
     property FileName: string read FFileName write FFileName;
     property Info: TBCEditorHighlighterInfo read FInfo write FInfo;
@@ -98,6 +99,15 @@ begin
   finally
     LStream.Free;
   end;
+end;
+
+procedure TBCEditorHighlighterColors.LoadFromResource(const ResName: string; const ResType: PChar);
+var
+  Stream: TResourceStream;
+begin
+  Stream := TResourceStream.Create(HInstance, PChar(ResName), ResType);
+  LoadFromStream(Stream);
+  Stream.Free();
 end;
 
 procedure TBCEditorHighlighterColors.LoadFromStream(AStream: TStream);

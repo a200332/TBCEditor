@@ -11,7 +11,7 @@ uses
   BCEditor.Editor.KeyCommands, BCEditor.Editor.LeftMargin, BCEditor.Editor.MatchingPair, BCEditor.Editor.Minimap,
   BCEditor.Editor.Replace, BCEditor.Editor.RightMargin, BCEditor.Editor.Scroll, BCEditor.Editor.Search,
   BCEditor.Editor.Directories, BCEditor.Editor.Selection, BCEditor.Editor.SkipRegions, BCEditor.Editor.SpecialChars,
-  BCEditor.Editor.Tabs, BCEditor.Editor.Undo, BCEditor.Editor.Undo.List, BCEditor.Editor.WordWrap,
+  BCEditor.Editor.Tabs, BCEditor.Editor.Undo.List, BCEditor.Editor.WordWrap,
   BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter, BCEditor.Highlighter.Attributes,
   BCEditor.KeyboardHandler, BCEditor.Lines, BCEditor.Search, BCEditor.PaintHelper, BCEditor.Editor.SyncEdit,
   BCEditor.Editor.TokenInfo, BCEditor.Utils, BCEditor.Editor.UnknownChars, BCEditor.Editor.TokenInfo.PopupWindow
@@ -49,8 +49,6 @@ type
 {$endif}
     FCompletionProposal: TBCEditorCompletionProposal;
     FCompletionProposalPopupWindow: TBCEditorCompletionProposalPopupWindow;
-    FCompletionProposalResize: Boolean;
-    FCompletionProposalResizeCursor: TCursor;
     FCompletionProposalTimer: TTimer;
     FCurrentMatchingPair: TBCEditorMatchingTokenResult;
     FCurrentMatchingPairMatch: TBCEditorMatchingPairMatch;
@@ -201,8 +199,8 @@ type
     FTokenInfoTimer: TTimer;
     FTokenInfoTokenRect: TRect;
     FTopLine: Integer;
-    FUndo: TBCEditorUndo;
     FUndoList: TBCEditorUndoList;
+    FUndoOptions: TBCEditorUndoOptions;
     FUndoRedo: Boolean;
     FUnknownCharHigh: Byte;
     FUnknownChars: TBCEditorUnknownChars;
@@ -231,7 +229,6 @@ type
     function GetCharAtCursor: Char;
     function GetCharWidth: Integer;
     function GetCommentAtTextPosition(const ATextPosition: TBCEditorTextPosition): string;
-    function GetCompletionProposalCursor(const APoint: TPoint): TCursor;
     function GetDisplayCaretPosition: TBCEditorDisplayPosition;
     function GetDisplayLineNumber(const ADisplayLineNumber: Integer): Integer;
     function GetDisplayPosition(const AColumn: Integer; const ARow: Integer): TBCEditorDisplayPosition;
@@ -252,11 +249,11 @@ type
     function GetScrollPageWidth: Integer;
     function GetSearchResultCount: Integer;
     function GetSelectedRow(const Y: Integer): Integer;
-    function GetSelectedText: string;
+    function GetSelText: string;
     function GetSelectionAvailable: Boolean;
     function GetSelectionBeginPosition: TBCEditorTextPosition;
     function GetSelectionEndPosition: TBCEditorTextPosition;
-    function GetSelectionStart: Integer;
+    function GetSelStart: Integer;
     function GetText: string;
     function GetTextBetween(const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition): string;
     function GetTextCaretPosition: TBCEditorTextPosition;
@@ -392,13 +389,13 @@ type
     procedure SetRightMargin(const AValue: TBCEditorRightMargin);
     procedure SetScroll(const AValue: TBCEditorScroll);
     procedure SetSearch(const AValue: TBCEditorSearch);
-    procedure SetSelectedText(const AValue: string);
+    procedure SetSelText(const AValue: string);
     procedure SetSelectedWord;
     procedure SetSelection(const AValue: TBCEditorSelection);
     procedure SetSelectionBeginPosition(const AValue: TBCEditorTextPosition);
     procedure SetSelectionEndPosition(const AValue: TBCEditorTextPosition);
-    procedure SetSelectionLength(const AValue: Integer);
-    procedure SetSelectionStart(const AValue: Integer);
+    procedure SetSelLength(const AValue: Integer);
+    procedure SetSelStart(const AValue: Integer);
     procedure SetSpecialChars(const AValue: TBCEditorSpecialChars);
     procedure SetSyncEdit(const AValue: TBCEditorSyncEdit);
     procedure SetTabs(const AValue: TBCEditorTabs);
@@ -410,7 +407,6 @@ type
     procedure SetTextEntryMode(const AValue: TBCEditorTextEntryMode);
     procedure SetTokenInfo(const AValue: TBCEditorTokenInfo);
     procedure SetTopLine(const AValue: Integer);
-    procedure SetUndo(const AValue: TBCEditorUndo);
     procedure SetUnknownChars(const AValue: TBCEditorUnknownChars);
     procedure SetUnknownCharHigh;
     procedure SetWordBlock(const ATextPosition: TBCEditorTextPosition);
@@ -439,7 +435,6 @@ type
     procedure WMIMEChar(var AMessage: TMessage); message WM_IME_CHAR;
     procedure WMIMEComposition(var AMessage: TMessage); message WM_IME_COMPOSITION;
     procedure WMIMENotify(var AMessage: TMessage); message WM_IME_NOTIFY;
-    procedure WMKillFocus(var AMessage: TWMKillFocus); message WM_KILLFOCUS;
     procedure WMNCPaint(var AMessage: TMessage); message WM_NCPAINT;
     procedure WMPaint(var AMessage: TWMPaint); message WM_PAINT;
     procedure WMPaste(var AMessage: TMessage); message WM_PASTE;
@@ -452,11 +447,12 @@ type
     procedure WMWindowPosChanging(var Message: TWMWindowPosChanging); message WM_WINDOWPOSCHANGING;
     procedure WordWrapChanged(ASender: TObject);
   protected
+    procedure ChangeScale(M, D: Integer); override;
     function DoMouseWheel(AShift: TShiftState; AWheelDelta: Integer; AMousePos: TPoint): Boolean; override;
     function DoOnReplaceText(const ASearch, AReplace: string; ALine, AColumn: Integer; DeleteLine: Boolean): TBCEditorReplaceAction;
     function DoSearchMatchNotFoundWraparoundDialog: Boolean; virtual;
     function GetReadOnly: Boolean; virtual;
-    function GetSelectionLength: Integer;
+    function GetSelLength: Integer;
     function PixelsToDisplayPosition(const X, Y: Integer): TBCEditorDisplayPosition;
     function PixelAndRowToDisplayPosition(const X, ARow: Integer; const ALineText: string = ''): TBCEditorDisplayPosition;
     procedure ChainLinesChanged(ASender: TObject);
@@ -606,8 +602,8 @@ type
     procedure DeleteMark(AMark: TBCEditorMark);
     procedure DeleteLines(const ALineNumber: Integer; const ACount: Integer);
     procedure DeleteWhitespace;
-    procedure DoUndo;
-    procedure DoRedo;
+    procedure DoRedo(); deprecated 'Use Redo'; // 2017-02-12
+    procedure DoUndo(); deprecated 'Use Undo'; // 2017-02-12
     procedure DragDrop(ASource: TObject; X, Y: Integer); override;
     procedure EndUndoBlock;
     procedure EndUpdate;
@@ -635,6 +631,7 @@ type
     procedure MoveCaretToEOF;
     procedure Notification(AComponent: TComponent; AOperation: TOperation); override;
     procedure PasteFromClipboard;
+    procedure Redo();
     procedure RegisterCommandHandler(const AHookedCommandEvent: TBCEditorHookedCommandEvent; AHandlerData: Pointer);
     procedure RemoveChainedEditor;
     procedure RemoveKeyDownHandler(AHandler: TKeyEvent);
@@ -656,9 +653,11 @@ type
     procedure SetMark(const AIndex: Integer; const ATextPosition: TBCEditorTextPosition; const AImageIndex: Integer;
       const AColor: TColor = clNone);
     procedure SetOption(const AOption: TBCEditorOption; const AEnabled: Boolean);
+    procedure SetUndoOption(const AOption: TBCEditorUndoOption; const AEnabled: Boolean);
     procedure Sort(const ASortOrder: TBCEditorSortOrder = soAsc; const ACaseSensitive: Boolean = False);
     procedure ToggleBookmark(const AIndex: Integer = -1);
     procedure ToggleSelectedCase(const ACase: TBCEditorCase = cNone);
+    procedure Undo();
     procedure UnfoldAll(const AFromLineNumber: Integer = -1; const AToLineNumber: Integer = -1);
     procedure UnfoldAllByLevel(const AFromLevel: Integer; const AToLevel: Integer);
     procedure UnhookEditorLines;
@@ -751,13 +750,15 @@ type
     property Scroll: TBCEditorScroll read FScroll write SetScroll;
     property Search: TBCEditorSearch read FSearch write SetSearch;
     property SearchResultCount: Integer read GetSearchResultCount;
+    property SelAvail: Boolean read GetSelectionAvailable;
     property Selection: TBCEditorSelection read FSelection write SetSelection;
     property SelectionAvailable: Boolean read GetSelectionAvailable;
     property SelectionBeginPosition: TBCEditorTextPosition read GetSelectionBeginPosition write SetSelectionBeginPosition;
     property SelectionEndPosition: TBCEditorTextPosition read GetSelectionEndPosition write SetSelectionEndPosition;
-    property SelectionLength: Integer read GetSelectionLength write SetSelectionLength;
-    property SelectionStart: Integer read GetSelectionStart write SetSelectionStart;
-    property SelectedText: string read GetSelectedText write SetSelectedText;
+    property SelLength: Integer read GetSelLength write SetSelLength;
+    property SelStart: Integer read GetSelStart write SetSelStart;
+    property SelectedText: string read GetSelText write SetSelText;
+    property SelText: string read GetSelText write SetSelText;
 {$if defined(USE_ALPHASKINS)}
     property SkinData: TsScrollWndData read FCommonData write FCommonData;
 {$endif}
@@ -770,7 +771,7 @@ type
     property TextEntryMode: TBCEditorTextEntryMode read FTextEntryMode write SetTextEntryMode default temInsert;
     property TokenInfo: TBCEditorTokenInfo read FTokenInfo write SetTokenInfo;
     property TopLine: Integer read FTopLine write SetTopLine;
-    property Undo: TBCEditorUndo read FUndo write SetUndo;
+    property UndoOptions: TBCEditorUndoOptions read FUndoOptions write FUndoOptions;
     property UndoList: TBCEditorUndoList read FUndoList;
     property UnknownChars: TBCEditorUnknownChars read FUnknownChars write SetUnknownChars;
     property URIOpener: Boolean read FURIOpener write FURIOpener;
@@ -905,7 +906,7 @@ begin
   ParentColor := False;
   { Undo & Redo }
   FUndoRedo := False;
-  FUndo := TBCEditorUndo.Create;
+  FUndoOptions := [uoGroupUndo];
   FUndoList := TBCEditorUndoList.Create;
   FUndoList.OnAddedUndo := UndoRedoAdded;
   FOriginalUndoList := FUndoList;
@@ -1071,7 +1072,6 @@ begin
   FSearch.Free;
   FReplace.Free;
   FTabs.Free;
-  FUndo.Free;
   FSpecialChars.Free;
   FUnknownChars.Free;
   FCaret.Free;
@@ -1322,7 +1322,7 @@ var
   LIndex: Integer;
   LDisplayPosition: TBCEditorDisplayPosition;
 begin
-  if GetSelectionLength > 0 then
+  if GetSelLength > 0 then
     Exit;
 
   if Assigned(FMultiCarets) and (FMultiCarets.Count > 0) then
@@ -1407,34 +1407,6 @@ begin
         Result := Copy(LTextLine, LTextPosition.Char, LStop - LTextPosition.Char);
     end;
   end;
-end;
-
-function TBCBaseEditor.GetCompletionProposalCursor(const APoint: TPoint): TCursor;
-var
-  LPoint: TPoint;
-  LRightSide, LBottomSide: Boolean;
-begin
-  with FCompletionProposalPopupWindow do
-  begin
-    LPoint.X := Left + Width;
-    LPoint.Y := Top + Height;
-  end;
-
-  LPoint := ScreenToClient(LPoint);
-
-  LRightSide := (APoint.X > LPoint.X) and (APoint.X < LPoint.X + 7);
-  LBottomSide := (APoint.Y > LPoint.Y) and (APoint.Y < LPoint.Y + 7);
-
-  if LRightSide and LBottomSide then
-    Result := crSizeNWSE
-  else
-  if LRightSide then
-    Result := crSizeWE
-  else
-  if LBottomSide then
-    Result := crSizeNS
-  else
-    Result := crDefault;
 end;
 
 function TBCBaseEditor.GetCharWidth: Integer;
@@ -1966,7 +1938,7 @@ begin
     ((FSelectionBeginPosition.Line <> FSelectionEndPosition.Line) and (FSelection.ActiveMode <> smColumn)));
 end;
 
-function TBCBaseEditor.GetSelectedText: string;
+function TBCBaseEditor.GetSelText: string;
 
   function CopyPadded(const AValue: string; Index, Count: Integer): string;
   var
@@ -2166,17 +2138,14 @@ begin
   Result := Max(1, Min(TopLine + Y div GetLineHeight, FLineNumbersCount));
 end;
 
-function TBCBaseEditor.GetSelectionStart: Integer;
+function TBCBaseEditor.GetSelStart: Integer;
 begin
   Result := TextPositionToCharIndex(SelectionBeginPosition);
 end;
 
-function TBCBaseEditor.GetText: string;
+function TBCBaseEditor.GetText(): string;
 begin
-  if csDestroying in ComponentState then
-    Result := ''
-  else
-    Result := FLines.Text;
+  Result := FLines.Text;
 end;
 
 function TBCBaseEditor.GetTextBetween(const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition): string;
@@ -4771,7 +4740,7 @@ begin
   LLength := FLines.StringLength(LTextCaretPosition.Line);
 
   if GetSelectionAvailable then
-    FUndoList.AddChange(crDelete, LTextCaretPosition, SelectionBeginPosition, SelectionEndPosition, GetSelectedText,
+    FUndoList.AddChange(crDelete, LTextCaretPosition, SelectionBeginPosition, SelectionEndPosition, GetSelText,
       FSelection.ActiveMode)
   else
   begin
@@ -5006,7 +4975,7 @@ begin
     LTextCaretPosition := TextCaretPosition;
     if GetSelectionAvailable then
     begin
-      FUndoList.AddChange(crDelete, LTextCaretPosition, SelectionBeginPosition, SelectionEndPosition, GetSelectedText,
+      FUndoList.AddChange(crDelete, LTextCaretPosition, SelectionBeginPosition, SelectionEndPosition, GetSelText,
         FSelection.ActiveMode);
       DoSelectedText('');
       LTextCaretPosition := FSelectionBeginPosition;
@@ -5137,82 +5106,85 @@ var
   LTempBitmap: Vcl.Graphics.TBitmap;
   LBackgroundColor, LForegroundColor: TColor;
 begin
-  LPoint := DisplayPositionToPixels(ADisplayCaretPosition);
-  Y := 0;
-  X := 0;
-  LCaretHeight := 1;
-  LCaretWidth := FPaintHelper.CharWidth;
+  if (HandleAllocated) then
+  begin
+    LPoint := DisplayPositionToPixels(ADisplayCaretPosition);
+    Y := 0;
+    X := 0;
+    LCaretHeight := 1;
+    LCaretWidth := FPaintHelper.CharWidth;
 
-  if Assigned(FMultiCarets) and (FMultiCarets.Count > 0) or (FMultiCaretPosition.Row <> -1) then
-  begin
-    LBackgroundColor := FCaret.MultiEdit.Colors.Background;
-    LForegroundColor := FCaret.MultiEdit.Colors.Foreground;
-    LCaretStyle := FCaret.MultiEdit.Style
-  end
-  else
-  begin
-    LBackgroundColor := FCaret.NonBlinking.Colors.Background;
-    LForegroundColor := FCaret.NonBlinking.Colors.Foreground;
-    if FTextEntryMode = temInsert then
-      LCaretStyle := FCaret.Styles.Insert
+    if Assigned(FMultiCarets) and (FMultiCarets.Count > 0) or (FMultiCaretPosition.Row <> -1) then
+    begin
+      LBackgroundColor := FCaret.MultiEdit.Colors.Background;
+      LForegroundColor := FCaret.MultiEdit.Colors.Foreground;
+      LCaretStyle := FCaret.MultiEdit.Style
+    end
     else
-      LCaretStyle := FCaret.Styles.Overwrite;
-  end;
+    begin
+      LBackgroundColor := FCaret.NonBlinking.Colors.Background;
+      LForegroundColor := FCaret.NonBlinking.Colors.Foreground;
+      if FTextEntryMode = temInsert then
+        LCaretStyle := FCaret.Styles.Insert
+      else
+        LCaretStyle := FCaret.Styles.Overwrite;
+    end;
 
-  case LCaretStyle of
-    csHorizontalLine, csThinHorizontalLine:
-      begin
-        if LCaretStyle = csHorizontalLine then
-          LCaretHeight := 2;
-        Y := GetLineHeight - LCaretHeight;
-        Inc(LPoint.Y, Y);
-        Inc(LPoint.X);
-      end;
-    csHalfBlock:
-      begin
-        LCaretHeight := GetLineHeight div 2;
-        Y := GetLineHeight div 2;
-        Inc(LPoint.Y, Y);
-        Inc(LPoint.X);
-      end;
-    csBlock:
-      begin
-        LCaretHeight := GetLineHeight;
-        Inc(LPoint.X);
-      end;
-    csVerticalLine, csThinVerticalLine:
-      begin
-        LCaretWidth := 1;
-        if LCaretStyle = csVerticalLine then
-          LCaretWidth := 2;
-        LCaretHeight := GetLineHeight;
-        X := 1;
-      end;
-  end;
-  LTempBitmap := Vcl.Graphics.TBitmap.Create;
-  try
-    { Background }
-    LTempBitmap.Canvas.Pen.Color := LBackgroundColor;
-    LTempBitmap.Canvas.Brush.Color := LBackgroundColor;
-    { Size }
-    LTempBitmap.Width := FPaintHelper.CharWidth;
-    LTempBitmap.Height := GetLineHeight;
-    { Character }
-    LTempBitmap.Canvas.Brush.Style := bsClear;
-    LTempBitmap.Canvas.Font.Name := Font.Name;
-    LTempBitmap.Canvas.Font.Color := LForegroundColor;
-    LTempBitmap.Canvas.Font.Style := Font.Style;
-    LTempBitmap.Canvas.Font.Height := Font.Height;
-    LTempBitmap.Canvas.Font.Size := Font.Size;
+    case LCaretStyle of
+      csHorizontalLine, csThinHorizontalLine:
+        begin
+          if LCaretStyle = csHorizontalLine then
+            LCaretHeight := 2;
+          Y := GetLineHeight - LCaretHeight;
+          Inc(LPoint.Y, Y);
+          Inc(LPoint.X);
+        end;
+      csHalfBlock:
+        begin
+          LCaretHeight := GetLineHeight div 2;
+          Y := GetLineHeight div 2;
+          Inc(LPoint.Y, Y);
+          Inc(LPoint.X);
+        end;
+      csBlock:
+        begin
+          LCaretHeight := GetLineHeight;
+          Inc(LPoint.X);
+        end;
+      csVerticalLine, csThinVerticalLine:
+        begin
+          LCaretWidth := 1;
+          if LCaretStyle = csVerticalLine then
+            LCaretWidth := 2;
+          LCaretHeight := GetLineHeight;
+          X := 1;
+        end;
+    end;
+    LTempBitmap := Vcl.Graphics.TBitmap.Create;
+    try
+      { Background }
+      LTempBitmap.Canvas.Pen.Color := LBackgroundColor;
+      LTempBitmap.Canvas.Brush.Color := LBackgroundColor;
+      { Size }
+      LTempBitmap.Width := FPaintHelper.CharWidth;
+      LTempBitmap.Height := GetLineHeight;
+      { Character }
+      LTempBitmap.Canvas.Brush.Style := bsClear;
+      LTempBitmap.Canvas.Font.Name := Font.Name;
+      LTempBitmap.Canvas.Font.Color := LForegroundColor;
+      LTempBitmap.Canvas.Font.Style := Font.Style;
+      LTempBitmap.Canvas.Font.Height := Font.Height;
+      LTempBitmap.Canvas.Font.Size := Font.Size;
 
-    if ADisplayCaretPosition.Column <= Length(FLines[ADisplayCaretPosition.Row - 1]) then
-      LTempBitmap.Canvas.TextOut(X, 0, FLines[ADisplayCaretPosition.Row - 1][ADisplayCaretPosition.Column]);
+      if ADisplayCaretPosition.Column <= Length(FLines[ADisplayCaretPosition.Row - 1]) then
+        LTempBitmap.Canvas.TextOut(X, 0, FLines[ADisplayCaretPosition.Row - 1][ADisplayCaretPosition.Column]);
 
-    Canvas.CopyRect(Rect(LPoint.X + FCaret.Offsets.Left, LPoint.Y + FCaret.Offsets.Top,
-      LPoint.X + FCaret.Offsets.Left + LCaretWidth, LPoint.Y + FCaret.Offsets.Top + LCaretHeight), LTempBitmap.Canvas,
-      Rect(0, Y, LCaretWidth, Y + LCaretHeight));
-  finally
-    LTempBitmap.Free
+      Canvas.CopyRect(Rect(LPoint.X + FCaret.Offsets.Left, LPoint.Y + FCaret.Offsets.Top,
+        LPoint.X + FCaret.Offsets.Left + LCaretWidth, LPoint.Y + FCaret.Offsets.Top + LCaretHeight), LTempBitmap.Canvas,
+        Rect(0, Y, LCaretWidth, Y + LCaretHeight));
+    finally
+      LTempBitmap.Free
+    end;
   end;
 end;
 
@@ -5630,7 +5602,7 @@ procedure TBCBaseEditor.MoveCaretAndSelection(const ABeforeTextPosition, AAfterT
 var
   LReason: TBCEditorChangeReason;
 begin
-  if not (uoGroupUndo in FUndo.Options) and UndoList.CanUndo then
+  if not (uoGroupUndo in FUndoOptions) and UndoList.CanUndo then
     FUndoList.AddGroupBreak;
 
   if not ASelectionCommand then
@@ -5868,6 +5840,7 @@ end;
 
 procedure TBCBaseEditor.OnTokenInfoTimer(ASender: TObject);
 var
+  LControl: TWinControl;
   LToken: string;
   LPoint: TPoint;
   LTextPosition, LPreviousTextPosition: TBCEditorTextPosition;
@@ -5889,6 +5862,11 @@ begin
       FTokenInfoPopupWindow := TBCEditorTokenInfoPopupWindow.Create(Self);
       with FTokenInfoPopupWindow do
       begin
+        LControl := Self;
+        while Assigned(LControl) and not (LControl is TCustomForm) do
+          LControl := LControl.Parent;
+        if LControl is TCustomForm then
+          PopupParent := TCustomForm(LControl);
         Assign(FTokenInfo);
 
         LShowInfo := False;
@@ -6846,7 +6824,10 @@ begin
   begin
     FTextEntryMode := AValue;
     if not (csDesigning in ComponentState) then
+    begin
       ResetCaret;
+      Invalidate();
+    end;
   end;
 end;
 
@@ -6919,7 +6900,7 @@ begin
     if AValue and Assigned(FOnModified) then
       FOnModified(Self);
 
-    if (uoGroupUndo in FUndo.Options) and UndoList.CanUndo and not AValue then
+    if (uoGroupUndo in FUndoOptions) and UndoList.CanUndo and not AValue then
       FUndoList.AddGroupBreak;
 
     if not FModified then
@@ -6974,7 +6955,7 @@ begin
   FSearch.Assign(AValue);
 end;
 
-procedure TBCBaseEditor.SetSelectedText(const AValue: string);
+procedure TBCBaseEditor.SetSelText(const AValue: string);
 var
   LTextCaretPosition, LBlockStartPosition, LBlockEndPosition: TBCEditorTextPosition;
 begin
@@ -6989,7 +6970,7 @@ begin
     LBlockEndPosition := FSelectionEndPosition;
 
     if GetSelectionAvailable then
-      FUndoList.AddChange(crDelete, LTextCaretPosition, LBlockStartPosition, LBlockEndPosition, GetSelectedText,
+      FUndoList.AddChange(crDelete, LTextCaretPosition, LBlockStartPosition, LBlockEndPosition, GetSelText,
         FSelection.ActiveMode)
     else
       FSelection.ActiveMode := FSelection.Mode;
@@ -7058,12 +7039,12 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.SetSelectionLength(const AValue: Integer);
+procedure TBCBaseEditor.SetSelLength(const AValue: Integer);
 begin
   SelectionEndPosition := CharIndexToTextPosition(AValue, SelectionBeginPosition, False);
 end;
 
-procedure TBCBaseEditor.SetSelectionStart(const AValue: Integer);
+procedure TBCBaseEditor.SetSelStart(const AValue: Integer);
 begin
   SelectionBeginPosition := CharIndexToTextPosition(AValue);
 end;
@@ -7135,11 +7116,6 @@ begin
         (FTopLine / Max(LDisplayLineCount - FVisibleLines, 1)))), 1);
     UpdateScrollBars;
   end;
-end;
-
-procedure TBCBaseEditor.SetUndo(const AValue: TBCEditorUndo);
-begin
-  FUndo.Assign(AValue);
 end;
 
 procedure TBCBaseEditor.SetUnknownCharHigh;
@@ -7662,7 +7638,6 @@ var
 begin
   AMessage.Result := 0;
 
-  FreeCompletionProposalPopupWindow;
   FreeTokenInfoPopupWindow;
 
   inherited;
@@ -7751,27 +7726,6 @@ begin
     end;
   end;
   inherited;
-end;
-
-procedure TBCBaseEditor.WMKillFocus(var AMessage: TWMKillFocus);
-begin
-  inherited;
-
-  FreeCompletionProposalPopupWindow;
-  FreeTokenInfoPopupWindow;
-
-  if FMultiCaretPosition.Row <> -1 then
-  begin
-    FMultiCaretPosition.Row := -1;
-    Invalidate;
-  end;
-  CommandProcessor(ecLostFocus, BCEDITOR_NONE_CHAR, nil);
-  if Focused or FAlwaysShowCaret then
-    Exit;
-  HideCaret;
-  Winapi.Windows.DestroyCaret;
-  if not Selection.Visible and GetSelectionAvailable then
-    Invalidate;
 end;
 
 procedure TBCBaseEditor.WMNCPaint(var AMessage: TMessage);
@@ -7887,7 +7841,7 @@ end;
 
 procedure TBCBaseEditor.WMUndo(var AMessage: TMessage);
 begin
-  DoUndo;
+  Undo();
 end;
 
 procedure TBCBaseEditor.WMVScroll(var AMessage: TWMScroll);
@@ -7902,7 +7856,6 @@ begin
   Invalidate;
   AMessage.Result := 0;
 
-  FreeCompletionProposalPopupWindow;
   FreeTokenInfoPopupWindow;
 
   case AMessage.ScrollCode of
@@ -7998,6 +7951,11 @@ end;
 
 { Protected declarations }
 
+procedure TBCBaseEditor.ChangeScale(M, D: Integer);
+begin
+  FCompletionProposal.ChangeScale(M, D);
+end;
+
 function TBCBaseEditor.DoMouseWheel(AShift: TShiftState; AWheelDelta: Integer; AMousePos: TPoint): Boolean;
 var
   LWheelClicks: Integer;
@@ -8044,7 +8002,7 @@ begin
   Result := FReadOnly;
 end;
 
-function TBCBaseEditor.GetSelectionLength: Integer;
+function TBCBaseEditor.GetSelLength: Integer;
 begin
   if GetSelectionAvailable then
     Result := TextPositionToCharIndex(SelectionEndPosition) - TextPositionToCharIndex(SelectionBeginPosition)
@@ -8444,6 +8402,7 @@ end;
 
 procedure TBCBaseEditor.DoExecuteCompletionProposal(const AKey: Word = 0; AShift: TShiftState = []);
 var
+  LControl: TWinControl;
   LIndex, LColumnIndex: Integer;
   LPoint: TPoint;
   LCurrentInput: string;
@@ -8456,11 +8415,14 @@ begin
   LPoint := ClientToScreen(DisplayPositionToPixels(DisplayCaretPosition));
   Inc(LPoint.Y, GetLineHeight);
 
-  FreeCompletionProposalPopupWindow;
-
   FCompletionProposalPopupWindow := TBCEditorCompletionProposalPopupWindow.Create(Self);
   with FCompletionProposalPopupWindow do
   begin
+    LControl := Self;
+    while Assigned(LControl) and not (LControl is TCustomForm) do
+      LControl := LControl.Parent;
+    if LControl is TCustomForm then
+      PopupParent := TCustomForm(LControl);
     OnCanceled := FOnCompletionProposalCanceled;
     OnSelected := FOnCompletionProposalSelected;
     Assign(FCompletionProposal);
@@ -8487,64 +8449,18 @@ begin
     LCurrentInput := GetCurrentInput;
     LCanExecute := True;
     if Assigned(FOnBeforeCompletionProposalExecute) then
-      FOnBeforeCompletionProposalExecute(Self, FCompletionProposal.Columns, LCurrentInput, AKey, AShift, LCanExecute);
+      FOnBeforeCompletionProposalExecute(Self, FCompletionProposal.Columns,
+        LCurrentInput, AKey, AShift, LCanExecute);
     if LCanExecute then
-      Execute(LCurrentInput, LPoint);
+      Execute(LCurrentInput, LPoint)
+    else
+      FreeCompletionProposalPopupWindow;
   end;
 end;
 
-procedure TBCBaseEditor.DoUndo;
-
-  procedure RemoveGroupBreak;
-  var
-    LUndoItem: TBCEditorUndoItem;
-  begin
-    if FUndoList.LastChangeReason = crGroupBreak then
-    begin
-      LUndoItem := FUndoList.PopItem;
-      LUndoItem.Free;
-      FRedoList.AddGroupBreak;
-    end;
-  end;
-
-var
-  LUndoItem: TBCEditorUndoItem;
-  LLastChangeBlockNumber: Integer;
-  LLastChangeReason: TBCEditorChangeReason;
-  LLastChangeString: string;
-  LIsPasteAction: Boolean;
-  LIsKeepGoing: Boolean;
+procedure TBCBaseEditor.DoUndo();
 begin
-  if ReadOnly then
-    Exit;
-
-  FUndoRedo := True;
-
-  RemoveGroupBreak;
-
-  LLastChangeBlockNumber := FUndoList.LastChangeBlockNumber;
-  LLastChangeReason := FUndoList.LastChangeReason;
-  LLastChangeString := FUndoList.LastChangeString;
-  LIsPasteAction := LLastChangeReason = crPaste;
-
-  LUndoItem := FUndoList.PeekItem;
-  if Assigned(LUndoItem) then
-    repeat
-      UndoItem;
-      LUndoItem := FUndoList.PeekItem;
-      LIsKeepGoing := False;
-      if Assigned(LUndoItem) then
-      begin
-        if uoGroupUndo in FUndo.Options then
-          LIsKeepGoing := LIsPasteAction and (FUndoList.LastChangeString = LLastChangeString) or
-            (LLastChangeReason = LUndoItem.ChangeReason) and (LUndoItem.ChangeBlockNumber = LLastChangeBlockNumber) or
-            (LUndoItem.ChangeBlockNumber <> 0) and (LUndoItem.ChangeBlockNumber = LLastChangeBlockNumber);
-        LLastChangeReason := LUndoItem.ChangeReason;
-        LIsPasteAction := LLastChangeReason = crPaste;
-      end;
-    until not LIsKeepGoing;
-
-  FUndoRedo := False;
+  Undo();
 end;
 
 procedure TBCBaseEditor.DoKeyPressW(var AMessage: TWMKey);
@@ -8837,7 +8753,7 @@ procedure TBCBaseEditor.FreeCompletionProposalPopupWindow;
 var
   LCompletionProposalPopupWindow: TBCEditorCompletionProposalPopupWindow;
 begin
-  if Assigned(FCompletionProposalPopupWindow) and FCompletionProposalPopupWindow.CanFree then
+  if Assigned(FCompletionProposalPopupWindow) then
   begin
     LCompletionProposalPopupWindow := FCompletionProposalPopupWindow;
     FCompletionProposalPopupWindow := nil; { Prevent WMKillFocus to free it again }
@@ -8983,9 +8899,6 @@ begin
     if Assigned(LData) then
       FreeMem(LData);
   end;
-
-  if Assigned(FCompletionProposalPopupWindow) and not FCompletionProposalPopupWindow.Visible then
-    FreeCompletionProposalPopupWindow;
 
   if not ReadOnly and FCompletionProposal.Enabled and not Assigned(FCompletionProposalPopupWindow) then
   begin
@@ -9236,7 +9149,6 @@ begin
       Self.FSpecialChars.Assign(FSpecialChars);
       Self.FSyncEdit.Assign(FSyncEdit);
       Self.FTabs.Assign(FTabs);
-      Self.FUndo.Assign(FUndo);
       Self.FWordWrap.Assign(FWordWrap);
     end
   else
@@ -9265,7 +9177,6 @@ var
   LRow, LRowCount: Integer;
   LMinimapLeft, LMinimapRight: Integer;
   LSelectedRow: Integer;
-  LPoint: TPoint;
 begin
   LSelectionAvailable := GetSelectionAvailable;
   LSelectedRow := GetSelectedRow(Y);
@@ -9277,30 +9188,6 @@ begin
 
     if FMinimap.Visible then
       FMinimapBufferBitmap.Height := 0;
-
-    FCompletionProposalResize := False;
-    if Assigned(FCompletionProposalPopupWindow) and FCompletionProposalPopupWindow.Visible and
-      (cpoResizeable in FCompletionProposal.Options) and (FCompletionProposalResizeCursor <> crDefault) then
-    begin
-      FCompletionProposalPopupWindow.SetOriginalSize;
-      FCompletionProposalResize := True;
-      if cpoAutoConstraints in FCompletionProposal.Options then
-      begin
-        LPoint.X := FCompletionProposalPopupWindow.Left;
-        LPoint.Y := FCompletionProposalPopupWindow.Top;
-        LPoint := ScreenToClient(LPoint);
-        with FCompletionProposal.Constraints do
-        begin
-          MinHeight := 0;
-          MinWidth := 0;
-          MaxHeight := Height - LPoint.Y - GetSystemMetrics(SM_CYVSCROLL) - 5;
-          MaxWidth := Width - LPoint.X - GetSystemMetrics(SM_CYHSCROLL) - 5;
-        end;
-      end;
-      Exit;
-    end
-    else
-      FreeCompletionProposalPopupWindow;
 
     if FCaret.MultiEdit.Enabled and not FMouseOverURI then
     begin
@@ -9555,25 +9442,6 @@ begin
   if FTokenInfo.Enabled then
     DoTokenInfo;
 
-  if AShift = [] then
-    FCompletionProposalResize := False;
-
-  if FCompletionProposalResize then
-  begin
-    case FCompletionProposalResizeCursor of
-      crSizeNWSE:
-        FCompletionProposalPopupWindow.IncSize(X - FMouseDownX, Y - FMouseDownY);
-      crSizeWE:
-        FCompletionProposalPopupWindow.IncSize(X - FMouseDownX, 0);
-      crSizeNS:
-        FCompletionProposalPopupWindow.IncSize(0, Y - FMouseDownY);
-    end;
-    Exit;
-  end;
-
-  if Assigned(FCompletionProposalPopupWindow) and FCompletionProposalPopupWindow.Visible and (cpoResizeable in FCompletionProposal.Options) then
-    FCompletionProposalResizeCursor := GetCompletionProposalCursor(Point(X, Y));
-
   if FMouseMoveScrolling then
   begin
     ComputeScroll(Point(X, Y));
@@ -9719,7 +9587,7 @@ begin
       LTextCaretPosition := DisplayToTextPosition(LDisplayPosition);
       TextCaretPosition := LTextCaretPosition;
       SelectionEndPosition := LTextCaretPosition;
-      if (uoGroupUndo in FUndo.Options) and UndoList.CanUndo then
+      if (uoGroupUndo in FUndoOptions) and UndoList.CanUndo then
         FUndoList.AddGroupBreak;
     end;
     FLastSortOrder := soDesc;
@@ -9739,7 +9607,6 @@ var
 begin
   FMinimap.Clicked := False;
   FMinimap.Dragging := False;
-  FCompletionProposalResize := False;
 
   Exclude(FStateFlags, sfInSelection);
 
@@ -12630,7 +12497,7 @@ begin
   if AChangeString <> '' then
     LBlockStartPosition := SelectionBeginPosition;
   FUndoList.BeginBlock;
-  FUndoList.AddChange(crDelete, TextCaretPosition, SelectionBeginPosition, SelectionEndPosition, GetSelectedText,
+  FUndoList.AddChange(crDelete, TextCaretPosition, SelectionBeginPosition, SelectionEndPosition, GetSelText,
     FSelection.ActiveMode);
 
   DoSelectedText(AChangeString);
@@ -12954,6 +12821,60 @@ begin
       Include(FStateFlags, sfCaretVisible);
 end;
 
+procedure TBCBaseEditor.Undo();
+
+  procedure RemoveGroupBreak;
+  var
+    LUndoItem: TBCEditorUndoItem;
+  begin
+    if FUndoList.LastChangeReason = crGroupBreak then
+    begin
+      LUndoItem := FUndoList.PopItem;
+      LUndoItem.Free;
+      FRedoList.AddGroupBreak;
+    end;
+  end;
+
+var
+  LUndoItem: TBCEditorUndoItem;
+  LLastChangeBlockNumber: Integer;
+  LLastChangeReason: TBCEditorChangeReason;
+  LLastChangeString: string;
+  LIsPasteAction: Boolean;
+  LIsKeepGoing: Boolean;
+begin
+  if ReadOnly then
+    Exit;
+
+  FUndoRedo := True;
+
+  RemoveGroupBreak;
+
+  LLastChangeBlockNumber := FUndoList.LastChangeBlockNumber;
+  LLastChangeReason := FUndoList.LastChangeReason;
+  LLastChangeString := FUndoList.LastChangeString;
+  LIsPasteAction := LLastChangeReason = crPaste;
+
+  LUndoItem := FUndoList.PeekItem;
+  if Assigned(LUndoItem) then
+    repeat
+      UndoItem;
+      LUndoItem := FUndoList.PeekItem;
+      LIsKeepGoing := False;
+      if Assigned(LUndoItem) then
+      begin
+        if uoGroupUndo in FUndoOptions then
+          LIsKeepGoing := LIsPasteAction and (FUndoList.LastChangeString = LLastChangeString) or
+            (LLastChangeReason = LUndoItem.ChangeReason) and (LUndoItem.ChangeBlockNumber = LLastChangeBlockNumber) or
+            (LUndoItem.ChangeBlockNumber <> 0) and (LUndoItem.ChangeBlockNumber = LLastChangeBlockNumber);
+        LLastChangeReason := LUndoItem.ChangeReason;
+        LIsPasteAction := LLastChangeReason = crPaste;
+      end;
+    until not LIsKeepGoing;
+
+  FUndoRedo := False;
+end;
+
 procedure TBCBaseEditor.UndoItem;
 var
   LUndoItem: TBCEditorUndoItem;
@@ -13111,9 +13032,6 @@ begin
     (LCursorPoint.X > ClientRect.Width - FSearch.Map.GetWidth) or (FSearch.Map.Align = saLeft) and
     (LCursorPoint.X <= FSearch.Map.GetWidth)) then
     SetCursor(Screen.Cursors[FSearch.Map.Cursor])
-  else
-  if Assigned(FCompletionProposalPopupWindow) and FCompletionProposalPopupWindow.Visible and (cpoResizeable in FCompletionProposal.Options) then
-    SetCursor(Screen.Cursors[FCompletionProposalResizeCursor])
   else
   begin
     LSelectionAvailable := GetSelectionAvailable;
@@ -14548,6 +14466,11 @@ begin
     Text := BCEditor.Utils.DeleteWhitespace(Text);
 end;
 
+procedure TBCBaseEditor.DoRedo();
+begin
+  Redo();
+end;
+
 procedure TBCBaseEditor.DragDrop(ASource: TObject; X, Y: Integer);
 var
   LNewCaretPosition: TBCEditorTextPosition;
@@ -14809,10 +14732,10 @@ begin
           DoToggleSelectedCase(ACommand);
       ecUndo:
         if not ReadOnly then
-          DoUndo;
+          Undo();
       ecRedo:
         if not ReadOnly then
-          DoRedo;
+          Redo();
       ecCut:
         if not ReadOnly and GetSelectionAvailable then
           DoCutToClipboard;
@@ -14834,14 +14757,14 @@ begin
           Update;
         end;
       ecInsertMode:
-        FTextEntryMode := temInsert;
+        SetTextEntryMode(temInsert);
       ecOverwriteMode:
-        FTextEntryMode := temOverwrite;
+        SetTextEntryMode(temOverwrite);
       ecToggleMode:
         if FTextEntryMode = temInsert then
-          FTextEntryMode := temOverwrite
+          SetTextEntryMode(temOverwrite)
         else
-          FTextEntryMode := temInsert;
+          SetTextEntryMode(temInsert);
       ecBlockIndent:
         if not ReadOnly then
           DoBlockIndent;
@@ -14864,6 +14787,8 @@ begin
       ecImeStr:
         if not ReadOnly then
           DoImeStr(AData);
+      ecCompletionProposal:
+        DoExecuteCompletionProposal();
     end;
   finally
     DecPaintLock;
@@ -15108,7 +15033,7 @@ begin
   CommandProcessor(ecPaste, BCEDITOR_NONE_CHAR, nil);
 end;
 
-procedure TBCBaseEditor.DoRedo;
+procedure TBCBaseEditor.Redo();
 
   procedure RemoveGroupBreak;
   var
@@ -15152,7 +15077,7 @@ begin
       LKeepGoing := False;
       if Assigned(LRedoItem) then
       begin
-        if uoGroupUndo in FUndo.Options then
+        if uoGroupUndo in FUndoOptions then
           LKeepGoing := LPasteAction and (FRedoList.LastChangeString = LLastChangeString) or
             (LLastChangeReason = LRedoItem.ChangeReason) and (LRedoItem.ChangeBlockNumber = LLastChangeBlockNumber) or
             (LRedoItem.ChangeBlockNumber <> 0) and (LRedoItem.ChangeBlockNumber = LLastChangeBlockNumber);
@@ -15286,7 +15211,7 @@ begin
     Encoding := AEncoding;
   FLines.SaveToStream(AStream, Encoding);
   SetModified(False);
-  if not (uoUndoAfterSave in FUndo.Options) then
+  if not (uoUndoAfterSave in FUndoOptions) then
     UndoList.Clear;
 end;
 
@@ -15414,6 +15339,14 @@ begin
     Include(FOptions, AOption)
   else
     Exclude(FOptions, AOption);
+end;
+
+procedure TBCBaseEditor.SetUndoOption(const AOption: TBCEditorUndoOption; const AEnabled: Boolean);
+begin
+  if (AEnabled) then
+    Include(FUndoOptions, AOption)
+  else
+    Exclude(FUndoOptions, AOption);
 end;
 
 procedure TBCBaseEditor.Sort(const ASortOrder: TBCEditorSortOrder = soAsc; const ACaseSensitive: Boolean = False);

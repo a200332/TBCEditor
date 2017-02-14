@@ -1,18 +1,12 @@
-The latest release version <a href="https://github.com/bonecode/TBCEditor/releases">1.9.0</a>
-
-Use the Issues page to report bugs or send them directly to lasse@bonecode.com.
-
 <h3>Description</h3>
 
 A syntax highlighting edit control for RAD Studio (Delphi/C++ Builder) with code folding, completion proposal, matching pair, minimap, sync edit, multi-caret editing, word wrap, support for non-fixed-width fonts, etc. External highlighter and color scheme files are in JSON format which can be also loaded from a stream.
 
 <h3>Build requirements</h3>
 
+* Delphi versions XE4-8, Seattle or Berlin
+* C++ Builder versions XE7-8, Seattle or Berlin
 * <a href="https://github.com/ahausladen/JsonDataObjects">Json Data Objects</a> (included)
-* Delphi versions XE4-8, Seattle, and Berlin are supported 
-* C++ Builder versions XE7-8, Seattle, and Berlin are supported
-
-<b>Note!</b> Do not offer me older versions to support. I don't have time to keep up with those.
 
 <h3>Conditional compilation</h3>
 
@@ -33,7 +27,7 @@ USE_VCL_STYLES | Use VCL styles. A set of graphical details that define the look
     Lines.Text := Highlighter.Info.General.Sample; 
   end;
 ```
-<b>Note!</b> LoadFromStream does not support multi-highlighters (for example HTML with Scripts.json). Override TBCBaseEditor.CreateFileStream function, if you want to load multi-highlighters from a stream. 
+<b>Note!</b> LoadFromStream / LoadFromResource does not support multi-highlighters (for example HTML with Scripts.json). Override TBCBaseEditor.CreateFileStream function, if you want to load multi-highlighters from a stream.
 
 <h3>Demo</h3>
 
@@ -43,10 +37,6 @@ TBCEditor Control Demo v. 2.0.0 (dev).
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
 
 The latest update: 05.02.2017 20:19, UTC+02:00
-
-<h3>Documentation</h3>
-
-Documentation will be written after the project stabilizes and dust settles. This project is developed in my spare time without sources of income and as long as this is the case there is no timetable for anything. 
 
 <h3>Projects using the control</h3>
 
@@ -66,12 +56,3 @@ Documentation will be written after the project stabilizes and dust settles. Thi
 ![bceditor7](https://cloud.githubusercontent.com/assets/11475177/20067786/2e83a9c0-a51f-11e6-918d-e039512503ca.png)
 ![bceditor8](https://cloud.githubusercontent.com/assets/11475177/20067774/2de408c0-a51f-11e6-9bbc-68c4824c7d10.png)
 ![bceditor9](https://cloud.githubusercontent.com/assets/11475177/20067777/2e22d398-a51f-11e6-80dc-aada64961860.png)
-
-
-
-
-
-
-
-
-

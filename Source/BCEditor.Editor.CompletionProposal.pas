@@ -31,6 +31,7 @@ type
   protected
     function GetOwner: TPersistent; override;
   public
+    procedure ChangeScale(M, D: Integer);
     constructor Create(AOwner: TComponent);
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
@@ -55,6 +56,11 @@ implementation
 
 uses
   Vcl.Menus;
+
+procedure TBCEditorCompletionProposal.ChangeScale(M, D: Integer);
+begin
+  FWidth := FWidth * M div D;
+end;
 
 constructor TBCEditorCompletionProposal.Create(AOwner: TComponent);
 begin

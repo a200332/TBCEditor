@@ -26,7 +26,7 @@ package BCEditor.Delphi.XE7.Designtime;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'BCEditor component suite'}
+{$DESCRIPTION 'BCEditor Components runtime'}
 {$DESIGNONLY}
 {$IMPLICITBUILD ON}
 

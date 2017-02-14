@@ -17,13 +17,11 @@ type
   strict private
     FAdjustCompletionStart: Boolean;
     FBitmapBuffer: Vcl.Graphics.TBitmap;
-    FCanFree: Boolean;
     FCaseSensitive: Boolean;
     FCompletionProposal: TBCEditorCompletionProposal;
     FCompletionStart: Integer;
     FCurrentString: string;
     FFiltered: Boolean;
-    FFormWidth: Integer;
     FItemHeight: Integer;
     FItemIndexArray: array of Integer;
     FItems: TStrings;
@@ -40,20 +38,18 @@ type
     function GetItemHeight: Integer;
     function GetTitleHeight: Integer;
     function GetVisibleLines: Integer;
-    procedure AddKeyHandlers;
-    procedure EditorKeyDown(ASender: TObject; var AKey: Word; AShift: TShiftState);
-    procedure EditorKeyPress(ASender: TObject; var AKey: Char);
     procedure HandleDblClick(ASender: TObject);
     procedure HandleOnValidate(ASender: TObject; AShift: TShiftState; AEndToken: Char);
     procedure MoveSelectedLine(ALineCount: Integer);
-    procedure RemoveKeyHandlers;
     procedure SetCurrentString(const AValue: string);
     procedure SetTopLine(const AValue: Integer);
     procedure UpdateScrollBar;
     procedure WMVScroll(var AMessage: TWMScroll); message WM_VSCROLL;
   protected
+    procedure CreateParams(var Params: TCreateParams); override;
     procedure Paint; override;
-    procedure Hide; override;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure KeyPress(var Key: Char); override;
     procedure MouseDown(AButton: TMouseButton; AShift: TShiftState; X, Y: Integer); override;
   public
     constructor Create(AOwner: TComponent); override;
@@ -63,7 +59,7 @@ type
     procedure Assign(ASource: TPersistent); override;
     procedure MouseWheel(AShift: TShiftState; AWheelDelta: Integer; AMousePos: TPoint);
     procedure Execute(const ACurrentString: string; const APoint: TPoint);
-    property CanFree: Boolean read FCanFree;
+    procedure WndProc(var Msg: TMessage); override;
     property CurrentString: string read FCurrentString write SetCurrentString;
     property Items: TBCEditorCompletionProposalColumnItems read GetItems;
     property TopLine: Integer read FTopLine write SetTopLine;
@@ -82,15 +78,14 @@ constructor TBCEditorCompletionProposalPopupWindow.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
-  FCanFree := True;
   FCaseSensitive := False;
   FFiltered := False;
   FItemHeight := 0;
   FMargin := 2;
+  FOnCanceled := nil;
+  FOnSelected := nil;
   FValueSet := False;
   Visible := False;
-
-  AddKeyHandlers;
 
   FItems := TStringList.Create;
   FBitmapBuffer := Vcl.Graphics.TBitmap.Create;
@@ -99,30 +94,28 @@ begin
   OnDblClick := HandleDblClick;
 end;
 
+procedure TBCEditorCompletionProposalPopupWindow.CreateParams(var Params: TCreateParams);
+begin
+  inherited;
+
+  if cpoResizeable in FCompletionProposal.Options then
+    Params.Style := Params.Style or WS_SIZEBOX;
+end;
+
 destructor TBCEditorCompletionProposalPopupWindow.Destroy;
 begin
   if FItemHeight <> 0 then
     FCompletionProposal.VisibleLines := ClientHeight div FItemHeight;
   FCompletionProposal.Width := Width;
 
-  FCanFree := False;
   if not FValueSet and Assigned(FOnCanceled) then
     FOnCanceled(Self);
-  FCanFree := True;
 
-  RemoveKeyHandlers;
   FBitmapBuffer.Free;
   SetLength(FItemIndexArray, 0);
   FItems.Free;
 
   inherited Destroy;
-end;
-
-procedure TBCEditorCompletionProposalPopupWindow.Hide;
-begin
-  RemoveKeyHandlers;
-
-  inherited Hide;
 end;
 
 procedure TBCEditorCompletionProposalPopupWindow.Assign(ASource: TPersistent);
@@ -134,36 +127,12 @@ begin
     begin
       Self.FCaseSensitive := cpoCaseSensitive in Options;
       Self.FFiltered := cpoFiltered in Options;
-      Self.FFormWidth := Width;
+      Self.Width := Width;
       Self.Constraints.Assign(Constraints);
     end
   end
   else
     inherited Assign(ASource);
-end;
-
-procedure TBCEditorCompletionProposalPopupWindow.AddKeyHandlers;
-var
-  LEditor: TBCBaseEditor;
-begin
-  LEditor := Owner as TBCBaseEditor;
-  if Assigned(LEditor) then
-  begin
-    LEditor.AddKeyPressHandler(EditorKeyPress);
-    LEditor.AddKeyDownHandler(EditorKeyDown);
-  end;
-end;
-
-procedure TBCEditorCompletionProposalPopupWindow.RemoveKeyHandlers;
-var
-  LEditor: TBCBaseEditor;
-begin
-  LEditor := Owner as TBCBaseEditor;
-  if Assigned(LEditor) then
-  begin
-    LEditor.RemoveKeyPressHandler(EditorKeyPress);
-    LEditor.RemoveKeyDownHandler(EditorKeyDown);
-  end;
 end;
 
 function TBCEditorCompletionProposalPopupWindow.GetItemHeight: Integer;
@@ -204,7 +173,7 @@ begin
   Result := (ClientHeight - FTitleHeight) div FItemHeight;
 end;
 
-procedure TBCEditorCompletionProposalPopupWindow.EditorKeyDown(ASender: TObject; var AKey: Word; AShift: TShiftState);
+procedure TBCEditorCompletionProposalPopupWindow.KeyDown(var Key: Word; Shift: TShiftState);
 var
   LChar: Char;
   LEditor: TBCBaseEditor;
@@ -213,12 +182,13 @@ begin
   LEditor := nil;
   if Assigned(Owner) then
     LEditor := Owner as TBCBaseEditor;
-  case AKey of
+  case Key of
     VK_RETURN, VK_TAB:
       if Assigned(FOnValidate) then
-        FOnValidate(Self, AShift, BCEDITOR_NONE_CHAR);
+        FOnValidate(Self, Shift, BCEDITOR_NONE_CHAR);
     VK_ESCAPE:
-      Hide;
+      if Assigned(LEditor) then
+        LEditor.SetFocus;
     VK_LEFT:
       begin
         if Length(FCurrentString) > 0 then
@@ -230,8 +200,10 @@ begin
         else
         begin
           if Assigned(LEditor) then
+          begin
             LEditor.CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
-          Hide;
+            LEditor.SetFocus;
+          end;
         end;
       end;
     VK_RIGHT:
@@ -245,10 +217,10 @@ begin
             else
               LChar := BCEDITOR_SPACE_CHAR;
 
-            if IsWordBreakChar(LChar) then
-              Self.Hide
-            else
-              CurrentString := FCurrentString + LChar;
+            if not IsWordBreakChar(LChar) then
+              CurrentString := FCurrentString + LChar
+            else if Assigned(LEditor) then
+              LEditor.SetFocus;
 
             CommandProcessor(ecRight, BCEDITOR_NONE_CHAR, nil);
           end;
@@ -262,17 +234,17 @@ begin
     VK_HOME:
       TopLine := 0;
     VK_UP:
-      if ssCtrl in AShift then
+      if ssCtrl in Shift then
         FSelectedLine := 0
       else
         MoveSelectedLine(-1);
     VK_DOWN:
-      if ssCtrl in AShift then
+      if ssCtrl in Shift then
         FSelectedLine := Length(FItemIndexArray) - 1
       else
         MoveSelectedLine(1);
     VK_BACK:
-      if AShift = [] then
+      if Shift = [] then
       begin
         if Length(FCurrentString) > 0 then
         begin
@@ -284,41 +256,51 @@ begin
         else
         begin
           if Assigned(LEditor) then
+          begin
             LEditor.CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
-
-          Hide;
+            LEditor.SetFocus;
+          end;
         end;
       end;
     VK_DELETE:
       if Assigned(LEditor) then
         LEditor.CommandProcessor(ecDeleteChar, BCEDITOR_NONE_CHAR, nil);
   end;
-  AKey := 0;
+  Key := 0;
   Invalidate;
 end;
 
-procedure TBCEditorCompletionProposalPopupWindow.EditorKeyPress(ASender: TObject; var AKey: Char);
+procedure TBCEditorCompletionProposalPopupWindow.KeyPress(var Key: Char);
+var
+  LEditor: TBCBaseEditor;
 begin
-  case AKey of
+  LEditor := nil;
+  if Assigned(Owner) then
+    LEditor := Owner as TBCBaseEditor;
+  case Key of
     BCEDITOR_CARRIAGE_RETURN:
-      Hide;
+      if Assigned(LEditor) then
+        LEditor.SetFocus;
     BCEDITOR_SPACE_CHAR .. High(Char):
       begin
         if not (cpoAutoInvoke in FCompletionProposal.Options) then
-          if (Owner as TBCBaseEditor).IsWordBreakChar(AKey) and Assigned(FOnValidate) then
-            if AKey = BCEDITOR_SPACE_CHAR then
+          if (Owner as TBCBaseEditor).IsWordBreakChar(Key) and Assigned(FOnValidate) then
+            if Key = BCEDITOR_SPACE_CHAR then
               FOnValidate(Self, [], BCEDITOR_NONE_CHAR);
-        CurrentString := FCurrentString + AKey;
+        CurrentString := FCurrentString + Key;
         if (cpoAutoInvoke in FCompletionProposal.Options) and (Length(FItemIndexArray) = 0) or
-          (Pos(AKey, FCompletionProposal.CloseChars) <> 0) then
-          Hide
+          (Pos(Key, FCompletionProposal.CloseChars) <> 0) then
+        begin
+          if Assigned(LEditor) then
+            LEditor.SetFocus;
+        end
         else
         if Assigned(OnKeyPress) then
-          OnKeyPress(Self, AKey);
+          OnKeyPress(Self, Key);
       end;
     BCEDITOR_BACKSPACE_CHAR:
       with Owner as TBCBaseEditor do
-        CommandProcessor(ecChar, AKey, nil);
+        CommandProcessor(ecChar, Key, nil);
   end;
   Invalidate;
 end;
@@ -346,25 +328,29 @@ begin
       for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
       begin
         LColumn := FCompletionProposal.Columns[LColumnIndex];
-        Canvas.Brush.Color := LColumn.Title.Colors.Background;
-        LRect.Left := LColumnWidth;
-        LRect.Right := LColumnWidth + LColumn.Width;
-        Winapi.Windows.ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
-        Canvas.Font.Assign(LColumn.Title.Font);
-        if LColumn.Title.Visible then
-          Canvas.TextOut(FMargin + LColumnWidth, 0, LColumn.Title.Caption);
-        Canvas.Pen.Color := LColumn.Title.Colors.BottomBorder;
-        Canvas.MoveTo(LRect.Left, LRect.Bottom - 1);
-        Canvas.LineTo(LRect.Right, LRect.Bottom - 1);
-        Canvas.Pen.Color := LColumn.Title.Colors.RightBorder;
-        Canvas.MoveTo(LRect.Right - 1, LRect.Top - 1);
-        Canvas.LineTo(LRect.Right - 1, LRect.Bottom - 1);
-        LColumnWidth := LColumnWidth + LColumn.Width;
+        if (LColumn.Visible) then
+        begin
+          LColumn := FCompletionProposal.Columns[LColumnIndex];
+          Canvas.Brush.Color := LColumn.Title.Colors.Background;
+          LRect.Left := LColumnWidth;
+          LRect.Right := LColumnWidth + LColumn.Width;
+          Winapi.Windows.ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+          Canvas.Font.Assign(LColumn.Title.Font);
+          if LColumn.Title.Visible then
+            Canvas.TextOut(FMargin + LColumnWidth, 0, LColumn.Title.Caption);
+          Canvas.Pen.Color := LColumn.Title.Colors.BottomBorder;
+          Canvas.MoveTo(LRect.Left, LRect.Bottom - 1);
+          Canvas.LineTo(LRect.Right, LRect.Bottom - 1);
+          Canvas.Pen.Color := LColumn.Title.Colors.RightBorder;
+          Canvas.MoveTo(LRect.Right - 1, LRect.Top - 1);
+          Canvas.LineTo(LRect.Right - 1, LRect.Bottom - 1);
+          LColumnWidth := LColumnWidth + LColumn.Width;
+        end;
+        LRect.Right := ClientRect.Right;
+        LRect.Left := 0;
+        LRect.Top := LRect.Bottom;
+        LRect.Bottom := LRect.Top + FItemHeight;
       end;
-      LRect.Right := ClientRect.Right;
-      LRect.Left := 0;
-      LRect.Top := LRect.Bottom;
-      LRect.Bottom := LRect.Top + FItemHeight;
     end;
     { Data }
     for LIndex := 0 to Min(GetVisibleLines, Length(FItemIndexArray) - 1) do
@@ -388,24 +374,27 @@ begin
       begin
         LItemIndex := FItemIndexArray[TopLine + LIndex];
         LColumn := FCompletionProposal.Columns[LColumnIndex];
-        Canvas.Font.Assign(LColumn.Font);
-
-        if LIndex + TopLine = FSelectedLine then
-          Canvas.Font.Color := FCompletionProposal.Colors.SelectedText
-        else
-          Canvas.Font.Color := FCompletionProposal.Colors.Foreground;
-
-        if LItemIndex < LColumn.Items.Count then
+        if (LColumn.Visible) then
         begin
-          LLeft := 0;
-          if LColumn.Items[LItemIndex].ImageIndex <> -1 then
+          Canvas.Font.Assign(LColumn.Font);
+
+          if LIndex + TopLine = FSelectedLine then
+            Canvas.Font.Color := FCompletionProposal.Colors.SelectedText
+          else
+            Canvas.Font.Color := FCompletionProposal.Colors.Foreground;
+
+          if LItemIndex < LColumn.Items.Count then
           begin
-            FCompletionProposal.Images.Draw(Canvas, FMargin + LColumnWidth, LRect.Top, LColumn.Items[LItemIndex].ImageIndex);
-            Inc(LLeft, FCompletionProposal.Images.Width + FMargin);
+            LLeft := 0;
+            if LColumn.Items[LItemIndex].ImageIndex <> -1 then
+            begin
+              FCompletionProposal.Images.Draw(Canvas, FMargin + LColumnWidth, LRect.Top, LColumn.Items[LItemIndex].ImageIndex);
+              Inc(LLeft, FCompletionProposal.Images.Width + FMargin);
+            end;
+            Canvas.TextOut(FMargin + LColumnWidth + LLeft, LRect.Top, LColumn.Items[LItemIndex].Value);
           end;
-          Canvas.TextOut(FMargin + LColumnWidth + LLeft, LRect.Top, LColumn.Items[LItemIndex].Value);
+          LColumnWidth := LColumnWidth + LColumn.Width;
         end;
-        LColumnWidth := LColumnWidth + LColumn.Width;
       end;
       LRect.Top := LRect.Bottom;
       LRect.Bottom := LRect.Top + FItemHeight;
@@ -434,7 +423,7 @@ procedure TBCEditorCompletionProposalPopupWindow.SetCurrentString(const AValue: 
     if FCaseSensitive then
       Result := CompareStr(LCompareString, AValue) = 0
     else
-      Result := CompareStr(LCompareString, AValue) = 0;
+      Result := AnsiCompareText(LCompareString, AValue) = 0;
   end;
 
   procedure RecalcList;
@@ -520,7 +509,7 @@ var
     LPoint.X := APoint.X - TextWidth(FBitmapBuffer.Canvas, ACurrentString);
     LPoint.Y := APoint.Y;
 
-    LWidth := FFormWidth;
+    LWidth := Width;
     LHeight := FItemHeight * FCompletionProposal.VisibleLines + FTitleHeight + 2;
 
     if LPoint.X + LWidth > Screen.DesktopWidth then
@@ -547,10 +536,19 @@ var
     LMaxWidth, LTempWidth, LAutoWidthCount, LWidthSum: Integer;
     LItems: TBCEditorCompletionProposalColumnItems;
     LProposalColumn: TBCEditorCompletionProposalColumn;
+    LVisibleColumnCount: Integer;
   begin
-    if FCompletionProposal.Columns.Count = 1 then
+    LVisibleColumnCount := 0;
+    for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
+      if FCompletionProposal.Columns[LColumnIndex].Visible then
+        Inc(LVisibleColumnCount);
+
+    if LVisibleColumnCount = 1 then
     begin
-      LProposalColumn := FCompletionProposal.Columns[0];
+      LProposalColumn := nil; // Hide compiler warning only.
+      for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
+        if FCompletionProposal.Columns[LColumnIndex].Visible then
+          LProposalColumn := FCompletionProposal.Columns[LColumnIndex];
       if LProposalColumn.AutoWidth then
         LProposalColumn.Width := Width;
       Exit;
@@ -561,7 +559,7 @@ var
     for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
     begin
       LProposalColumn := FCompletionProposal.Columns[LColumnIndex];
-      if LProposalColumn.AutoWidth then
+      if LProposalColumn.Visible and LProposalColumn.AutoWidth then
       begin
         LItems := LProposalColumn.Items;
         LMaxWidth := 0;
@@ -582,7 +580,7 @@ var
     for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
     begin
       LProposalColumn := FCompletionProposal.Columns[LColumnIndex];
-      if LProposalColumn.AutoWidth then
+      if LProposalColumn.Visible and LProposalColumn.AutoWidth then
         LProposalColumn.Width := LProposalColumn.Width + LMaxWidth;
     end;
   end;
@@ -596,7 +594,7 @@ var
     for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
     begin
       LColumn := FCompletionProposal.Columns[LColumnIndex];
-      if LColumn.Title.Visible then
+      if LColumn.Visible and LColumn.Title.Visible then
         Exit(True);
     end;
   end;
@@ -631,8 +629,6 @@ begin
     CurrentString := ACurrentString;
     if Length(FItemIndexArray) > 0 then
     begin
-      if cpoShowShadow in FCompletionProposal.Options then
-        ActivateDropShadow(Handle);
       UpdateScrollBar;
       Show(LPoint);
     end;
@@ -677,10 +673,8 @@ begin
       else
         LValue := SelectedText;
 
-      FCanFree := False;
       if Assigned(FOnSelected) then
         FOnSelected(Self, LValue);
-      FCanFree := True;
 
       FValueSet := SelectedText <> LValue;
       if FValueSet then
@@ -811,6 +805,16 @@ begin
   FSelectedLine := Max(0, TopLine + ((Y - FTitleHeight) div FItemHeight));
   inherited MouseDown(AButton, AShift, X, Y);
   Refresh;
+end;
+
+procedure TBCEditorCompletionProposalPopupWindow.WndProc(var Msg: TMessage);
+begin
+  if (Msg.Msg = WM_KEYDOWN) then
+    Write;
+  if (Msg.Msg = WM_SETFOCUS) then
+    Write;
+
+  inherited;
 end;
 
 end.

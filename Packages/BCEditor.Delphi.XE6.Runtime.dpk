@@ -25,7 +25,7 @@ package BCEditor.Delphi.XE6.Runtime;
 {$IMAGEBASE $400000}
 {$DEFINE DEBUG}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'BCEditor component suite runtime'}
+{$DESCRIPTION 'BCEditor Components runtime'}
 {$RUNONLY}
 {$IMPLICITBUILD ON}
 
@@ -111,7 +111,6 @@ contains
   BCEditor.Editor.TokenInfo.Title in '..\Source\BCEditor.Editor.TokenInfo.Title.pas',
   BCEditor.Editor.TokenInfo.Title.Colors in '..\Source\BCEditor.Editor.TokenInfo.Title.Colors.pas',
   BCEditor.Editor.TokenInfo.PopupWindow in '..\Source\BCEditor.Editor.TokenInfo.PopupWindow.pas',
-  BCEditor.Editor.Undo in '..\Source\BCEditor.Editor.Undo.pas',
   BCEditor.Editor.Undo.Item in '..\Source\BCEditor.Editor.Undo.Item.pas',
   BCEditor.Editor.Undo.List in '..\Source\BCEditor.Editor.Undo.List.pas',
 	BCEditor.Editor.UnknownChars in '..\Source\BCEditor.Editor.UnknownChars.pas',

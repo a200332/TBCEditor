@@ -13,6 +13,7 @@ type
     FFont: TFont;
     FItems: TBCEditorCompletionProposalColumnItems;
     FTitle: TBCEditorCompletionProposalColumnTitle;
+    FVisible: Boolean;
     FWidth: Integer;
     procedure SetFont(const AValue: TFont);
   public
@@ -24,6 +25,7 @@ type
     property Font: TFont read FFont write SetFont;
     property Items: TBCEditorCompletionProposalColumnItems read FItems write FItems;
     property Title: TBCEditorCompletionProposalColumnTitle read FTitle write FTitle;
+    property Visible: Boolean read FVisible write FVisible default True;
     property Width: Integer read FWidth write FWidth default 0;
   end;
 
@@ -56,6 +58,7 @@ begin
   FFont.Size := 8;
   FItems := TBCEditorCompletionProposalColumnItems.Create(Self, TBCEditorCompletionProposalColumnItem);
   FTitle := TBCEditorCompletionProposalColumnTitle.Create;
+  FVisible := True;
   FWidth := 0;
 end;
 

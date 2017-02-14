@@ -125,7 +125,7 @@ type
     property Tag;
     property TextEntryMode;
     property TokenInfo;
-    property Undo;
+    property UndoOptions;
     property UnknownChars;
     property WantReturns;
     property Width;

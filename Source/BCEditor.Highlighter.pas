@@ -66,6 +66,7 @@ type
     procedure Clear;
     procedure GetToken(var AResult: string);
     procedure LoadFromFile(const AFileName: string);
+    procedure LoadFromResource(const ResName: string; const ResType: PChar);
     procedure LoadFromStream(AStream: TStream);
     procedure Next;
     procedure NextToEndOfLine;
@@ -513,6 +514,15 @@ begin
       LStream.Free;
     end;
   end;
+end;
+
+procedure TBCEditorHighlighter.LoadFromResource(const ResName: string; const ResType: PChar);
+var
+  Stream: TResourceStream;
+begin
+  Stream := TResourceStream.Create(HInstance, PChar(ResName), ResType);
+  LoadFromStream(Stream);
+  Stream.Free();
 end;
 
 procedure TBCEditorHighlighter.LoadFromStream(AStream: TStream);
