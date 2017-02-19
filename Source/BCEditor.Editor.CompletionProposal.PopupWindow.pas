@@ -30,6 +30,7 @@ type
     FOnSelected: TBCEditorCompletionProposalSelectedEvent;
     FOnValidate: TBCEditorCompletionProposalValidateEvent;
     FSelectedLine: Integer;
+    FSendToEditor: Boolean;
     FTitleHeight: Integer;
     FTitleVisible: Boolean;
     FTopLine: Integer;
@@ -52,7 +53,7 @@ type
     procedure KeyPress(var Key: Char); override;
     procedure MouseDown(AButton: TMouseButton; AShift: TShiftState; X, Y: Integer); override;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(const AEditor: TCustomControl);
     destructor Destroy; override;
 
     function GetCurrentInput: string;
@@ -74,9 +75,9 @@ uses
   BCEditor.Editor.Utils, BCEditor.Consts, System.Math, Vcl.Dialogs, BCEditor.Editor.CompletionProposal.Columns
   {$if defined(USE_VCL_STYLES) or not defined(USE_VCL_STYLES) and not defined(USE_ALPHASKINS)}, Vcl.Themes{$endif};
 
-constructor TBCEditorCompletionProposalPopupWindow.Create(AOwner: TComponent);
+constructor TBCEditorCompletionProposalPopupWindow.Create(const AEditor: TCustomControl);
 begin
-  inherited Create(AOwner);
+  inherited Create(AEditor);
 
   FCaseSensitive := False;
   FFiltered := False;
@@ -176,73 +177,88 @@ end;
 procedure TBCEditorCompletionProposalPopupWindow.KeyDown(var Key: Word; Shift: TShiftState);
 var
   LChar: Char;
-  LEditor: TBCBaseEditor;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
-  LEditor := nil;
-  if Assigned(Owner) then
-    LEditor := Owner as TBCBaseEditor;
+  FSendToEditor := True;
   case Key of
     VK_RETURN, VK_TAB:
-      if Assigned(FOnValidate) then
-        FOnValidate(Self, Shift, BCEDITOR_NONE_CHAR);
+      begin
+        if Assigned(FOnValidate) then
+          FOnValidate(Self, Shift, BCEDITOR_NONE_CHAR);
+          FSendToEditor := False;
+      end;
     VK_ESCAPE:
-      if Assigned(LEditor) then
-        LEditor.SetFocus;
+      begin
+        Editor.SetFocus;
+        FSendToEditor := False;
+      end;
     VK_LEFT:
       begin
         if Length(FCurrentString) > 0 then
         begin
           CurrentString := Copy(FCurrentString, 1, Length(FCurrentString) - 1);
-          if Assigned(LEditor) then
-            LEditor.CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
+          TBCBaseEditor(Editor).CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
         end
         else
         begin
-          if Assigned(LEditor) then
-          begin
-            LEditor.CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
-            LEditor.SetFocus;
-          end;
+          TBCBaseEditor(Editor).CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
+          Editor.SetFocus;
         end;
+        FSendToEditor := False;
       end;
     VK_RIGHT:
+      with TBCBaseEditor(Editor) do
       begin
-        if Assigned(LEditor) then
-          with LEditor do
-          begin
-            LTextCaretPosition := TextCaretPosition;
-            if LTextCaretPosition.Char <= Length(LEditor.Lines[LTextCaretPosition.Line]) then
-              LChar := LEditor.Lines[LTextCaretPosition.Line][LTextCaretPosition.Char]
-            else
-              LChar := BCEDITOR_SPACE_CHAR;
+        LTextCaretPosition := TextCaretPosition;
+        if LTextCaretPosition.Char <= Length(Lines[LTextCaretPosition.Line]) then
+          LChar := Lines[LTextCaretPosition.Line][LTextCaretPosition.Char]
+        else
+          LChar := BCEDITOR_SPACE_CHAR;
 
-            if not IsWordBreakChar(LChar) then
-              CurrentString := FCurrentString + LChar
-            else if Assigned(LEditor) then
-              LEditor.SetFocus;
+        if not IsWordBreakChar(LChar) then
+          CurrentString := FCurrentString + LChar
+        else
+          Editor.SetFocus;
 
-            CommandProcessor(ecRight, BCEDITOR_NONE_CHAR, nil);
-          end;
+        CommandProcessor(ecRight, BCEDITOR_NONE_CHAR, nil);
+        FSendToEditor := False;
       end;
     VK_PRIOR:
-      MoveSelectedLine(-GetVisibleLines);
+      begin
+        MoveSelectedLine(-GetVisibleLines);
+        FSendToEditor := False;
+      end;
     VK_NEXT:
-      MoveSelectedLine(GetVisibleLines);
+      begin
+        MoveSelectedLine(GetVisibleLines);
+        FSendToEditor := False;
+      end;
     VK_END:
-      TopLine := Length(FItemIndexArray) - 1;
+      begin
+        TopLine := Length(FItemIndexArray) - 1;
+        FSendToEditor := False;
+      end;
     VK_HOME:
-      TopLine := 0;
+      begin
+        TopLine := 0;
+        FSendToEditor := False;
+      end;
     VK_UP:
-      if ssCtrl in Shift then
-        FSelectedLine := 0
-      else
-        MoveSelectedLine(-1);
+      begin
+        if ssCtrl in Shift then
+          FSelectedLine := 0
+        else
+          MoveSelectedLine(-1);
+        FSendToEditor := False;
+      end;
     VK_DOWN:
-      if ssCtrl in Shift then
-        FSelectedLine := Length(FItemIndexArray) - 1
-      else
-        MoveSelectedLine(1);
+      begin
+        if ssCtrl in Shift then
+          FSelectedLine := Length(FItemIndexArray) - 1
+        else
+          MoveSelectedLine(1);
+        FSendToEditor := False;
+      end;
     VK_BACK:
       if Shift = [] then
       begin
@@ -250,58 +266,49 @@ begin
         begin
           CurrentString := Copy(FCurrentString, 1, Length(FCurrentString) - 1);
 
-          if Assigned(LEditor) then
-            LEditor.CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
+          TBCBaseEditor(Editor).CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
         end
         else
         begin
-          if Assigned(LEditor) then
-          begin
-            LEditor.CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
-            LEditor.SetFocus;
-          end;
+          TBCBaseEditor(Editor).CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
+          Editor.SetFocus;
         end;
+        FSendToEditor := False;
       end;
     VK_DELETE:
-      if Assigned(LEditor) then
-        LEditor.CommandProcessor(ecDeleteChar, BCEDITOR_NONE_CHAR, nil);
+      begin
+        TBCBaseEditor(Editor).CommandProcessor(ecDeleteChar, BCEDITOR_NONE_CHAR, nil);
+        FSendToEditor := False;
+      end;
   end;
   Key := 0;
   Invalidate;
 end;
 
 procedure TBCEditorCompletionProposalPopupWindow.KeyPress(var Key: Char);
-var
-  LEditor: TBCBaseEditor;
 begin
-  LEditor := nil;
-  if Assigned(Owner) then
-    LEditor := Owner as TBCBaseEditor;
   case Key of
     BCEDITOR_CARRIAGE_RETURN:
-      if Assigned(LEditor) then
-        LEditor.SetFocus;
+      Editor.SetFocus;
     BCEDITOR_SPACE_CHAR .. High(Char):
       begin
         if not (cpoAutoInvoke in FCompletionProposal.Options) then
-          if (Owner as TBCBaseEditor).IsWordBreakChar(Key) and Assigned(FOnValidate) then
+          if TBCBaseEditor(Editor).IsWordBreakChar(Key) and Assigned(FOnValidate) then
             if Key = BCEDITOR_SPACE_CHAR then
               FOnValidate(Self, [], BCEDITOR_NONE_CHAR);
         CurrentString := FCurrentString + Key;
         if (cpoAutoInvoke in FCompletionProposal.Options) and (Length(FItemIndexArray) = 0) or
           (Pos(Key, FCompletionProposal.CloseChars) <> 0) then
-        begin
-          if Assigned(LEditor) then
-            LEditor.SetFocus;
-        end
+          Editor.SetFocus
         else
         if Assigned(OnKeyPress) then
           OnKeyPress(Self, Key);
       end;
     BCEDITOR_BACKSPACE_CHAR:
-      with Owner as TBCBaseEditor do
-        CommandProcessor(ecChar, Key, nil);
+      TBCBaseEditor(Editor).CommandProcessor(ecChar, Key, nil);
   end;
+  if (FSendToEditor) then
+    PostMessage(TBCBaseEditor(Editor).Handle, WM_CHAR, WParam(Key), 0);
   Invalidate;
 end;
 
@@ -502,32 +509,25 @@ var
   LPoint: TPoint;
 
   procedure CalculateFormPlacement;
-  var
-    LWidth: Integer;
-    LHeight: Integer;
   begin
     LPoint.X := APoint.X - TextWidth(FBitmapBuffer.Canvas, ACurrentString);
     LPoint.Y := APoint.Y;
 
-    LWidth := Width;
-    LHeight := FItemHeight * FCompletionProposal.VisibleLines + FTitleHeight + 2;
+    ClientHeight := FItemHeight * FCompletionProposal.VisibleLines + FTitleHeight + 2;
 
-    if LPoint.X + LWidth > Screen.DesktopWidth then
+    if LPoint.X + ClientWidth > Screen.DesktopWidth then
     begin
-      LPoint.X := Screen.DesktopWidth - LWidth - 5;
+      LPoint.X := Screen.DesktopWidth - ClientWidth - 5;
       if LPoint.X < 0 then
         LPoint.X := 0;
     end;
 
-    if LPoint.Y + LHeight > Screen.DesktopHeight then
+    if LPoint.Y + ClientHeight > Screen.DesktopHeight then
     begin
-      LPoint.Y := LPoint.Y - LHeight - (Owner as TBCBaseEditor).LineHeight - 2;
+      LPoint.Y := LPoint.Y - ClientHeight - TBCBaseEditor(Editor).LineHeight - 2;
       if LPoint.Y < 0 then
         LPoint.Y := 0;
     end;
-
-    Width := LWidth;
-    Height := LHeight;
   end;
 
   procedure CalculateColumnWidths;
@@ -637,14 +637,10 @@ end;
 
 procedure TBCEditorCompletionProposalPopupWindow.HandleOnValidate(ASender: TObject; AShift: TShiftState; AEndToken: Char);
 var
-  LEditor: TBCBaseEditor;
   LValue, LLine: string;
   LTextPosition: TBCEditorTextPosition;
 begin
-  if not Assigned(Owner) then
-    Exit;
-  LEditor := Owner as TBCBaseEditor;
-  with LEditor do
+  with TBCBaseEditor(Editor) do
   begin
     BeginUpdate;
     BeginUndoBlock;
@@ -704,20 +700,18 @@ function TBCEditorCompletionProposalPopupWindow.GetCurrentInput: string;
 var
   LIndex: Integer;
   LLineText: string;
-  LEditor: TBCBaseEditor;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
   Result := '';
-  LEditor := Owner as TBCBaseEditor;
 
-  LTextCaretPosition := LEditor.TextCaretPosition;
+  LTextCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
 
-  LLineText := LEditor.Lines[LTextCaretPosition.Line];
+  LLineText := TBCBaseEditor(Editor).Lines[LTextCaretPosition.Line];
   LIndex := LTextCaretPosition.Char - 1;
   if LIndex <= Length(LLineText) then
   begin
     FAdjustCompletionStart := False;
-    while (LIndex > 0) and (LLineText[LIndex] > BCEDITOR_SPACE_CHAR) and not LEditor.IsWordBreakChar(LLineText[LIndex]) do
+    while (LIndex > 0) and (LLineText[LIndex] > BCEDITOR_SPACE_CHAR) and not TBCBaseEditor(Editor).IsWordBreakChar(LLineText[LIndex]) do
       Dec(LIndex);
 
     FCompletionStart := LIndex + 1;

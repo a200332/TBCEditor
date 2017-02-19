@@ -338,10 +338,7 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.TokenInfo.PopupWindow.pas">
             <BuildOrder>58</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Undo.Item.pas">
-            <BuildOrder>59</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Undo.List.pas">
+        <DelphiCompile Include="..\Source\BCEditor.Editor.Undo.pas">
             <BuildOrder>60</BuildOrder>
         </DelphiCompile>
 				<DelphiCompile Include="..\Source\BCEditor.Editor.UnknownChars.pas">

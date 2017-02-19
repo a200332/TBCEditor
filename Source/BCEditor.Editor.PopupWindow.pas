@@ -14,6 +14,7 @@ type
     FCommonData: TsScrollWndData;
     FScrollWnd: TacScrollWnd;
 {$endif}
+    FEditor: TCustomControl;
     FOriginalHeight: Integer;
     FOriginalWidth: Integer;
     FPopupParent: TCustomForm;
@@ -29,13 +30,14 @@ type
     procedure Hide; virtual;
     procedure Show(Origin: TPoint); virtual;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(const AEditor: TCustomControl); reintroduce;
     destructor Destroy; override;
     procedure CreateWnd; override;
     procedure IncSize(const AWidth: Integer; const AHeight: Integer);
     procedure SetOriginalSize;
     procedure WndProc(var AMessage: TMessage); override;
     property ActiveControl: TWinControl read FActiveControl;
+    property Editor: TCustomControl read FEditor;
     property PopupParent: TCustomForm read FPopupParent write SetPopupParent;
 {$if defined(USE_ALPHASKINS)}
     property SkinData: TsScrollWndData read FCommonData write FCommonData;
@@ -48,7 +50,7 @@ uses
   Winapi.Windows, System.SysUtils{$if defined(USE_VCL_STYLES)}, Vcl.Themes{$endif}
   {$if defined(USE_ALPHASKINS)}, Winapi.CommCtrl, sVCLUtils, sMessages, sConst, sSkinProps{$endif};
 
-constructor TBCEditorPopupWindow.Create(AOwner: TComponent);
+constructor TBCEditorPopupWindow.Create(const AEditor: TCustomControl);
 begin
   {$if defined(USE_ALPHASKINS)}
   FCommonData := TsScrollWndData.Create(Self, True);
@@ -56,11 +58,12 @@ begin
   if FCommonData.SkinSection = '' then
     FCommonData.SkinSection := s_Edit;
 {$endif}
-  inherited Create(AOwner);
+  inherited Create(nil);
 
   ControlStyle := ControlStyle + [csNoDesignVisible, csReplicatable];
 
   Ctl3D := False;
+  FEditor := AEditor;
   FPopupParent := nil;
   ParentCtl3D := False;
   Visible := False;

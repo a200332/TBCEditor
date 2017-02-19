@@ -11,8 +11,8 @@ unit BCEditor.Editor.TokenInfo.PopupWindow;
 interface
 
 uses
-  System.Classes, System.Types, Vcl.Graphics, BCEditor.Types, BCEditor.Lines, BCEditor.Editor.PopupWindow,
-  BCEditor.Editor.TokenInfo;
+  System.Classes, System.Types, Vcl.Graphics, Vcl.Controls,
+  BCEditor.Types, BCEditor.Lines, BCEditor.Editor.PopupWindow, BCEditor.Editor.TokenInfo;
 
 type
   TBCEditorTokenInfoEvent = procedure(ASender: TObject; const ATextPosition: TBCEditorTextPosition;
@@ -36,7 +36,7 @@ type
   protected
     procedure Paint; override;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(const AEditor: TCustomControl);
     destructor Destroy; override;
 
     procedure Assign(ASource: TPersistent); override;
@@ -64,9 +64,9 @@ type
 
 { TBCEditorTokenInfoPopupWindow }
 
-constructor TBCEditorTokenInfoPopupWindow.Create(AOwner: TComponent);
+constructor TBCEditorTokenInfoPopupWindow.Create(const AEditor: TCustomControl);
 begin
-  inherited Create(AOwner);
+  inherited Create(AEditor);
 
   FContent := TBCEditorLines.Create(nil);
   FContent.Clear;

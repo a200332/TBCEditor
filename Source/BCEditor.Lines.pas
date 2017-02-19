@@ -873,47 +873,41 @@ var
 begin
   if Assigned(FOnBeforeSetText) then
     FOnBeforeSetText(Self);
-  Clear;
+  Clear();
   FIndexOfLongestLine := -1;
-  LPValue := Pointer(AValue);
-  if Assigned(LPValue) then
+  if (AValue <> '') then
   begin
+    LPValue := PChar(AValue);
     LLength := Length(AValue);
     LPLastChar := @AValue[LLength];
     while LPValue <= LPLastChar do
-    begin
-      LPStartValue := LPValue;
-      while (LPValue <= LPLastChar) and (LPValue^ <> BCEDITOR_CARRIAGE_RETURN) and (LPValue^ <> BCEDITOR_LINEFEED) and
-        (LPValue^ <> BCEDITOR_LINE_SEPARATOR) do
-        Inc(LPValue);
-
-      if FCount = FCapacity then
-        Grow;
-
-      with FList^[FCount] do
+      if (LPValue^ = BCEDITOR_CARRIAGE_RETURN) then
       begin
-        Pointer(Value) := nil;
-        if LPValue = LPStartValue then
-          Value := ''
-        else
-          SetString(Value, LPStartValue, LPValue - LPStartValue);
-        Range := nil;
-        ExpandedLength := -1;
-        Flags := [sfExpandedLengthUnknown];
-        New(Attribute);
-        Attribute^.Foreground := clNone;
-        Attribute^.Background := clNone;
-        Attribute^.LineState := lsNone;
-      end;
-      Inc(FCount);
+        Inc(LPValue);
+        if (LPValue^ = BCEDITOR_LINEFEED) then
+          Inc(LPValue);
+        InsertItem(FCount, '');
+      end
+      else if (LPValue^ = BCEDITOR_LINEFEED) then
+      begin
+        Inc(LPValue);
+        if (LPValue^ = BCEDITOR_CARRIAGE_RETURN) then
+          Inc(LPValue);
+        InsertItem(FCount, '');
+      end
+      else
+      begin
+        LPStartValue := LPValue;
+        while (LPValue <= LPLastChar) and (LPValue^ <> BCEDITOR_CARRIAGE_RETURN) and (LPValue^ <> BCEDITOR_LINEFEED) do
+          Inc(LPValue);
 
-      if LPValue^ = BCEDITOR_CARRIAGE_RETURN then
-        Inc(LPValue);
-      if LPValue^ = BCEDITOR_LINEFEED then
-        Inc(LPValue);
-      if LPValue^ = BCEDITOR_LINE_SEPARATOR then
-        Inc(LPValue);
-    end;
+        if (FCount = 0) then
+          InsertItem(FCount, '');
+        if LPValue = LPStartValue then
+          FList^[FCount - 1].Value := ''
+        else
+          SetString(FList^[FCount - 1].Value, LPStartValue, LPValue - LPStartValue);
+      end;
   end;
 
   if (FUpdateCount = 0) and Assigned(FOnInserted) then

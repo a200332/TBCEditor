@@ -1,19 +1,15 @@
 <h3>Description</h3>
 
-A syntax highlighting edit control for RAD Studio (Delphi/C++ Builder) with code folding, completion proposal, matching pair, minimap, sync edit, multi-caret editing, word wrap, support for non-fixed-width fonts, etc. External highlighter and color scheme files are in JSON format which can be also loaded from a stream.
+A syntax highlighting edit control for the RAD Studio (Delphi/C++ Builder) with code folding, completion proposal, matching pair, minimap, sync edit, multi-caret editing, word wrap, support for non-fixed-width fonts, etc. External highlighter and color scheme files are in JSON format and can be loaded at runtime.
 
 <h3>Build requirements</h3>
 
-* Delphi versions XE4-8, Seattle or Berlin
-* C++ Builder versions XE7-8, Seattle or Berlin
-* <a href="https://github.com/ahausladen/JsonDataObjects">Json Data Objects</a> (included)
+* Delphi versions XE4 or higher
+* C++ Builder versions XE7 or higher
 
 <h3>Conditional compilation</h3>
 
-Define | Description 
---- | --- 
-USE_ALPHASKINS | Use <a href="http://www.alphaskins.com/">AlphaSkins</a>. AlphaSkins are most powerful theming solutions for apps developed in Delphi.
-USE_VCL_STYLES | Use VCL styles. A set of graphical details that define the look and feel of a VCL application.
+"USE_VCL_STYLES" - a set of graphical details that define the look and feel of a VCL application.
 
 <h3>Usage example</h3>
 
@@ -31,7 +27,7 @@ USE_VCL_STYLES | Use VCL styles. A set of graphical details that define the look
 
 <h3>Demo</h3>
 
-TBCEditor Control Demo v. 2.0.0 (dev).
+BCEditor Control Demo v. 2.0.0 (dev).
 
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
   * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>

@@ -82,6 +82,8 @@ const
   ecSetBookmark9 = 328;
   ecGotoNextBookmark = 330;
   ecGotoPreviousBookmark = 331;
+  { CompletionProposal }
+  ecCompletionProposal = 470;
   { Focus }
   ecGotFocus = 480;
   ecLostFocus = 481;
@@ -128,13 +130,14 @@ const
   ecMoveCharLeft = 703;
   ecMoveCharRight = 704;
   { Search }
+  ecSearchFindFirst = 802;
+  ecSearchFind = 803;
+  ecSearchReplace = 804;
   ecSearchNext = 800;
   ecSearchPrevious = 801;
   { Comments }
   ecLineComment = 900;
   ecBlockComment = 901;
-  { CompletionProposal }
-  ecCompletionProposal = 910;
 
   ecUserFirst = 1001;
 
@@ -227,8 +230,10 @@ type
   end;
 
 const
-  EditorCommandStrings: array [0 .. 106] of TBCEditorCommandString = (
+  EditorCommandStrings: array [0 .. 114] of TBCEditorCommandString = (
     (Value: ecNone; Name: 'ecNone'),
+    (Value: ecEditCommandFirst; Name: 'ecEditCommandFirst'),
+    (Value: ecEditCommandLast; Name: 'ecEditCommandLast'),
     (Value: ecLeft; Name: 'ecLeft'),
     (Value: ecRight; Name: 'ecRight'),
     (Value: ecUp; Name: 'ecUp'),
@@ -246,6 +251,7 @@ const
     (Value: ecEditorTop; Name: 'ecEditorTop'),
     (Value: ecEditorBottom; Name: 'ecEditorBottom'),
     (Value: ecGotoXY; Name: 'ecGotoXY'),
+    (Value: ecSelection; Name: 'ecSelection'),
     (Value: ecSelectionLeft; Name: 'ecSelectionLeft'),
     (Value: ecSelectionRight; Name: 'ecSelectionRight'),
     (Value: ecSelectionUp; Name: 'ecSelectionUp'),
@@ -269,34 +275,11 @@ const
     (Value: ecScrollDown; Name: 'ecScrollDown'),
     (Value: ecScrollLeft; Name: 'ecScrollLeft'),
     (Value: ecScrollRight; Name: 'ecScrollRight'),
-    (Value: ecBackspace; Name: 'ecBackspace'),
-    (Value: ecDeleteChar; Name: 'ecDeleteChar'),
-    (Value: ecDeleteWord; Name: 'ecDeleteWord'),
-    (Value: ecDeleteLastWord; Name: 'ecDeleteLastWord'),
-    (Value: ecDeleteBeginningOfLine; Name: 'ecDeleteBeginningOfLine'),
-    (Value: ecDeleteEndOfLine; Name: 'ecDeleteEndOfLine'),
-    (Value: ecDeleteLine; Name: 'ecDeleteLine'),
-    (Value: ecClear; Name: 'ecClear'),
-    (Value: ecLineBreak; Name: 'ecLineBreak'),
-    (Value: ecInsertLine; Name: 'ecInsertLine'),
-    (Value: ecChar; Name: 'ecChar'),
-    (Value: ecImeStr; Name: 'ecImeStr'),
-    (Value: ecUndo; Name: 'ecUndo'),
-    (Value: ecRedo; Name: 'ecRedo'),
-    (Value: ecCut; Name: 'ecCut'),
-    (Value: ecCopy; Name: 'ecCopy'),
-    (Value: ecPaste; Name: 'ecPaste'),
     (Value: ecInsertMode; Name: 'ecInsertMode'),
     (Value: ecOverwriteMode; Name: 'ecOverwriteMode'),
     (Value: ecToggleMode; Name: 'ecToggleMode'),
-    (Value: ecBlockIndent; Name: 'ecBlockIndent'),
-    (Value: ecBlockUnindent; Name: 'ecBlockUnindent'),
-    (Value: ecTab; Name: 'ecTab'),
-    (Value: ecShiftTab; Name: 'ecShiftTab'),
     (Value: ecNormalSelect; Name: 'ecNormalSelect'),
     (Value: ecColumnSelect; Name: 'ecColumnSelect'),
-    (Value: ecUserFirst; Name: 'ecUserFirst'),
-    (Value: ecContextHelp; Name: 'ecContextHelp'),
     (Value: ecToggleBookmark; Name: 'ecToggleBookmark'),
     (Value: ecGotoBookmark1; Name: 'ecGotoBookmark1'),
     (Value: ecGotoBookmark2; Name: 'ecGotoBookmark2'),
@@ -318,11 +301,31 @@ const
     (Value: ecSetBookmark9; Name: 'ecSetBookmark9'),
     (Value: ecGotoNextBookmark; Name: 'ecGotoNextBookmark'),
     (Value: ecGotoPreviousBookmark; Name: 'ecGotoPreviousBookmark'),
+    (Value: ecGotFocus; Name: 'ecGotFocus'),
+    (Value: ecLostFocus; Name: 'ecLostFocus'),
+    (Value: ecContextHelp; Name: 'ecContextHelp'),
+    (Value: ecBackspace; Name: 'ecBackspace'),
+    (Value: ecDeleteChar; Name: 'ecDeleteChar'),
+    (Value: ecDeleteWord; Name: 'ecDeleteWord'),
+    (Value: ecDeleteLastWord; Name: 'ecDeleteLastWord'),
+    (Value: ecDeleteBeginningOfLine; Name: 'ecDeleteBeginningOfLine'),
+    (Value: ecDeleteEndOfLine; Name: 'ecDeleteEndOfLine'),
+    (Value: ecDeleteLine; Name: 'ecDeleteLine'),
+    (Value: ecClear; Name: 'ecClear'),
+    (Value: ecLineBreak; Name: 'ecLineBreak'),
+    (Value: ecInsertLine; Name: 'ecInsertLine'),
+    (Value: ecChar; Name: 'ecChar'),
     (Value: ecString; Name: 'ecString'),
-    (Value: ecMoveLineUp; Name: 'ecMoveLineUp'),
-    (Value: ecMoveLineDown; Name: 'ecMoveLineDown'),
-    (Value: ecMoveCharLeft; Name: 'ecMoveCharLeft'),
-    (Value: ecMoveCharRight; Name: 'ecMoveCharRight'),
+    (Value: ecImeStr; Name: 'ecImeStr'),
+    (Value: ecUndo; Name: 'ecUndo'),
+    (Value: ecRedo; Name: 'ecRedo'),
+    (Value: ecCopy; Name: 'ecCopy'),
+    (Value: ecCut; Name: 'ecCut'),
+    (Value: ecPaste; Name: 'ecPaste'),
+    (Value: ecBlockIndent; Name: 'ecBlockIndent'),
+    (Value: ecBlockUnindent; Name: 'ecBlockUnindent'),
+    (Value: ecTab; Name: 'ecTab'),
+    (Value: ecShiftTab; Name: 'ecShiftTab'),
     (Value: ecUpperCase; Name: 'ecUpperCase'),
     (Value: ecLowerCase; Name: 'ecLowerCase'),
     (Value: ecAlternatingCase; Name: 'ecAlternatingCase'),
@@ -331,10 +334,18 @@ const
     (Value: ecUpperCaseBlock; Name: 'ecUpperCaseBlock'),
     (Value: ecLowerCaseBlock; Name: 'ecLowerCaseBlock'),
     (Value: ecAlternatingCaseBlock; Name: 'ecAlternatingCaseBlock'),
+    (Value: ecMoveLineUp; Name: 'ecMoveLineUp'),
+    (Value: ecMoveLineDown; Name: 'ecMoveLineDown'),
+    (Value: ecMoveCharLeft; Name: 'ecMoveCharLeft'),
+    (Value: ecMoveCharRight; Name: 'ecMoveCharRight'),
+    (Value: ecSearchFindFirst; Name: 'ecSearchFindFirst'),
+    (Value: ecSearchFind; Name: 'ecSearchFind'),
+    (Value: ecSearchReplace; Name: 'ecSearchReplace'),
     (Value: ecSearchNext; Name: 'ecSearchNext'),
     (Value: ecSearchPrevious; Name: 'ecSearchPrevious'),
     (Value: ecLineComment; Name: 'ecLineComment'),
-    (Value: ecBlockComment; Name: 'ecBlockComment')
+    (Value: ecBlockComment; Name: 'ecBlockComment'),
+    (Value: ecCompletionProposal; Name: 'ecCompletionProposal')
   );
 
 function IdentToEditorCommand(const AIdent: string; var ACommand: LongInt): Boolean;
@@ -673,6 +684,8 @@ begin
   Add(ecBackspace, [ssShift], VK_BACK);
   Add(ecDeleteLastWord, [ssCtrl], VK_BACK);
   { Search }
+  Add(ecSearchFind, [ssCtrl], Ord('F'));
+  Add(ecSearchReplace, [ssCtrl], Ord('R'));
   Add(ecSearchNext, [], VK_F3);
   Add(ecSearchPrevious, [ssShift], VK_F3);
   { Enter (return) & Tab }
