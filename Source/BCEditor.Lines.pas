@@ -1,6 +1,6 @@
 unit BCEditor.Lines;
 
-interface
+interface {********************************************************************}
 
 uses
   System.SysUtils, Vcl.Graphics, BCEditor.Utils, System.Classes, BCEditor.Consts, BCEditor.Types;
@@ -147,7 +147,7 @@ function GetTextPosition(const AChar, ALine: Integer): TBCEditorTextPosition; in
 function MaxTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
 function MinTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
 
-implementation
+implementation {***************************************************************}
 
 uses
   Math,
@@ -231,7 +231,8 @@ function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer;
 // ACharIndex is 1-based
 var
   LBeginChar: Integer; // 0-based
-  LIndex, LCharIndex: Integer;
+  LCharIndex: Integer;
+  LIndex: Integer;
   LLineLength: Integer;
 begin
   Result.Line := ATextBeginPosition.Line;
@@ -331,7 +332,8 @@ end;
 
 procedure TBCEditorLines.DeleteLines(const AIndex: Integer; ACount: Integer);
 var
-  i, LLinesAfter: Integer;
+  i: Integer;
+  LLinesAfter: Integer;
 begin
   if ACount > 0 then
   begin
@@ -380,10 +382,11 @@ end;
 
 procedure TBCEditorLines.ExchangeItems(AIndex1, AIndex2: Integer);
 var
-  Item1, Item2: PStringRecord;
+  Item1: PStringRecord;
+  Item2: PStringRecord;
   LAttribute: PLineAttribute;
-  LFlags: TStringFlags;
   LExpandedLength: Integer;
+  LFlags: TStringFlags;
   LRange: TRange;
   LValue: Pointer;
 begin
@@ -494,7 +497,8 @@ end;
 
 function TBCEditorLines.GetLengthOfLongestLine: Integer;
 var
-  i, LMaxLength: Integer;
+  i: Integer;
+  LMaxLength: Integer;
   StringRecord: PStringRecord;
 begin
   if FIndexOfLongestLine < 0 then
@@ -540,7 +544,8 @@ end;
 
 function TBCEditorLines.GetTextLength: Integer;
 var
-  i, LLineBreakLength: Integer;
+  i: Integer;
+  LLineBreakLength: Integer;
 begin
   Result := 0;
   LLineBreakLength := Length(LineBreak);
@@ -554,9 +559,13 @@ end;
 
 function TBCEditorLines.GetTextStr: string;
 var
-  i, j, LLength, LSize, LLineBreakLength: Integer;
-  LPValue: PChar;
+  i: Integer;
+  j: Integer;
+  LLength: Integer;
   LLineBreak: string;
+  LLineBreakLength: Integer;
+  LPValue: PChar;
+  LSize: Integer;
 begin
   LSize := GetTextLength;
   LLineBreak := LineBreak;
@@ -706,9 +715,9 @@ end;
 procedure TBCEditorLines.LoadFromBuffer(var ABuffer: TBytes; AEncoding: TEncoding = nil);
 var
   LIndex: Integer;
+  LPStrBuffer: PChar;
   LSize: Integer;
   LStrBuffer: string;
-  LPStrBuffer: PChar;
 begin
   FStreaming := True;
 
@@ -735,8 +744,8 @@ end;
 
 procedure TBCEditorLines.LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil);
 var
-  LSize: Integer;
   LBuffer: TBytes;
+  LSize: Integer;
   LStrBuffer: string;
 begin
   FStreaming := True;
@@ -864,7 +873,9 @@ end;
 
 procedure TBCEditorLines.QuickSort(ALeft, ARight: Integer; ACompare: TCompare);
 var
-  LLeft, LRight, LMiddle: Integer;
+  LLeft: Integer;
+  LMiddle: Integer;
+  LRight: Integer;
 begin
   repeat
     LLeft := ALeft;
@@ -917,7 +928,8 @@ end;
 
 procedure TBCEditorLines.SaveToStream(AStream: TStream; AEncoding: TEncoding);
 var
-  LBuffer, LPreamble: TBytes;
+  LBuffer: TBytes;
+  LPreamble: TBytes;
 begin
   FStreaming := True;
 
@@ -969,7 +981,9 @@ end;
 procedure TBCEditorLines.SetTextStr(const AValue: string);
 var
   LLength: Integer;
-  LPValue, LPStartValue, LPLastChar: PChar;
+  LPLastChar: PChar;
+  LPStartValue: PChar;
+  LPValue: PChar;
 begin
   if Assigned(FOnBeforeSetText) then
     FOnBeforeSetText(Self);

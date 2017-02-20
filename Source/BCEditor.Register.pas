@@ -3,7 +3,8 @@ unit BCEditor.Register;
 interface
 
 uses
-  System.Classes, BCEditor.Editor, BCEditor.Editor.DB, BCEditor.Print, BCEditor.Print.Preview, BCEditor.MacroRecorder;
+  System.Classes,
+  BCEditor.Editor, BCEditor.Print, BCEditor.Print.Preview, BCEditor.MacroRecorder;
 
 procedure Register;
 
