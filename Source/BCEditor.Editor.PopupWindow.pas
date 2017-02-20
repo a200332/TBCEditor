@@ -173,10 +173,11 @@ end;
 {$if defined(USE_VCL_STYLES)}
 procedure TBCEditorPopupWindow.WMNCPaint(var AMessage: TWMNCPaint);
 var
-  LRect: TRect;
+  LBorderHeight: Integer;
+  LBorderWidth: Integer;
   LExStyle: Integer;
+  LRect: TRect;
   LTempRgn: HRGN;
-  LBorderWidth, LBorderHeight: Integer;
 begin
   if StyleServices.Enabled then
   begin

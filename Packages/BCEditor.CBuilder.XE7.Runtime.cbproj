@@ -341,17 +341,11 @@
 				<DelphiCompile Include="..\Source\BCEditor.Editor.UnknownChars.pas">
             <BuildOrder>63</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Utils.pas">
-            <BuildOrder>64</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.WordWrap.Colors.pas">
             <BuildOrder>65</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.WordWrap.pas">
             <BuildOrder>66</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Encoding.pas">
-            <BuildOrder>67</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Export.HTML.pas">
             <BuildOrder>67</BuildOrder>

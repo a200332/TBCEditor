@@ -11,12 +11,12 @@ type
   type
     TItem = class(TPersistent)
     type
-      TReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak,
+      TItemType = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak,
         crIndent, crUnindent, crCaret, crSelection, crNothing, crGroupBreak);
     protected
       FBlockNumber: Integer;
       FData: Pointer;
-      FReason: TReason;
+      FItemType: TItemType;
       FSelectionBeginPosition: TBCEditorTextPosition;
       FSelectionEndPosition: TBCEditorTextPosition;
       FSelectionMode: TBCEditorSelectionMode;
@@ -26,7 +26,7 @@ type
       procedure Assign(ASource: TPersistent); override;
       property BlockNumber: Integer read FBlockNumber write FBlockNumber;
       property Data: Pointer read FData write FData;
-      property Reason: TReason read FReason write FReason;
+      property ItemType: TItemType read FItemType write FItemType;
       property SelectionBeginPosition: TBCEditorTextPosition read FSelectionBeginPosition write FSelectionBeginPosition;
       property SelectionEndPosition: TBCEditorTextPosition read FSelectionEndPosition write FSelectionEndPosition;
       property SelectionMode: TBCEditorSelectionMode read FSelectionMode write FSelectionMode;
@@ -54,7 +54,7 @@ type
     function GetItems(const AIndex: Integer): TItem;
     procedure SetItems(const AIndex: Integer; const AValue: TItem);
   public
-    procedure AddChange(AReason: TItem.TReason;
+    procedure AddChange(AReason: TItem.TItemType;
       const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
       const AChangeText: string; ASelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
     procedure BeginBlock(AChangeBlockNumber: Integer = 0);
@@ -63,7 +63,7 @@ type
     destructor Destroy(); override;
     procedure EndBlock();
     function LastChangeBlockNumber(): Integer;
-    function LastChangeReason(): TItem.TReason;
+    function LastChangeReason(): TItem.TItemType;
     function LastChangeString(): string;
     function PeekItem(): TItem;
     function PopItem(): TItem;
@@ -98,7 +98,7 @@ begin
 
   FBlockNumber := TItem(ASource).BlockNumber;
   FData := TItem(ASource).Data;
-  FReason := TItem(ASource).Reason;
+  FItemType := TItem(ASource).ItemType;
   FSelectionMode := TItem(ASource).SelectionMode;
   FSelectionBeginPosition := TItem(ASource).SelectionBeginPosition;
   FSelectionEndPosition := TItem(ASource).SelectionEndPosition;
@@ -108,7 +108,7 @@ end;
 
 { TBCEditorUndoList ***********************************************************}
 
-procedure TBCEditorUndoList.AddChange(AReason: TItem.TReason;
+procedure TBCEditorUndoList.AddChange(AReason: TItem.TItemType;
   const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
   const AChangeText: string; ASelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
 var
@@ -131,7 +131,7 @@ begin
         BlockNumber := FChangeBlockNumber
       else
         BlockNumber := 0;
-      Reason := AReason;
+      ItemType := AReason;
       SelectionMode := ASelectionMode;
       TextCaretPosition := ACaretPosition;
       SelectionBeginPosition := ASelectionBeginPosition;
@@ -257,12 +257,12 @@ begin
     Result := TItem(FItems[FItems.Count - 1]).BlockNumber;
 end;
 
-function TBCEditorUndoList.LastChangeReason(): TItem.TReason;
+function TBCEditorUndoList.LastChangeReason(): TItem.TItemType;
 begin
   if FItems.Count = 0 then
     Result := crNothing
   else
-    Result := TItem(FItems[FItems.Count - 1]).Reason;
+    Result := TItem(FItems[FItems.Count - 1]).ItemType;
 end;
 
 function TBCEditorUndoList.LastChangeString(): string;
@@ -298,7 +298,7 @@ begin
   begin
     Result := FItems[LIndex];
     FItems.Delete(LIndex);
-    FChanged := Result.Reason in Reasons;
+    FChanged := Result.ItemType in Reasons;
     if FChanged then
       Dec(FChangeCount);
   end;
@@ -309,7 +309,7 @@ begin
   if Assigned(AItem) then
   begin
     if ((FItems.Count > 0)
-      and (AItem.Reason = crInsert) and (TItem(FItems[FItems.Count - 1]).Reason = AItem.Reason)
+      and (AItem.ItemType = crInsert) and (TItem(FItems[FItems.Count - 1]).ItemType = AItem.ItemType)
       and (AItem.TextCaretPosition.Line = TItem(FItems[FItems.Count - 1]).SelectionEndPosition.Line)
       and (AItem.TextCaretPosition.Char = TItem(FItems[FItems.Count - 1]).SelectionEndPosition.Char + 1)) then
     begin
@@ -317,7 +317,7 @@ begin
       TItem(FItems[FItems.Count - 1]).SelectionEndPosition := AItem.SelectionEndPosition;
     end
     else if ((FItems.Count > 0)
-      and (AItem.Reason = crDelete) and (TItem(FItems[FItems.Count - 1]).Reason = AItem.Reason)
+      and (AItem.ItemType = crDelete) and (TItem(FItems[FItems.Count - 1]).ItemType = AItem.ItemType)
       and (AItem.TextCaretPosition.Char = TItem(FItems[FItems.Count - 1]).TextCaretPosition.Char)
       and (AItem.TextCaretPosition.Line = TItem(FItems[FItems.Count - 1]).TextCaretPosition.Line)) then
     begin
@@ -328,7 +328,7 @@ begin
     else
     begin
       FItems.Add(AItem);
-      if (AItem.Reason <> crGroupBreak) and Assigned(OnAddedUndo) then
+      if (AItem.ItemType <> crGroupBreak) and Assigned(OnAddedUndo) then
         OnAddedUndo(Self);
     end;
   end;
