@@ -185,7 +185,8 @@ type
 implementation
 
 uses
-  Vcl.Forms, BCEditor.Editor.Utils, BCEditor.Consts, System.Types;
+  Vcl.Forms, System.Types,
+  BCEditor.Editor.Utils, BCEditor.Consts, BCEditor.Lines;
 
 { TBCEditorDatAEvent }
 

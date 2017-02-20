@@ -346,9 +346,6 @@ type
 
   TBCEditorSortOrder = (soAsc, soDesc, soRandom);
 
-  TBCEditorChangeReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent,
-    crCaret, crSelection, crNothing, crGroupBreak);
-
   TBCEditorWordWrapWidth = (wwwPage, wwwRightMargin);
 
   TBCEditorCodeFoldingMarkStyle = (msCircle, msSquare, msTriangle);

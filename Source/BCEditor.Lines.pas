@@ -6,44 +6,40 @@ uses
   System.SysUtils, Vcl.Graphics, BCEditor.Utils, System.Classes, BCEditor.Consts, BCEditor.Types;
 
 type
-  TBCEditorLinesRange = Pointer;
-
-  TBCEditorStringFlag = (sfHasTabs, sfHasNoTabs, sfExpandedLengthUnknown);
-  TBCEditorStringFlags = set of TBCEditorStringFlag;
-
-  TBCEditorLineState = (lsNone, lsNormal, lsModified);
-
-  TBCEditorLineAttribute = packed record
-    Background: TColor;
-    Foreground: TColor;
-    LineState: TBCEditorLineState;
-  end;
-  PBCEditorLineAttribute = ^TBCEditorLineAttribute;
-
-  TBCEditorStringRecord = packed record
-    Attribute: PBCEditorLineAttribute;
-    Flags: TBCEditorStringFlags;
-    ExpandedLength: Integer;
-    Range: TBCEditorLinesRange;
-    Value: string;
-  end;
-  PBCEditorStringRecord = ^TBCEditorStringRecord;
-
-const
-  CSTRINGRECORDSIZE = SizeOf(TBCEditorStringRecord);
-  CMAXSTRINGS = MaxInt div CSTRINGRECORDSIZE;
-
-type
-  TBCEditorLines = class;
-
-  PEditorStringRecordList = ^TBCEditorStringRecordList;
-  TBCEditorStringRecordList = array [0 .. CMAXSTRINGS - 1] of TBCEditorStringRecord;
-
-  TStringListChangeEvent = procedure(ASender: TObject; const AIndex: Integer; const ACount: Integer) of object;
-
-  TBCEditorStringListSortCompare = function(AList: TBCEditorLines; AIndex1, AIndex2: Integer): Integer;
-
   TBCEditorLines = class(TStrings)
+  const
+    LineBreak = sLineBreak;
+  type
+    TChangeEvent = procedure(ASender: TObject; const AIndex: Integer; const ACount: Integer) of object;
+
+    TRange = Pointer;
+
+    TStringFlag = (sfHasTabs, sfHasNoTabs, sfExpandedLengthUnknown);
+    TStringFlags = set of TStringFlag;
+
+    TLineState = (lsNone, lsNormal, lsModified);
+
+    PLineAttribute = ^TLineAttribute;
+    TLineAttribute = packed record
+      Background: TColor;
+      Foreground: TColor;
+      LineState: TLineState;
+    end;
+
+    PStringRecord = ^TStringRecord;
+    TStringRecord = packed record
+      Attribute: PLineAttribute;
+      Flags: TStringFlags;
+      ExpandedLength: Integer;
+      Range: TRange;
+      Value: string;
+    end;
+
+    PStringRecordList = ^TStringRecordList;
+    TStringRecordList = array [0 .. MaxInt div SizeOf(TStringRecord) - 1] of TStringRecord;
+
+    TCompare = function(AList: TBCEditorLines; AIndex1, AIndex2: Integer): Integer;
+
   strict private
     FCapacity: Integer;
     FCaseSensitive: Boolean;
@@ -51,137 +47,153 @@ type
     FCount: Integer;
     FIndexOfLongestLine: Integer;
     FLengthOfLongestLine: Integer;
-    FList: PEditorStringRecordList;
+    FList: PStringRecordList;
     FLongestLineNeedsUpdate: Boolean;
     FOnAfterSetText: TNotifyEvent;
-    FOnBeforePutted: TStringListChangeEvent;
+    FOnBeforePutted: TChangeEvent;
     FOnBeforeSetText: TNotifyEvent;
     FOnChange: TNotifyEvent;
     FOnChanging: TNotifyEvent;
     FOnCleared: TNotifyEvent;
-    FOnDeleted: TStringListChangeEvent;
-    FOnInserted: TStringListChangeEvent;
-    FOnPutted: TStringListChangeEvent;
+    FOnDeleted: TChangeEvent;
+    FOnInserted: TChangeEvent;
+    FOnPutted: TChangeEvent;
     FOwner: TObject;
     FSortOrder: TBCEditorSortOrder;
     FStreaming: Boolean;
     FTabWidth: Integer;
     FUpdateCount: Integer;
+    procedure ExchangeItems(AIndex1, AIndex2: Integer);
     function ExpandString(AIndex: Integer): string;
-    function GetAttributes(AIndex: Integer): PBCEditorLineAttribute;
+    function GetAttributes(AIndex: Integer): PLineAttribute;
     function GetExpandedString(AIndex: Integer): string;
     function GetExpandedStringLength(AIndex: Integer): Integer;
-    function GetRange(AIndex: Integer): TBCEditorLinesRange;
-    procedure ExchangeItems(AIndex1, AIndex2: Integer);
+    function GetRange(AIndex: Integer): TRange;
     procedure Grow;
-    procedure PutAttributes(AIndex: Integer; const AValue: PBCEditorLineAttribute);
-    procedure PutRange(AIndex: Integer; ARange: TBCEditorLinesRange);
-    procedure QuickSort(ALeft, ARight: Integer; ACompare: TBCEditorStringListSortCompare);
+    procedure PutAttributes(AIndex: Integer; const AValue: PLineAttribute);
+    procedure PutRange(AIndex: Integer; ARange: TRange);
+    procedure QuickSort(ALeft, ARight: Integer; ACompare: TCompare);
   protected
     function CompareStrings(const S1, S2: string): Integer; override;
     function Get(AIndex: Integer): string; override;
     function GetCapacity: Integer; override;
     function GetCount: Integer; override;
     function GetTextStr: string; override;
+    procedure InsertItem(AIndex: Integer; const AValue: string);
     procedure Put(AIndex: Integer; const AValue: string); override;
     procedure SetCapacity(AValue: Integer); override;
     procedure SetColumns(AValue: Boolean);
     procedure SetTabWidth(AValue: Integer);
     procedure SetTextStr(const AValue: string); override;
     procedure SetUpdateState(AUpdating: Boolean); override;
-    procedure InsertItem(AIndex: Integer; const AValue: string);
   public
-    constructor Create(AOwner: TObject);
-    destructor Destroy; override;
-    function StringLength(AIndex: Integer): Integer;
     function Add(const AValue: string): Integer; override;
+    procedure AddIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
+      const Ident: string; const SelectionMode: TBCEditorSelectionMode);
+    function CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition; overload;
+    function CharIndexToTextPosition(const ACharIndex: Integer;
+      const ATextBeginPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
+    procedure Clear; override;
+    constructor Create(AOwner: TObject);
+    procedure CustomSort(const ABeginLine: Integer; const AEndLine: Integer; ACompare: TCompare); virtual;
+    procedure Delete(AIndex: Integer); override;
+    procedure DeleteLines(const AIndex: Integer; ACount: Integer);
+    destructor Destroy; override;
     function GetLengthOfLongestLine: Integer;
     function GetLineText(ALine: Integer): string;
     function GetTextLength: Integer;
-    procedure Clear; override;
-    procedure CustomSort(const ABeginLine: Integer; const AEndLine: Integer; ACompare: TBCEditorStringListSortCompare); virtual;
-    procedure Delete(AIndex: Integer); override;
-    procedure DeleteLines(const AIndex: Integer; ACount: Integer);
     procedure Insert(AIndex: Integer; const AValue: string); override;
     procedure InsertLines(AIndex, ACount: Integer; AStrings: TStrings = nil);
     procedure InsertStrings(AIndex: Integer; AStrings: TStrings);
     procedure InsertText(AIndex: Integer; const AText: string);
-    procedure LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil); override;
-    procedure SaveToStream(AStream: TStream; AEncoding: TEncoding = nil); override;
-    procedure TrimTrailingSpaces(AIndex: Integer);
     procedure LoadFromBuffer(var ABuffer: TBytes; AEncoding: TEncoding = nil);
-    procedure Sort(const ABeginLine: Integer; const AEndLine: Integer); virtual;
+    procedure LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil); override;
     procedure LoadFromStrings(var AStrings: TStringList);
-    property Attributes[AIndex: Integer]: PBCEditorLineAttribute read GetAttributes write PutAttributes;
+    procedure RemoveIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
+      const Ident: string; const SelectionMode: TBCEditorSelectionMode);
+    procedure SaveToStream(AStream: TStream; AEncoding: TEncoding = nil); override;
+    procedure Sort(const ABeginLine: Integer; const AEndLine: Integer); virtual;
+    function StringLength(AIndex: Integer): Integer;
+    function TextPositionToCharIndex(const ATextPosition: TBCEditorTextPosition): Integer;
+    procedure TrimTrailingSpaces(AIndex: Integer);
+    property Attributes[AIndex: Integer]: PLineAttribute read GetAttributes write PutAttributes;
     property CaseSensitive: Boolean read FCaseSensitive write FCaseSensitive default False;
     property Columns: Boolean read FColumns write SetColumns;
     property Count: Integer read FCount;
-    property ExpandedStrings[AIndex: Integer]: string read GetExpandedString;
     property ExpandedStringLengths[AIndex: Integer]: Integer read GetExpandedStringLength;
-    property List: PEditorStringRecordList read FList;
+    property ExpandedStrings[AIndex: Integer]: string read GetExpandedString;
+    property List: PStringRecordList read FList;
+    property Owner: TObject read FOwner write FOwner;
+    property Ranges[AIndex: Integer]: TRange read GetRange write PutRange;
+    property SortOrder: TBCEditorSortOrder read FSortOrder write FSortOrder;
+    property Streaming: Boolean read FStreaming;
+    property Strings[AIndex: Integer]: string read Get write Put; default;
+    property TabWidth: Integer read FTabWidth write SetTabWidth;
+    property Text: string read GetTextStr write SetTextStr;
     property OnAfterSetText: TNotifyEvent read FOnAfterSetText write FOnAfterSetText;
-    property OnBeforePutted: TStringListChangeEvent read FOnBeforePutted write FOnBeforePutted;
+    property OnBeforePutted: TChangeEvent read FOnBeforePutted write FOnBeforePutted;
     property OnBeforeSetText: TNotifyEvent read FOnBeforeSetText write FOnBeforeSetText;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
     property OnChanging: TNotifyEvent read FOnChanging write FOnChanging;
     property OnCleared: TNotifyEvent read FOnCleared write FOnCleared;
-    property OnDeleted: TStringListChangeEvent read FOnDeleted write FOnDeleted;
-    property OnInserted: TStringListChangeEvent read FOnInserted write FOnInserted;
-    property OnPutted: TStringListChangeEvent read FOnPutted write FOnPutted;
-    property Owner: TObject read FOwner write FOwner;
-    property Ranges[AIndex: Integer]: TBCEditorLinesRange read GetRange write PutRange;
-    property SortOrder: TBCEditorSortOrder read FSortOrder write FSortOrder;
-    property Strings[AIndex: Integer]: string read Get write Put; default;
-    property Streaming: Boolean read FStreaming;
-    property TabWidth: Integer read FTabWidth write SetTabWidth;
-    property Text: string read GetTextStr write SetTextStr;
+    property OnDeleted: TChangeEvent read FOnDeleted write FOnDeleted;
+    property OnInserted: TChangeEvent read FOnInserted write FOnInserted;
+    property OnPutted: TChangeEvent read FOnPutted write FOnPutted;
   end;
 
   EBCEditorLinesException = class(Exception);
 
+function GetTextPosition(const AChar, ALine: Integer): TBCEditorTextPosition; inline;
+function MaxTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+function MinTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+
 implementation
 
 uses
+  Math,
   BCEditor.Language;
 
-{ TBCEditorLines }
+function GetTextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
+// AChar is 1-based
+// ALine is 0-based
+begin
+  with Result do
+  begin
+    Char := AChar;
+    Line := ALine;
+  end;
+end;
 
-procedure ListIndexOutOfBounds(AIndex: Integer);
+function MaxTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+begin
+  if (A.Line > B.Line) then
+    Result := A
+  else if (B.Line > A.Line) or (A.Char < B.Char) then
+    Result := B
+  else
+    Result := A;
+end;
+
+function MinTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+begin
+  if (A.Line < B.Line) then
+    Result := A
+  else if (B.Line < A.Line) or (A.Char >= B.Char) then
+    Result := B
+  else
+    Result := A;
+end;
+
+{ TBCEditorLines **************************************************************}
+
+procedure ListIndexOutOfBounds(AIndex: Integer); inline;
 begin
   raise EBCEditorLinesException.CreateFmt(SBCEditorListIndexOutOfBounds, [AIndex]);
 end;
 
-constructor TBCEditorLines.Create;
+function StringListCompareStrings(AList: TBCEditorLines; AIndex1, AIndex2: Integer): Integer;
 begin
-  inherited Create;
-
-  FCaseSensitive := False;
-  FCount := 0;
-  FOwner := AOwner;
-  FUpdateCount := 0;
-  FIndexOfLongestLine := -1;
-  FLengthOfLongestLine := 0;
-  FLongestLineNeedsUpdate := False;
-  TabWidth := 4;
-  Add(EmptyStr);
-end;
-
-destructor TBCEditorLines.Destroy;
-var
-  LIndex: Integer;
-begin
-  FOnChange := nil;
-  FOnChanging := nil;
-  if FCount > 0 then
-  begin
-    for LIndex := 0 to FCount - 1 do
-      Dispose(FList^[LIndex].Attribute);
-    Finalize(FList^[0], FCount);
-  end;
-  FCount := 0;
-  SetCapacity(0);
-
-  inherited;
+  Result := AList.CompareStrings(AList.List[AIndex1].Value, AList.List[AIndex2].Value);
 end;
 
 function TBCEditorLines.Add(const AValue: string): Integer;
@@ -192,56 +204,55 @@ begin
     OnInserted(Self, Result, 1);
 end;
 
-function TBCEditorLines.CompareStrings(const S1, S2: string): Integer;
-begin
-  if SortOrder = soRandom then
-    Exit(Random(2) - 1);
-
-  if CaseSensitive then
-    Result := CompareStr(S1, S2)
-  else
-    Result := CompareText(S1, S2);
-
-  if SortOrder = soDesc then
-    Result := -1 * Result;
-end;
-
-function TBCEditorLines.GetLengthOfLongestLine: Integer;
+procedure TBCEditorLines.AddIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
+  const Ident: string; const SelectionMode: TBCEditorSelectionMode);
 var
-  i, LMaxLength: Integer;
-  PStringRecord: PBCEditorStringRecord;
+  EndLine: Integer;
+  I: Integer;
+  StartLine: Integer;
 begin
-  if FIndexOfLongestLine < 0 then
-  begin
-    LMaxLength := 0;
-    if FCount > 0 then
-    begin
-      PStringRecord := @FList^[0];
-      for i := 0 to FCount - 1 do
-      begin
-        if sfExpandedLengthUnknown in PStringRecord^.Flags then
-          ExpandString(i);
-        if PStringRecord^.ExpandedLength > LMaxLength then
-        begin
-          LMaxLength := PStringRecord^.ExpandedLength;
-          FIndexOfLongestLine := i;
-        end;
-        Inc(PStringRecord);
-      end;
-    end;
-  end;
-  if (fIndexOfLongestLine >= 0) and (FIndexOfLongestLine < FCount) then
-    Result := FList^[FIndexOfLongestLine].ExpandedLength
-  else
-    Result := 0;
+  StartLine := MinTextPosition(TextBeginPosition, TextEndPosition).Line;
+  EndLine := MaxTextPosition(TextBeginPosition, TextEndPosition).Line;
+  for I := StartLine to EndLine do
+    if (SelectionMode <> smColumn) then
+      Strings[I] := Ident + Strings[I]
+    else if (Length(Strings[I]) >= TextBeginPosition.Char) then
+      Strings[I] := Copy(Strings[I], 1, TextBeginPosition.Char - 1) + Ident + Copy(Strings[I], TextBeginPosition.Char, MaxInt);
 end;
 
-function TBCEditorLines.StringLength(AIndex: Integer): Integer;
+function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition;
+// ACharIndex is 1-based
 begin
-  Result := 0;
-  if (AIndex < 0) or (AIndex > FCount - 1) then
-    Exit;
-  Result := Length(FList^[AIndex].Value);
+  Result := CharIndexToTextPosition(ACharIndex, GetTextPosition(1, 0));
+end;
+
+function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer;
+  const ATextBeginPosition: TBCEditorTextPosition): TBCEditorTextPosition;
+// ACharIndex is 1-based
+var
+  LBeginChar: Integer; // 0-based
+  LIndex, LCharIndex: Integer;
+  LLineLength: Integer;
+begin
+  Result.Line := ATextBeginPosition.Line;
+  LBeginChar := ATextBeginPosition.Char - 1;
+  LCharIndex := ACharIndex;
+  for LIndex := ATextBeginPosition.Line to Count do
+  begin
+    LLineLength := Length(Self.Strings[LIndex]) - LBeginChar;
+    if LCharIndex <= LLineLength then
+    begin
+      Result.Char := 1 + LBeginChar + LCharIndex;
+      Break;
+    end
+    else
+    begin
+      Inc(Result.Line);
+      Dec(LCharIndex, LLineLength);
+      Dec(LCharIndex, Length(LineBreak));
+    end;
+    LBeginChar := 0;
+  end;
 end;
 
 procedure TBCEditorLines.Clear;
@@ -263,6 +274,42 @@ begin
   FLengthOfLongestLine := 0;
 end;
 
+function TBCEditorLines.CompareStrings(const S1, S2: string): Integer;
+begin
+  if SortOrder = soRandom then
+    Exit(Random(2) - 1);
+
+  if CaseSensitive then
+    Result := CompareStr(S1, S2)
+  else
+    Result := CompareText(S1, S2);
+
+  if SortOrder = soDesc then
+    Result := -1 * Result;
+end;
+
+constructor TBCEditorLines.Create;
+begin
+  inherited Create;
+
+  FCaseSensitive := False;
+  FCount := 0;
+  FOwner := AOwner;
+  FUpdateCount := 0;
+  FIndexOfLongestLine := -1;
+  FLengthOfLongestLine := 0;
+  FLongestLineNeedsUpdate := False;
+  TabWidth := 4;
+  Add(EmptyStr);
+end;
+
+procedure TBCEditorLines.CustomSort(const ABeginLine: Integer; const AEndLine: Integer;
+  ACompare: TCompare);
+begin
+  if FCount > 1 then
+    QuickSort(ABeginLine, AEndLine, ACompare);
+end;
+
 procedure TBCEditorLines.Delete(AIndex: Integer);
 begin
   if (AIndex < 0) or (AIndex > FCount) then
@@ -273,7 +320,7 @@ begin
     Finalize(FList^[AIndex]);
     Dec(FCount);
     if AIndex < FCount then
-      System.Move(FList[AIndex + 1], FList[AIndex], (FCount - AIndex) * CSTRINGRECORDSIZE);
+      System.Move(FList[AIndex + 1], FList[AIndex], (FCount - AIndex) * SizeOf(TStringRecord));
   finally
     EndUpdate;
   end;
@@ -300,7 +347,7 @@ begin
     begin
       BeginUpdate;
       try
-        System.Move(FList[AIndex + ACount], FList[AIndex], LLinesAfter * CSTRINGRECORDSIZE);
+        System.Move(FList[AIndex + ACount], FList[AIndex], LLinesAfter * SizeOf(TStringRecord));
       finally
         EndUpdate;
       end;
@@ -313,21 +360,55 @@ begin
   end;
 end;
 
-function TBCEditorLines.GetAttributes(AIndex: Integer): PBCEditorLineAttribute;
+destructor TBCEditorLines.Destroy;
+var
+  LIndex: Integer;
 begin
-  if (AIndex >= 0) and (AIndex < FCount) then
-    Result := FList^[AIndex].Attribute
-  else
-    Result := nil;
+  FOnChange := nil;
+  FOnChanging := nil;
+  if FCount > 0 then
+  begin
+    for LIndex := 0 to FCount - 1 do
+      Dispose(FList^[LIndex].Attribute);
+    Finalize(FList^[0], FCount);
+  end;
+  FCount := 0;
+  SetCapacity(0);
+
+  inherited;
 end;
 
-procedure TBCEditorLines.PutAttributes(AIndex: Integer; const AValue: PBCEditorLineAttribute);
+procedure TBCEditorLines.ExchangeItems(AIndex1, AIndex2: Integer);
+var
+  Item1, Item2: PStringRecord;
+  LAttribute: PLineAttribute;
+  LFlags: TStringFlags;
+  LExpandedLength: Integer;
+  LRange: TRange;
+  LValue: Pointer;
 begin
-  if (AIndex < 0) or (AIndex >= FCount) then
-    ListIndexOutOfBounds(AIndex);
-  BeginUpdate;
-  FList^[AIndex].Attribute := AValue;
-  EndUpdate;
+  Item1 := @FList[AIndex1];
+  Item2 := @FList[AIndex2];
+
+  LAttribute := Pointer(Item1^.Attribute);
+  Pointer(Item1^.Attribute) := Pointer(Item2^.Attribute);
+  Pointer(Item2^.Attribute) := LAttribute;
+
+  LFlags := Item1^.Flags;
+  Item1^.Flags := Item2^.Flags;
+  Item2^.Flags := LFlags;
+
+  LExpandedLength := Item1^.ExpandedLength;
+  Item1^.ExpandedLength := Item2^.ExpandedLength;
+  Item2^.ExpandedLength := LExpandedLength;
+
+  LRange := Pointer(Item1^.Range);
+  Pointer(Item1^.Range) := Pointer(Item2^.Range);
+  Pointer(Item2^.Range) := LRange;
+
+  LValue := Pointer(Item1^.Value);
+  Pointer(Item1^.Value) := Pointer(Item2^.Value);
+  Pointer(Item2^.Value) := LValue;
 end;
 
 function TBCEditorLines.ExpandString(AIndex: Integer): string;
@@ -368,6 +449,14 @@ begin
     Result := '';
 end;
 
+function TBCEditorLines.GetAttributes(AIndex: Integer): PLineAttribute;
+begin
+  if (AIndex >= 0) and (AIndex < FCount) then
+    Result := FList^[AIndex].Attribute
+  else
+    Result := nil;
+end;
+
 function TBCEditorLines.GetCapacity: Integer;
 begin
   Result := FCapacity;
@@ -403,7 +492,45 @@ begin
     Result := 0;
 end;
 
-function TBCEditorLines.GetRange(AIndex: Integer): TBCEditorLinesRange;
+function TBCEditorLines.GetLengthOfLongestLine: Integer;
+var
+  i, LMaxLength: Integer;
+  StringRecord: PStringRecord;
+begin
+  if FIndexOfLongestLine < 0 then
+  begin
+    LMaxLength := 0;
+    if FCount > 0 then
+    begin
+      StringRecord := @FList^[0];
+      for i := 0 to FCount - 1 do
+      begin
+        if sfExpandedLengthUnknown in StringRecord^.Flags then
+          ExpandString(i);
+        if StringRecord^.ExpandedLength > LMaxLength then
+        begin
+          LMaxLength := StringRecord^.ExpandedLength;
+          FIndexOfLongestLine := i;
+        end;
+        Inc(StringRecord);
+      end;
+    end;
+  end;
+  if (fIndexOfLongestLine >= 0) and (FIndexOfLongestLine < FCount) then
+    Result := FList^[FIndexOfLongestLine].ExpandedLength
+  else
+    Result := 0;
+end;
+
+function TBCEditorLines.GetLineText(ALine: Integer): string;
+begin
+  if (ALine >= 0) and (ALine < Count) then
+    Result := Get(ALine)
+  else
+    Result := '';
+end;
+
+function TBCEditorLines.GetRange(AIndex: Integer): TRange;
 begin
   if (AIndex >= 0) and (AIndex < FCount) then
     Result := FList^[AIndex].Range
@@ -416,7 +543,7 @@ var
   i, LLineBreakLength: Integer;
 begin
   Result := 0;
-  LLineBreakLength := Length(SLineBreak);
+  LLineBreakLength := Length(LineBreak);
   for i := 0 to FCount - 1 do
   begin
     if i = FCount - 1 then
@@ -432,7 +559,7 @@ var
   LLineBreak: string;
 begin
   LSize := GetTextLength;
-  LLineBreak := SLineBreak;
+  LLineBreak := LineBreak;
   LLineBreakLength := Length(LLineBreak);
   SetString(Result, nil, LSize);
   LPValue := Pointer(Result);
@@ -487,7 +614,7 @@ begin
     Grow;
 
   if AIndex < FCount then
-    System.Move(FList^[AIndex], FList^[AIndex + 1], (FCount - AIndex) * CSTRINGRECORDSIZE);
+    System.Move(FList^[AIndex], FList^[AIndex + 1], (FCount - AIndex) * SizeOf(TStringRecord));
   FIndexOfLongestLine := -1;
   with FList^[AIndex] do
   begin
@@ -517,7 +644,7 @@ begin
     try
       SetCapacity(FCount + ACount);
       if AIndex < FCount then
-        System.Move(FList^[AIndex], FList^[AIndex + ACount], (FCount - AIndex) * CSTRINGRECORDSIZE);
+        System.Move(FList^[AIndex], FList^[AIndex + ACount], (FCount - AIndex) * SizeOf(TStringRecord));
       LIndex := 0;
       for LLine := AIndex to AIndex + ACount - 1 do
       with FList^[LLine] do
@@ -606,86 +733,40 @@ begin
   FStreaming := False;
 end;
 
-function StringListCompareStrings(AList: TBCEditorLines; AIndex1, AIndex2: Integer): Integer;
-begin
-  Result := AList.CompareStrings(AList.List[AIndex1].Value, AList.List[AIndex2].Value);
-end;
-
-procedure TBCEditorLines.Sort(const ABeginLine: Integer; const AEndLine: Integer);
-begin
-  CustomSort(ABeginLine, AEndLine, StringListCompareStrings);
-end;
-
-procedure TBCEditorLines.CustomSort(const ABeginLine: Integer; const AEndLine: Integer;
-  ACompare: TBCEditorStringListSortCompare);
-begin
-  if FCount > 1 then
-    QuickSort(ABeginLine, AEndLine, ACompare);
-end;
-
-procedure TBCEditorLines.ExchangeItems(AIndex1, AIndex2: Integer);
+procedure TBCEditorLines.LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil);
 var
-  Item1, Item2: PBCEditorStringRecord;
-  LAttribute: PBCEditorLineAttribute;
-  LFlags: TBCEditorStringFlags;
-  LExpandedLength: Integer;
-  LRange: TBCEditorLinesRange;
-  LValue: Pointer;
+  LSize: Integer;
+  LBuffer: TBytes;
+  LStrBuffer: string;
 begin
-  Item1 := @FList[AIndex1];
-  Item2 := @FList[AIndex2];
+  FStreaming := True;
 
-  LAttribute := Pointer(Item1^.Attribute);
-  Pointer(Item1^.Attribute) := Pointer(Item2^.Attribute);
-  Pointer(Item2^.Attribute) := LAttribute;
+  BeginUpdate;
+  try
+    LSize := AStream.Size - AStream.Position;
+    if Assigned(AEncoding) then
+    begin
+      SetLength(LBuffer, LSize);
+      AStream.Read(LBuffer[0], LSize);
+      LSize := TEncoding.GetBufferEncoding(LBuffer, AEncoding);
+      LStrBuffer := AEncoding.GetString(LBuffer, LSize, Length(LBuffer) - LSize);
+      SetLength(LBuffer, 0);
+    end
+    else
+    begin
+      SetLength(LStrBuffer, LSize shr 1);
+      AStream.ReadBuffer(LStrBuffer[1], LSize);
+    end;
+    SetTextStr(LStrBuffer);
+    SetLength(LStrBuffer, 0);
+  finally
+    EndUpdate;
+  end;
 
-  LFlags := Item1^.Flags;
-  Item1^.Flags := Item2^.Flags;
-  Item2^.Flags := LFlags;
+  if Assigned(OnInserted) then
+    OnInserted(Self, 0, FCount);
 
-  LExpandedLength := Item1^.ExpandedLength;
-  Item1^.ExpandedLength := Item2^.ExpandedLength;
-  Item2^.ExpandedLength := LExpandedLength;
-
-  LRange := Pointer(Item1^.Range);
-  Pointer(Item1^.Range) := Pointer(Item2^.Range);
-  Pointer(Item2^.Range) := LRange;
-
-  LValue := Pointer(Item1^.Value);
-  Pointer(Item1^.Value) := Pointer(Item2^.Value);
-  Pointer(Item2^.Value) := LValue;
-end;
-
-procedure TBCEditorLines.QuickSort(ALeft, ARight: Integer; ACompare: TBCEditorStringListSortCompare);
-var
-  LLeft, LRight, LMiddle: Integer;
-begin
-  repeat
-    LLeft := ALeft;
-    LRight := ARight;
-    LMiddle := (ALeft + ARight) shr 1;
-    repeat
-      while ACompare(Self, LLeft, LMiddle) < 0 do
-        Inc(LLeft);
-      while ACompare(Self, LRight, LMiddle) > 0 do
-        Dec(LRight);
-      if LLeft <= LRight then
-      begin
-        if LLeft <> LRight then
-          ExchangeItems(LLeft, LRight);
-        if LMiddle = LLeft then
-          LMiddle := LRight
-        else
-        if LMiddle = LRight then
-          LMiddle := LLeft;
-        Inc(LLeft);
-        Dec(LRight);
-      end;
-    until LLeft > LRight;
-    if ALeft < LRight then
-      QuickSort(ALeft, LRight, ACompare);
-    ALeft := LLeft;
-  until LLeft >= ARight;
+  FStreaming := False;
 end;
 
 procedure TBCEditorLines.LoadFromStrings(var AStrings: TStringList);
@@ -733,59 +814,6 @@ begin
   FStreaming := False;
 end;
 
-procedure TBCEditorLines.LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil);
-var
-  LSize: Integer;
-  LBuffer: TBytes;
-  LStrBuffer: string;
-begin
-  FStreaming := True;
-
-  BeginUpdate;
-  try
-    LSize := AStream.Size - AStream.Position;
-    if Assigned(AEncoding) then
-    begin
-      SetLength(LBuffer, LSize);
-      AStream.Read(LBuffer[0], LSize);
-      LSize := TEncoding.GetBufferEncoding(LBuffer, AEncoding);
-      LStrBuffer := AEncoding.GetString(LBuffer, LSize, Length(LBuffer) - LSize);
-      SetLength(LBuffer, 0);
-    end
-    else
-    begin
-      SetLength(LStrBuffer, LSize shr 1);
-      AStream.ReadBuffer(LStrBuffer[1], LSize);
-    end;
-    SetTextStr(LStrBuffer);
-    SetLength(LStrBuffer, 0);
-  finally
-    EndUpdate;
-  end;
-
-  if Assigned(OnInserted) then
-    OnInserted(Self, 0, FCount);
-
-  FStreaming := False;
-end;
-
-procedure TBCEditorLines.SaveToStream(AStream: TStream; AEncoding: TEncoding);
-var
-  LBuffer, LPreamble: TBytes;
-begin
-  FStreaming := True;
-
-  if AEncoding = nil then
-    AEncoding := TEncoding.Default;
-  LBuffer := AEncoding.GetBytes(GetTextStr);
-  LPreamble := AEncoding.GetPreamble;
-  if Length(LPreamble) > 0 then
-    AStream.WriteBuffer(LPreamble[0], Length(LPreamble));
-  AStream.WriteBuffer(LBuffer[0], Length(LBuffer));
-
-  FStreaming := False;
-end;
-
 procedure TBCEditorLines.Put(AIndex: Integer; const AValue: string);
 var
   LHasTabs: Boolean;
@@ -818,18 +846,90 @@ begin
   end;
 end;
 
-procedure TBCEditorLines.TrimTrailingSpaces(AIndex: Integer);
+procedure TBCEditorLines.PutAttributes(AIndex: Integer; const AValue: PLineAttribute);
 begin
   if (AIndex < 0) or (AIndex >= FCount) then
     ListIndexOutOfBounds(AIndex);
-  FList^[AIndex].Value := TrimRight(FList^[AIndex].Value);
+  BeginUpdate;
+  FList^[AIndex].Attribute := AValue;
+  EndUpdate;
 end;
 
-procedure TBCEditorLines.PutRange(AIndex: Integer; ARange: TBCEditorLinesRange);
+procedure TBCEditorLines.PutRange(AIndex: Integer; ARange: TRange);
 begin
   if (AIndex < 0) or (AIndex >= FCount) then
     ListIndexOutOfBounds(AIndex);
   FList^[AIndex].Range := ARange;
+end;
+
+procedure TBCEditorLines.QuickSort(ALeft, ARight: Integer; ACompare: TCompare);
+var
+  LLeft, LRight, LMiddle: Integer;
+begin
+  repeat
+    LLeft := ALeft;
+    LRight := ARight;
+    LMiddle := (ALeft + ARight) shr 1;
+    repeat
+      while ACompare(Self, LLeft, LMiddle) < 0 do
+        Inc(LLeft);
+      while ACompare(Self, LRight, LMiddle) > 0 do
+        Dec(LRight);
+      if LLeft <= LRight then
+      begin
+        if LLeft <> LRight then
+          ExchangeItems(LLeft, LRight);
+        if LMiddle = LLeft then
+          LMiddle := LRight
+        else
+        if LMiddle = LRight then
+          LMiddle := LLeft;
+        Inc(LLeft);
+        Dec(LRight);
+      end;
+    until LLeft > LRight;
+    if ALeft < LRight then
+      QuickSort(ALeft, LRight, ACompare);
+    ALeft := LLeft;
+  until LLeft >= ARight;
+end;
+
+procedure TBCEditorLines.RemoveIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
+  const Ident: string; const SelectionMode: TBCEditorSelectionMode);
+var
+  EndLine: Integer;
+  I: Integer;
+  StartLine: Integer;
+begin
+  StartLine := MinTextPosition(TextBeginPosition, TextEndPosition).Line;
+  EndLine := MaxTextPosition(TextBeginPosition, TextEndPosition).Line;
+  for I := StartLine to EndLine do
+    if (SelectionMode <> smColumn) then
+    begin
+      if (Copy(Strings[I], 1, Length(Ident)) = Ident) then
+        Strings[I] := Copy(Strings[I], 1 + Length(Ident), MaxInt);
+    end
+    else if (Copy(Strings[I], TextBeginPosition.Char, Length(Ident)) = Ident) then
+      Strings[I] :=
+        Copy(Strings[I], 1, TextBeginPosition.Char - 1)
+          + Copy(Strings[I], TextBeginPosition.Char + Length(Ident), MaxInt);
+end;
+
+procedure TBCEditorLines.SaveToStream(AStream: TStream; AEncoding: TEncoding);
+var
+  LBuffer, LPreamble: TBytes;
+begin
+  FStreaming := True;
+
+  if AEncoding = nil then
+    AEncoding := TEncoding.Default;
+  LBuffer := AEncoding.GetBytes(GetTextStr);
+  LPreamble := AEncoding.GetPreamble;
+  if Length(LPreamble) > 0 then
+    AStream.WriteBuffer(LPreamble[0], Length(LPreamble));
+  AStream.WriteBuffer(LBuffer[0], Length(LBuffer));
+
+  FStreaming := False;
 end;
 
 procedure TBCEditorLines.SetCapacity(AValue: Integer);
@@ -838,9 +938,14 @@ begin
     EListError.Create(SBCEditorInvalidCapacity);
   if AValue <> FCapacity then
   begin
-    ReallocMem(FList, AValue * CSTRINGRECORDSIZE);
+    ReallocMem(FList, AValue * SizeOf(TStringRecord));
     FCapacity := AValue;
   end;
+end;
+
+procedure TBCEditorLines.SetColumns(AValue: Boolean);
+begin
+  FColumns := AValue;
 end;
 
 procedure TBCEditorLines.SetTabWidth(AValue: Integer);
@@ -859,11 +964,6 @@ begin
         Include(Flags, sfExpandedLengthUnknown);
       end;
   end;
-end;
-
-procedure TBCEditorLines.SetColumns(AValue: Boolean);
-begin
-  FColumns := AValue;
 end;
 
 procedure TBCEditorLines.SetTextStr(const AValue: string);
@@ -930,12 +1030,38 @@ begin
     FOnChange(Self);
 end;
 
-function TBCEditorLines.GetLineText(ALine: Integer): string;
+procedure TBCEditorLines.Sort(const ABeginLine: Integer; const AEndLine: Integer);
 begin
-  if (ALine >= 0) and (ALine < Count) then
-    Result := Get(ALine)
-  else
-    Result := '';
+  CustomSort(ABeginLine, AEndLine, StringListCompareStrings);
+end;
+
+function TBCEditorLines.StringLength(AIndex: Integer): Integer;
+begin
+  Result := 0;
+  if (AIndex < 0) or (AIndex > FCount - 1) then
+    Exit;
+  Result := Length(FList^[AIndex].Value);
+end;
+
+function TBCEditorLines.TextPositionToCharIndex(const ATextPosition: TBCEditorTextPosition): Integer;
+var
+  LIndex: Integer;
+  LTextPosition: TBCEditorTextPosition;
+begin
+  Result := 0;
+  LTextPosition.Char := ATextPosition.Char;
+  LTextPosition.Line := Min(Count, ATextPosition.Line) - 1;
+  for LIndex := 0 to LTextPosition.Line do
+    Inc(Result, Length(Strings[LIndex]) + Length(LineBreak));
+  Inc(Result, LTextPosition.Char - 1);
+  // Result is 0-based
+end;
+
+procedure TBCEditorLines.TrimTrailingSpaces(AIndex: Integer);
+begin
+  if (AIndex < 0) or (AIndex >= FCount) then
+    ListIndexOutOfBounds(AIndex);
+  FList^[AIndex].Value := TrimRight(FList^[AIndex].Value);
 end;
 
 end.

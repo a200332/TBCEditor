@@ -14,7 +14,7 @@ uses
 
 procedure Register;
 begin
-  RegisterComponents('BCEditor', [TBCEditor, TBCDBEditor, TBCEditorPrint, TBCEditorPrintPreview, TBCEditorMacroRecorder]);
+  RegisterComponents('BCEditor', [TBCEditor, TBCEditorPrint, TBCEditorPrintPreview, TBCEditorMacroRecorder]);
   { UnlistPublishedProperty }
   UnlistPublishedProperty(TBCEditor, 'Ctl3D');
   UnlistPublishedProperty(TBCEditor, 'CustomHint');

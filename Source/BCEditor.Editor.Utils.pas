@@ -5,28 +5,14 @@ interface
 uses
   System.Classes, System.SysUtils, BCEditor.Types;
 
-function GetTextPosition(const AChar, ALine: Integer): TBCEditorTextPosition; inline;
 function IsUTF8Buffer(const ABuffer: TBytes; out AWithBOM: Boolean): Boolean;
 function GetClipboardText: string;
-function MaxTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
-function MinTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
 procedure SetClipboardText(const AText: string);
 
 implementation
 
 uses
   System.Math, BCEditor.Consts, Winapi.Windows, vcl.ClipBrd;
-
-function GetTextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
-// AChar is 1-based
-// ALine is 0-based
-begin
-  with Result do
-  begin
-    Char := AChar;
-    Line := ALine;
-  end;
-end;
 
 // checks for a BOM in UTF-8 format or searches the Buffer for typical UTF-8 octet sequences
 function IsUTF8Buffer(const ABuffer: TBytes; out AWithBOM: Boolean): Boolean;
@@ -237,26 +223,6 @@ begin
   finally
     Clipboard.Close;
   end;
-end;
-
-function MaxTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
-begin
-  if (A.Line > B.Line) then
-    Result := A
-  else if (B.Line > A.Line) or (A.Char < B.Char) then
-    Result := B
-  else
-    Result := A;
-end;
-
-function MinTextPosition(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
-begin
-  if (A.Line < B.Line) then
-    Result := A
-  else if (B.Line < A.Line) or (A.Char >= B.Char) then
-    Result := B
-  else
-    Result := A;
 end;
 
 procedure SetClipboardText(const AText: string);

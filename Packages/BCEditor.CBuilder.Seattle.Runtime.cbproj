@@ -437,7 +437,7 @@
         <DelphiCompile Include="..\Source\BCEditor.Utils.pas">
             <BuildOrder>89</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.JsonDataObjects.pas">
+        <DelphiCompile Include="..\Source\JsonDataObjects.pas">
             <BuildOrder>90</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Form.pas">

@@ -392,9 +392,6 @@
         <DelphiCompile Include="..\Source\BCEditor.Highlighter.Token.pas">
             <BuildOrder>72</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.JsonDataObjects.pas">
-            <BuildOrder>90</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.KeyboardHandler.pas">
             <BuildOrder>73</BuildOrder>
         </DelphiCompile>
@@ -448,6 +445,9 @@
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Utils.pas">
             <BuildOrder>89</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="..\Source\JsonDataObjects.pas">
+            <BuildOrder>90</BuildOrder>
         </DelphiCompile>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
