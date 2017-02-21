@@ -166,7 +166,6 @@
 				<DCCReference Include="..\Source\BCEditor.Editor.LeftMargin.MarksPanel.pas"/>
 				<DCCReference Include="..\Source\BCEditor.Editor.Marks.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.MatchingPair.pas"/>
-        <DCCReference Include="..\Source\BCEditor.Editor.MatchingPair.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Minimap.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Minimap.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Minimap.Indicator.pas"/>
@@ -200,7 +199,6 @@
         <DCCReference Include="..\Source\BCEditor.Editor.Undo.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.UnknownChars.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.WordWrap.pas"/>
-        <DCCReference Include="..\Source\BCEditor.Editor.WordWrap.Colors.pas"/>
         <DCCReference Include="..\Source\BCEditor.Export.HTML.pas"/>
         <DCCReference Include="..\Source\BCEditor.Highlighter.pas"/>
         <DCCReference Include="..\Source\BCEditor.KeyboardHandler.pas"/>

@@ -293,14 +293,6 @@ type
   );
   TBCEditorLeftMarginLineNumberOptions = set of TBCEditorLeftMarginLineNumberOption;
 
-  TBCEditorMatchingPairOption = (
-    mpoHighlightAfterToken,
-    mpoHighlightUnmatched,
-    mpoUnderline,
-    mpoUseMatchedColor
-  );
-  TBCEditorMatchingPairOptions = set of TBCEditorMatchingPairOption;
-
   TBCEditorMinimapOption = (
     moShowBookmarks,
     moShowIndentGuides,

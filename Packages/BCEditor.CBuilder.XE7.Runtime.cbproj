@@ -233,9 +233,6 @@
 				<DelphiCompile Include="..\Source\BCEditor.Editor.Marks.pas">
             <BuildOrder>6</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.MatchingPair.Colors.pas">
-            <BuildOrder>38</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.MatchingPair.pas">
             <BuildOrder>39</BuildOrder>
         </DelphiCompile>
@@ -340,9 +337,6 @@
         </DelphiCompile>
 				<DelphiCompile Include="..\Source\BCEditor.Editor.UnknownChars.pas">
             <BuildOrder>63</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.WordWrap.Colors.pas">
-            <BuildOrder>65</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.WordWrap.pas">
             <BuildOrder>66</BuildOrder>

@@ -125,6 +125,7 @@ type
       procedure InitPage(ACanvas: TCanvas; APageNumber: Integer; APrinterInfo: TBCEditorPrinterInfo;
         ALineNumbers, ALineNumbersInMargin: Boolean; AMaxLineNumber: Integer);
       procedure LoadFromStream(AStream: TStream);
+      procedure SaveToStream(AStream: TStream);
       property PixelBottom: Integer read FPixelBottom write FPixelBottom;
       property PixelFooter: Integer read FPixelFooter write FPixelFooter;
       property PixelHeader: Integer read FPixelHeader write FPixelHeader;
@@ -135,7 +136,6 @@ type
       property PixelRight: Integer read FPixelRight write FPixelRight;
       property PixelRightTextIndent: Integer read FPixelRightTextIndent write FPixelRightTextIndent;
       property PixelTop: Integer read FPixelTop write FPixelTop;
-      procedure SaveToStream(AStream: TStream);
     published
       property Bottom: Double read GetBottom write SetBottom;
       property Footer: Double read GetFooter write SetFooter;
