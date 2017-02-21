@@ -9,33 +9,25 @@ uses
 type
   TBCEditorUndoList = class(TPersistent)
   type
-    TItem = class(TPersistent)
-    type
-      TItemType = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak,
-        crIndent, crUnindent, crCaret, crSelection, crNothing, crGroupBreak);
-    protected
-      FBlockNumber: Integer;
-      FData: Pointer;
-      FItemType: TItemType;
-      FSelectionBeginPosition: TBCEditorTextPosition;
-      FSelectionEndPosition: TBCEditorTextPosition;
-      FSelectionMode: TBCEditorSelectionMode;
-      FText: string;
-      FTextCaretPosition: TBCEditorTextPosition;
-    public
-      procedure Assign(ASource: TPersistent); override;
-      property BlockNumber: Integer read FBlockNumber write FBlockNumber;
-      property Data: Pointer read FData write FData;
-      property ItemType: TItemType read FItemType write FItemType;
-      property SelectionBeginPosition: TBCEditorTextPosition read FSelectionBeginPosition write FSelectionBeginPosition;
-      property SelectionEndPosition: TBCEditorTextPosition read FSelectionEndPosition write FSelectionEndPosition;
-      property SelectionMode: TBCEditorSelectionMode read FSelectionMode write FSelectionMode;
-      property Text: string read FText write FText;
-      property TextCaretPosition: TBCEditorTextPosition read FTextCaretPosition write FTextCaretPosition;
+    TUndoType = (utInsert, utPaste, utDragDropInsert, utDelete, utLineBreak,
+      utIndent, utUnindent, utCaret, utSelection, utNothing, utGroupBreak);
+
+    TItem = record
+      BlockNumber: Integer;
+      Data: Pointer;
+      UndoType: TUndoType;
+      SelectionBeginPosition: TBCEditorTextPosition;
+      SelectionEndPosition: TBCEditorTextPosition;
+      SelectionMode: TBCEditorSelectionMode;
+      Text: string;
+      TextCaretPosition: TBCEditorTextPosition;
     end;
 
   strict private const
-    Reasons = [crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent];
+    UndoTypes = [utInsert, utPaste, utDragDropInsert, utDelete, utLineBreak, utIndent, utUnindent];
+  strict private
+    FCount: Integer;
+    procedure Grow();
   protected
     FBlockCount: Integer;
     FBlockNumber: Integer;
@@ -45,38 +37,37 @@ type
     FInsideRedo: Boolean;
     FInsideUndoBlock: Boolean;
     FInsideUndoBlockCount: Integer;
-    FItems: TList;
+    FItems: array of TItem;
     FLines: TBCEditorLines;
     FLockCount: Integer;
     FOnAddedUndo: TNotifyEvent;
-    function GetCanUndo(): Boolean;
-    function GetItemCount(): Integer;
+    function GetCanUndo(): Boolean; inline;
+    function GetItemCount(): Integer; inline;
     function GetItems(const AIndex: Integer): TItem;
     procedure SetItems(const AIndex: Integer; const AValue: TItem);
   public
-    procedure AddChange(AReason: TItem.TItemType;
+    procedure AddChange(AUndoType: TUndoType;
       const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
       const AChangeText: string; ASelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
+    procedure AddGroupBreak();
+    procedure Assign(ASource: TPersistent); override;
     procedure BeginBlock(AChangeBlockNumber: Integer = 0);
     procedure Clear();
     constructor Create(const ALines: TBCEditorLines);
-    destructor Destroy(); override;
     procedure EndBlock();
-    function LastChangeBlockNumber(): Integer;
-    function LastChangeReason(): TItem.TItemType;
-    function LastChangeString(): string;
-    function PeekItem(): TItem;
-    function PopItem(): TItem;
+    function LastBlockNumber(): Integer;
+    function LastUndoType(): TUndoType;
+    function LastText(): string;
+    function PeekItem(out Item: TItem): Boolean;
+    function PopItem(out Item: TItem): Boolean;
     procedure Lock();
     procedure PushItem(AItem: TItem);
     procedure Unlock();
-  public
-    procedure AddGroupBreak();
-    procedure Assign(ASource: TPersistent); override;
     property BlockCount: Integer read FBlockCount;
     property CanUndo: Boolean read GetCanUndo;
     property ChangeCount: Integer read FChangeCount;
     property Changed: Boolean read FChanged write FChanged;
+    property Count: Integer read FCount;
     property InsideRedo: Boolean read FInsideRedo write FInsideRedo default False;
     property InsideUndoBlock: Boolean read FInsideUndoBlock write FInsideUndoBlock default False;
     property ItemCount: Integer read GetItemCount;
@@ -90,55 +81,35 @@ implementation { **************************************************************}
 uses
   BCEditor.Consts;
 
-{ TBCEditorUndoList.TItem *****************************************************}
-
-procedure TBCEditorUndoList.TItem.Assign(ASource: TPersistent);
-begin
-  Assert(ASource is TItem);
-
-  FBlockNumber := TItem(ASource).BlockNumber;
-  FData := TItem(ASource).Data;
-  FItemType := TItem(ASource).ItemType;
-  FSelectionMode := TItem(ASource).SelectionMode;
-  FSelectionBeginPosition := TItem(ASource).SelectionBeginPosition;
-  FSelectionEndPosition := TItem(ASource).SelectionEndPosition;
-  FText := TItem(ASource).Text;
-  FTextCaretPosition := TItem(ASource).TextCaretPosition;
-end;
-
 { TBCEditorUndoList ***********************************************************}
 
-procedure TBCEditorUndoList.AddChange(AReason: TItem.TItemType;
+procedure TBCEditorUndoList.AddChange(AUndoType: TUndoType;
   const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
   const AChangeText: string; ASelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
 var
-  LNewItem: TItem;
+  NewItem: TItem;
 begin
   if FLockCount = 0 then
   begin
-    FChanged := AReason in Reasons;
+    FChanged := AUndoType in UndoTypes;
 
     if FChanged then
       Inc(FChangeCount);
 
-    LNewItem := TItem.Create;
-    with LNewItem do
-    begin
-      if AChangeBlockNumber <> 0 then
-        BlockNumber := AChangeBlockNumber
-      else
-      if FInsideUndoBlock then
-        BlockNumber := FChangeBlockNumber
-      else
-        BlockNumber := 0;
-      ItemType := AReason;
-      SelectionMode := ASelectionMode;
-      TextCaretPosition := ACaretPosition;
-      SelectionBeginPosition := ASelectionBeginPosition;
-      SelectionEndPosition := ASelectionEndPosition;
-      Text := AChangeText;
-    end;
-    PushItem(LNewItem);
+    if (AChangeBlockNumber <> 0) then
+      NewItem.BlockNumber := AChangeBlockNumber
+    else
+    if (FInsideUndoBlock) then
+      NewItem.BlockNumber := FChangeBlockNumber
+    else
+      NewItem.BlockNumber := 0;
+    NewItem.UndoType := AUndoType;
+    NewItem.SelectionMode := ASelectionMode;
+    NewItem.TextCaretPosition := ACaretPosition;
+    NewItem.SelectionBeginPosition := ASelectionBeginPosition;
+    NewItem.SelectionEndPosition := ASelectionEndPosition;
+    NewItem.Text := AChangeText;
+    PushItem(NewItem);
   end;
 end;
 
@@ -146,33 +117,25 @@ procedure TBCEditorUndoList.AddGroupBreak();
 var
   LTextPosition: TBCEditorTextPosition;
 begin
-  if (LastChangeBlockNumber = 0) and (LastChangeReason <> crGroupBreak) then
-    AddChange(crGroupBreak, LTextPosition, LTextPosition, LTextPosition, '', smNormal);
+  if (LastBlockNumber = 0) and (LastUndoType <> utGroupBreak) then
+    AddChange(utGroupBreak, LTextPosition, LTextPosition, LTextPosition, '', smNormal);
 end;
 
 procedure TBCEditorUndoList.Assign(ASource: TPersistent);
 var
-  LIndex: Integer;
-  LUndoItem: TItem;
+  I: Integer;
 begin
-  if Assigned(ASource) and (ASource is TBCEditorUndoList) then
-  with ASource as TBCEditorUndoList do
-  begin
-    Self.Clear;
-    for LIndex := 0 to (ASource as TBCEditorUndoList).FItems.Count - 1 do
-    begin
-      LUndoItem := TItem.Create;
-      LUndoItem.Assign(FItems[LIndex]);
-      Self.FItems.Add(LUndoItem);
-    end;
-    Self.FInsideUndoBlock := FInsideUndoBlock;
-    Self.FBlockCount := FBlockCount;
-    Self.FChangeBlockNumber := FChangeBlockNumber;
-    Self.FLockCount := FLockCount;
-    Self.FInsideRedo := FInsideRedo;
-  end
-  else
-    inherited Assign(ASource);
+  Assert(Assigned(ASource) and (ASource is TBCEditorUndoList));
+
+  Clear();
+  SetLength(FItems, TBCEditorUndoList(ASource).Count);
+  for I := 0 to TBCEditorUndoList(ASource).Count - 1 do
+    FItems[I] := TBCEditorUndoList(ASource).Items[I];
+  FInsideUndoBlock := TBCEditorUndoList(ASource).FInsideUndoBlock;
+  FBlockCount := TBCEditorUndoList(ASource).FBlockCount;
+  FChangeBlockNumber := TBCEditorUndoList(ASource).FChangeBlockNumber;
+  FLockCount := TBCEditorUndoList(ASource).FLockCount;
+  FInsideRedo := TBCEditorUndoList(ASource).FInsideRedo;
 end;
 
 procedure TBCEditorUndoList.BeginBlock(AChangeBlockNumber: Integer = 0);
@@ -195,14 +158,11 @@ begin
 end;
 
 procedure TBCEditorUndoList.Clear();
-var
-  LIndex: Integer;
 begin
   FBlockCount := 0;
-  for LIndex := 0 to FItems.Count - 1 do
-    TItem(FItems[LIndex]).Free;
-  FItems.Clear;
   FChangeCount := 0;
+  FCount := 0;
+  SetLength(FItems, 0);
 end;
 
 constructor TBCEditorUndoList.Create(const ALines: TBCEditorLines);
@@ -213,17 +173,10 @@ begin
 
   FBlockNumber := BCEDITOR_UNDO_BLOCK_NUMBER_START;
   FChangeCount := 0;
+  FCount := 0;
   FInsideRedo := False;
   FInsideUndoBlock := False;
   FInsideUndoBlockCount := 0;
-  FItems := TList.Create;
-end;
-
-destructor TBCEditorUndoList.Destroy();
-begin
-  Clear;
-  FItems.Free;
-  inherited Destroy;
 end;
 
 procedure TBCEditorUndoList.EndBlock();
@@ -236,12 +189,12 @@ end;
 
 function TBCEditorUndoList.GetCanUndo(): Boolean;
 begin
-  Result := FItems.Count > 0;
+  Result := Count > 0;
 end;
 
 function TBCEditorUndoList.GetItemCount(): Integer;
 begin
-  Result := FItems.Count;
+  Result := FCount;
 end;
 
 function TBCEditorUndoList.GetItems(const AIndex: Integer): TItem;
@@ -249,28 +202,36 @@ begin
   Result := TItem(FItems[AIndex]);
 end;
 
-function TBCEditorUndoList.LastChangeBlockNumber(): Integer;
+procedure TBCEditorUndoList.Grow();
 begin
-  if FItems.Count = 0 then
+  if (Length(FItems) > 64) then
+    SetLength(FItems, Length(FItems) + Length(FItems) div 4)
+  else
+    SetLength(FItems, Length(FItems) + 16);
+end;
+
+function TBCEditorUndoList.LastBlockNumber(): Integer;
+begin
+  if (Count = 0) then
     Result := 0
   else
-    Result := TItem(FItems[FItems.Count - 1]).BlockNumber;
+    Result := TItem(FItems[Count - 1]).BlockNumber;
 end;
 
-function TBCEditorUndoList.LastChangeReason(): TItem.TItemType;
+function TBCEditorUndoList.LastUndoType(): TUndoType;
 begin
-  if FItems.Count = 0 then
-    Result := crNothing
+  if (FCount = 0) then
+    Result := utNothing
   else
-    Result := TItem(FItems[FItems.Count - 1]).ItemType;
+    Result := TItem(FItems[FCount - 1]).UndoType;
 end;
 
-function TBCEditorUndoList.LastChangeString(): string;
+function TBCEditorUndoList.LastText(): string;
 begin
-  if FItems.Count = 0 then
+  if (FCount = 0) then
     Result := ''
   else
-    Result := TItem(FItems[FItems.Count - 1]).Text;
+    Result := TItem(FItems[FCount - 1]).Text;
 end;
 
 procedure TBCEditorUndoList.Lock();
@@ -278,27 +239,22 @@ begin
   Inc(FLockCount);
 end;
 
-function TBCEditorUndoList.PeekItem(): TItem;
-var
-  LIndex: Integer;
+function TBCEditorUndoList.PeekItem(out Item: TItem): Boolean;
 begin
-  Result := nil;
-  LIndex := FItems.Count - 1;
-  if LIndex >= 0 then
-    Result := FItems[LIndex];
+  Result := FCount > 0;
+  if (Result) then
+    Item := FItems[FCount - 1];
 end;
 
-function TBCEditorUndoList.PopItem(): TItem;
-var
-  LIndex: Integer;
+function TBCEditorUndoList.PopItem(out Item: TItem): Boolean;
 begin
-  Result := nil;
-  LIndex := FItems.Count - 1;
-  if LIndex >= 0 then
+  Result := FCount > 0;
+  if (Result) then
   begin
-    Result := FItems[LIndex];
-    FItems.Delete(LIndex);
-    FChanged := Result.ItemType in Reasons;
+    Item := FItems[FCount - 1];
+    Dec(FCount);
+
+    FChanged := Item.UndoType in UndoTypes;
     if FChanged then
       Dec(FChangeCount);
   end;
@@ -306,31 +262,34 @@ end;
 
 procedure TBCEditorUndoList.PushItem(AItem: TItem);
 begin
-  if Assigned(AItem) then
+  if (FCount = Length(FItems)) then
+    Grow();
+
+  if ((FCount > 0)
+    and (AItem.UndoType = utInsert) and (TItem(FItems[FCount - 1]).UndoType = AItem.UndoType)
+    and (AItem.TextCaretPosition.Line = TItem(FItems[FCount - 1]).SelectionEndPosition.Line)
+    and (AItem.TextCaretPosition.Char = TItem(FItems[FCount - 1]).SelectionEndPosition.Char + 1)) then
   begin
-    if ((FItems.Count > 0)
-      and (AItem.ItemType = crInsert) and (TItem(FItems[FItems.Count - 1]).ItemType = AItem.ItemType)
-      and (AItem.TextCaretPosition.Line = TItem(FItems[FItems.Count - 1]).SelectionEndPosition.Line)
-      and (AItem.TextCaretPosition.Char = TItem(FItems[FItems.Count - 1]).SelectionEndPosition.Char + 1)) then
-    begin
-      TItem(FItems[FItems.Count - 1]).Text := TItem(FItems[FItems.Count - 1]).Text + AItem.Text;
-      TItem(FItems[FItems.Count - 1]).SelectionEndPosition := AItem.SelectionEndPosition;
-    end
-    else if ((FItems.Count > 0)
-      and (AItem.ItemType = crDelete) and (TItem(FItems[FItems.Count - 1]).ItemType = AItem.ItemType)
-      and (AItem.TextCaretPosition.Char = TItem(FItems[FItems.Count - 1]).TextCaretPosition.Char)
-      and (AItem.TextCaretPosition.Line = TItem(FItems[FItems.Count - 1]).TextCaretPosition.Line)) then
-    begin
-      TItem(FItems[FItems.Count - 1]).Text := TItem(FItems[FItems.Count - 1]).Text + AItem.Text;
-      TItem(FItems[FItems.Count - 1]).SelectionEndPosition :=
-        Lines.CharIndexToTextPosition(Lines.TextPositionToCharIndex(TItem(FItems[FItems.Count - 1]).TextCaretPosition) + Length(TItem(FItems[FItems.Count - 1]).Text));
-    end
-    else
-    begin
-      FItems.Add(AItem);
-      if (AItem.ItemType <> crGroupBreak) and Assigned(OnAddedUndo) then
-        OnAddedUndo(Self);
-    end;
+    TItem(FItems[FCount - 1]).Text := TItem(FItems[FCount - 1]).Text + AItem.Text;
+    TItem(FItems[FCount - 1]).SelectionEndPosition := AItem.SelectionEndPosition;
+  end
+  else if ((FCount > 0)
+    and (AItem.UndoType = utDelete) and (TItem(FItems[FCount - 1]).UndoType = AItem.UndoType)
+    and (AItem.TextCaretPosition.Char = TItem(FItems[FCount - 1]).TextCaretPosition.Char)
+    and (AItem.TextCaretPosition.Line = TItem(FItems[FCount - 1]).TextCaretPosition.Line)) then
+  begin
+    TItem(FItems[FCount - 1]).Text := TItem(FItems[FCount - 1]).Text + AItem.Text;
+    TItem(FItems[FCount - 1]).SelectionEndPosition :=
+      Lines.CharIndexToTextPosition(Lines.TextPositionToCharIndex(TItem(FItems[FCount - 1]).TextCaretPosition) + Length(TItem(FItems[FCount - 1]).Text));
+  end
+  else if ((FCount > 0)
+    and (AItem.UndoType in [utCaret, utSelection]) and (TItem(FItems[FCount - 1]).UndoType = AItem.UndoType)) then
+  else
+  begin
+    FItems[FCount] := AItem;
+    Inc(FCount);
+    if (AItem.UndoType <> utGroupBreak) and Assigned(OnAddedUndo) then
+      OnAddedUndo(Self);
   end;
 end;
 

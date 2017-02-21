@@ -4,7 +4,6 @@ interface
 
 resourcestring
   { BCEditor.Editor.Base }
-  SBCEditorVersion = 'Version';
   SBCEditorScrollInfoTopLine = 'Top line: %d';
   SBCEditorScrollInfo = '%d - %d';
   SBCEditorSearchStringNotFound = 'Search string ''%s'' not found';

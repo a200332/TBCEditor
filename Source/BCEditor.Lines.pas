@@ -88,8 +88,6 @@ type
     procedure SetUpdateState(AUpdating: Boolean); override;
   public
     function Add(const AValue: string): Integer; override;
-    procedure AddIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-      const Ident: string; const SelectionMode: TBCEditorSelectionMode);
     function CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition; overload;
     function CharIndexToTextPosition(const ACharIndex: Integer;
       const ATextBeginPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
@@ -109,8 +107,6 @@ type
     procedure LoadFromBuffer(var ABuffer: TBytes; AEncoding: TEncoding = nil);
     procedure LoadFromStream(AStream: TStream; AEncoding: TEncoding = nil); override;
     procedure LoadFromStrings(var AStrings: TStringList);
-    procedure RemoveIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-      const Ident: string; const SelectionMode: TBCEditorSelectionMode);
     procedure SaveToStream(AStream: TStream; AEncoding: TEncoding = nil); override;
     procedure Sort(const ABeginLine: Integer; const AEndLine: Integer); virtual;
     function StringLength(AIndex: Integer): Integer;
@@ -202,22 +198,6 @@ begin
   InsertItem(Result, AValue);
   if Assigned(OnInserted) and (FUpdateCount = 0) then
     OnInserted(Self, Result, 1);
-end;
-
-procedure TBCEditorLines.AddIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-  const Ident: string; const SelectionMode: TBCEditorSelectionMode);
-var
-  EndLine: Integer;
-  I: Integer;
-  StartLine: Integer;
-begin
-  StartLine := MinTextPosition(TextBeginPosition, TextEndPosition).Line;
-  EndLine := MaxTextPosition(TextBeginPosition, TextEndPosition).Line;
-  for I := StartLine to EndLine do
-    if (SelectionMode <> smColumn) then
-      Strings[I] := Ident + Strings[I]
-    else if (Length(Strings[I]) >= TextBeginPosition.Char) then
-      Strings[I] := Copy(Strings[I], 1, TextBeginPosition.Char - 1) + Ident + Copy(Strings[I], TextBeginPosition.Char, MaxInt);
 end;
 
 function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition;
@@ -903,27 +883,6 @@ begin
       QuickSort(ALeft, LRight, ACompare);
     ALeft := LLeft;
   until LLeft >= ARight;
-end;
-
-procedure TBCEditorLines.RemoveIdent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-  const Ident: string; const SelectionMode: TBCEditorSelectionMode);
-var
-  EndLine: Integer;
-  I: Integer;
-  StartLine: Integer;
-begin
-  StartLine := MinTextPosition(TextBeginPosition, TextEndPosition).Line;
-  EndLine := MaxTextPosition(TextBeginPosition, TextEndPosition).Line;
-  for I := StartLine to EndLine do
-    if (SelectionMode <> smColumn) then
-    begin
-      if (Copy(Strings[I], 1, Length(Ident)) = Ident) then
-        Strings[I] := Copy(Strings[I], 1 + Length(Ident), MaxInt);
-    end
-    else if (Copy(Strings[I], TextBeginPosition.Char, Length(Ident)) = Ident) then
-      Strings[I] :=
-        Copy(Strings[I], 1, TextBeginPosition.Char - 1)
-          + Copy(Strings[I], TextBeginPosition.Char + Length(Ident), MaxInt);
 end;
 
 procedure TBCEditorLines.SaveToStream(AStream: TStream; AEncoding: TEncoding);

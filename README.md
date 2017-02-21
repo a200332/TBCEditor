@@ -7,10 +7,6 @@ A syntax highlighting edit control for the RAD Studio (Delphi/C++ Builder) with 
 * Delphi versions XE4 or higher
 * C++ Builder versions XE7 or higher
 
-<h3>Conditional compilation</h3>
-
-"USE_VCL_STYLES" - a set of graphical details that define the look and feel of a VCL application.
-
 <h3>Usage example</h3>
 
 ```objectpascal

@@ -28,7 +28,6 @@ type
 
   TBCEditor = class(TBCCustomEditor)
   published
-    property About;
     property ActiveLine;
     property Align;
     property Anchors;
