@@ -3,7 +3,7 @@ unit BCEditor.Types;
 interface
 
 uses
-  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, BCEditor.Highlighter.Attributes,
+  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls,
   BCEditor.Consts, System.SysUtils, BCEditor.Editor.CompletionProposal.Columns;
 
 type
@@ -240,28 +240,6 @@ type
     ttSymbol,
     ttWebLink
   );
-
-  TBCEditorMatchingPairToken = record
-    OpenToken: string;
-    CloseToken: string;
-  end;
-  PBCEditorMatchingPairToken = ^TBCEditorMatchingPairToken;
-
-  TBCEditorMatchingTokenResult = (
-    trCloseAndOpenTokenFound,
-    trCloseTokenFound,
-    trNotFound,
-    trOpenTokenFound,
-    trOpenAndCloseTokenFound
-  );
-
-  TBCEditorMatchingPairMatch = record
-    OpenToken: string;
-    CloseToken: string;
-    OpenTokenPos: TBCEditorTextPosition;
-    CloseTokenPos: TBCEditorTextPosition;
-    TokenAttribute: TBCEditorHighlighterAttribute;
-  end;
 
   TBCEditorKeyPressWEvent = procedure(ASender: TObject; var AKey: Char) of object;
 

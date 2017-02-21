@@ -350,29 +350,8 @@
         <DelphiCompile Include="..\Source\BCEditor.Export.HTML.pas">
             <BuildOrder>65</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Attributes.pas">
-            <BuildOrder>66</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Colors.pas">
-            <BuildOrder>67</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Comments.pas">
-            <BuildOrder>67</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Info.pas">
-            <BuildOrder>68</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Import.JSON.pas">
-            <BuildOrder>69</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Highlighter.pas">
             <BuildOrder>70</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Rules.pas">
-            <BuildOrder>71</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Highlighter.Token.pas">
-            <BuildOrder>72</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.KeyboardHandler.pas">
             <BuildOrder>73</BuildOrder>
@@ -386,23 +365,11 @@
         <DelphiCompile Include="..\Source\BCEditor.MacroRecorder.pas">
             <BuildOrder>76</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Print.HeaderFooter.pas">
-            <BuildOrder>77</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Print.Margins.pas">
-            <BuildOrder>78</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Print.pas">
             <BuildOrder>79</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Print.Preview.pas">
             <BuildOrder>80</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Print.PrinterInfo.pas">
-            <BuildOrder>81</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Print.Types.pas">
-            <BuildOrder>82</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Search.pas">
             <BuildOrder>83</BuildOrder>

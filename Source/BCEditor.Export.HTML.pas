@@ -28,8 +28,8 @@ type
 implementation
 
 uses
-  Winapi.Windows, System.UITypes, BCEditor.Highlighter.Attributes, BCEditor.Highlighter.Colors, BCEditor.Consts,
-  BCEditor.Utils;
+  Winapi.Windows, System.UITypes,
+  BCEditor.Consts, BCEditor.Utils;
 
 constructor TBCEditorExportHTML.Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
 begin
@@ -83,7 +83,7 @@ procedure TBCEditorExportHTML.CreateInternalCSS;
 var
   LIndex: Integer;
   LStyles: TList;
-  LElement: PBCEditorHighlighterElement;
+  LElement: TBCEditorHighlighter.PElement;
 begin
   FStringList.Add('  <style>');
 
@@ -123,7 +123,7 @@ procedure TBCEditorExportHTML.CreateLines;
 var
   LIndex: Integer;
   LTextLine, LToken: string;
-  LHighlighterAttribute: TBCEditorHighlighterAttribute;
+  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   LPreviousElement: string;
 begin
   LPreviousElement := '';
@@ -188,3 +188,4 @@ begin
 end;
 
 end.
+

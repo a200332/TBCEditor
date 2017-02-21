@@ -12,7 +12,7 @@ uses
   BCEditor.Editor.Replace, BCEditor.Editor.RightMargin, BCEditor.Editor.Scroll, BCEditor.Editor.Search,
   BCEditor.Editor.Directories, BCEditor.Editor.Selection, BCEditor.Editor.SkipRegions, BCEditor.Editor.SpecialChars,
   BCEditor.Editor.Tabs, BCEditor.Editor.Undo, BCEditor.Editor.WordWrap,
-  BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter, BCEditor.Highlighter.Attributes,
+  BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter,
   BCEditor.KeyboardHandler, BCEditor.Lines, BCEditor.Search, BCEditor.PaintHelper, BCEditor.Editor.SyncEdit,
   BCEditor.Editor.TokenInfo, BCEditor.Utils, BCEditor.Editor.UnknownChars, BCEditor.Editor.TokenInfo.PopupWindow
   {$if defined(USE_ALPHASKINS)}, sCommonData, acSBUtils{$endif};
@@ -50,8 +50,8 @@ type
     FCompletionProposal: TBCEditorCompletionProposal;
     FCompletionProposalPopupWindow: TBCEditorCompletionProposalPopupWindow;
     FCompletionProposalTimer: TTimer;
-    FCurrentMatchingPair: TBCEditorMatchingTokenResult;
-    FCurrentMatchingPairMatch: TBCEditorMatchingPairMatch;
+    FCurrentMatchingPair: TBCEditorHighlighter.TMatchingTokenResult;
+    FCurrentMatchingPairMatch: TBCEditorHighlighter.TMatchingPairMatch;
     FDirectories: TBCEditorDirectories;
     FDoubleClickTime: Cardinal;
     FDrawMultiCarets: Boolean;
@@ -235,7 +235,7 @@ type
     function GetDisplayTextLineNumber(const ADisplayLineNumber: Integer): Integer;
     function GetEndOfLine(const ALine: PChar): PChar;
     function GetHighlighterAttributeAtRowColumn(const ATextPosition: TBCEditorTextPosition; var AToken: string;
-      var ATokenType: TBCEditorRangeType; var AStart: Integer; var AHighlighterAttribute: TBCEditorHighlighterAttribute): Boolean;
+      var ATokenType: TBCEditorRangeType; var AStart: Integer; var AHighlighterAttribute: TBCEditorHighlighter.TAttribute): Boolean;
     function GetHookedCommandHandlersCount: Integer;
     function GetHorizontalScrollMax: Integer;
     function GetLeadingExpandedLength(const AStr: string; const ABorder: Integer = 0): Integer;
@@ -243,7 +243,7 @@ type
     function GetLineHeight: Integer;
     function GetLineIndentLevel(const ALine: Integer): Integer;
     function GetMarkBackgroundColor(const ALine: Integer): TColor;
-    function GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition; var AMatch: TBCEditorMatchingPairMatch): TBCEditorMatchingTokenResult;
+    function GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition; var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorHighlighter.TMatchingTokenResult;
     function GetMouseMoveScrollCursorIndex: Integer;
     function GetMouseMoveScrollCursors(const AIndex: Integer): HCursor;
     function GetScrollPageWidth: Integer;
@@ -795,7 +795,7 @@ uses
   Winapi.ShellAPI, Winapi.Imm, System.Math, System.Types, Vcl.Clipbrd, System.Character, Vcl.Menus,
   BCEditor.Editor.LeftMargin.Border, BCEditor.Editor.LeftMargin.LineNumbers, BCEditor.Editor.Scroll.Hint,
   BCEditor.Editor.Search.Map, BCEditor.Language,
-  BCEditor.Highlighter.Rules, BCEditor.Export.HTML, Vcl.Themes, BCEditor.StyleHooks,
+  BCEditor.Export.HTML, Vcl.Themes, BCEditor.StyleHooks,
   BCEditor.Editor.CompletionProposal.Columns.Items,
   System.RegularExpressions{$if defined(USE_ALPHASKINS)}, Winapi.CommCtrl, sVCLUtils, sMessages, sConst, sSkinProps{$endif};
 
@@ -1446,7 +1446,7 @@ end;
 
 function TBCBaseEditor.GetHighlighterAttributeAtRowColumn(const ATextPosition: TBCEditorTextPosition;
   var AToken: string; var ATokenType: TBCEditorRangeType; var AStart: Integer;
-  var AHighlighterAttribute: TBCEditorHighlighterAttribute): Boolean;
+  var AHighlighterAttribute: TBCEditorHighlighter.TAttribute): Boolean;
 var
   LPositionX, LPositionY: Integer;
   LLine: string;
@@ -1593,10 +1593,10 @@ begin
 end;
 
 function TBCBaseEditor.GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition;
-  var AMatch: TBCEditorMatchingPairMatch): TBCEditorMatchingTokenResult;
+  var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorHighlighter.TMatchingTokenResult;
 var
   LIndex, LCount: Integer;
-  LTokenMatch: PBCEditorMatchingPairToken;
+  LTokenMatch: TBCEditorHighlighter.PMatchingPairToken;
   LToken, LOriginalToken, LElement: string;
   LLevel, LDeltaLevel: Integer;
   LMatchStackID: Integer;
@@ -1616,7 +1616,7 @@ var
     Result := True;
 
     for LIndex := 0 to LOpenDuplicateLength - 1 do
-      if LToken = PBCEditorMatchingPairToken(FHighlighter.MatchingPairs[FMatchingPairOpenDuplicate[LIndex]])^.OpenToken then
+      if LToken = TBCEditorHighlighter.PMatchingPairToken(FHighlighter.MatchingPairs[FMatchingPairOpenDuplicate[LIndex]])^.OpenToken then
       begin
         LElement := FHighlighter.GetCurrentRangeAttribute.Element;
         if not IsCommentOrString(LElement) then
@@ -1633,7 +1633,7 @@ var
     Result := True;
 
     for LIndex := 0 to LCloseDuplicateLength - 1 do
-      if LToken = PBCEditorMatchingPairToken(FHighlighter.MatchingPairs[FMatchingPairCloseDuplicate[LIndex]])^.CloseToken
+      if LToken = TBCEditorHighlighter.PMatchingPairToken(FHighlighter.MatchingPairs[FMatchingPairCloseDuplicate[LIndex]])^.CloseToken
       then
       begin
         LElement := FHighlighter.GetCurrentRangeAttribute.Element;
@@ -1710,7 +1710,7 @@ var
 
 var
   LCaretX: Integer;
-  LMathingPairToken: TBCEditorMatchingPairToken;
+  LMathingPairToken: TBCEditorHighlighter.TMatchingPairToken;
 begin
   Result := trNotFound;
   if FHighlighter = nil then
@@ -1742,7 +1742,7 @@ begin
       Exit;
     while LIndex < LCount do
     begin
-      LMathingPairToken := PBCEditorMatchingPairToken(FHighlighter.MatchingPairs[LIndex])^;
+      LMathingPairToken := TBCEditorHighlighter.PMatchingPairToken(FHighlighter.MatchingPairs[LIndex])^;
       if LToken = LMathingPairToken.CloseToken then
       begin
         Result := trCloseTokenFound;
@@ -1775,7 +1775,7 @@ begin
     LCloseDuplicateLength := 0;
     for LIndex := 0 to LCount - 1 do
     begin
-      LMathingPairToken := PBCEditorMatchingPairToken(FHighlighter.MatchingPairs[LIndex])^;
+      LMathingPairToken := TBCEditorHighlighter.PMatchingPairToken(FHighlighter.MatchingPairs[LIndex])^;
       if LTokenMatch^.OpenToken = LMathingPairToken.OpenToken then
       begin
         FMatchingPairCloseDuplicate[LCloseDuplicateLength] := LIndex;
@@ -2163,7 +2163,7 @@ var
   procedure AddWrappedLineNumberIntoCache;
   var
     LTokenText, LNextTokenText, LFirstPartOfToken, LChar: string;
-    LHighlighterAttribute: TBCEditorHighlighterAttribute;
+    LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
     LLength, LTokenWidth, LWidth, LMaxWidth: Integer;
     LCharsBefore: Integer;
     LPToken: PChar;
@@ -2340,7 +2340,7 @@ function TBCBaseEditor.DisplayPositionToPixels(const ADisplayPosition: TBCEditor
 var
   LPositionY: Integer;
   LLineText, LToken, LNextTokenText: string;
-  LHighlighterAttribute: TBCEditorHighlighterAttribute;
+  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   LFontStyles, LPreviousFontStyles: TFontStyles;
   LTokenLength, LLength: Integer;
   LCharsBefore: Integer;
@@ -2960,7 +2960,7 @@ var
   LToken, LNextTokenText, LChar: string;
   LFontStyles, LPreviousFontStyles: TFontStyles;
   LLineText: string;
-  LHighlighterAttribute: TBCEditorHighlighterAttribute;
+  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   LXInEditor: Integer;
   LTextWidth, LTokenWidth, LTokenLength, LCharLength: Integer;
   LPToken: PChar;
@@ -3151,7 +3151,7 @@ end;
 
 function TBCBaseEditor.RescanHighlighterRangesFrom(const AIndex: Integer): Integer;
 var
-  LCurrentRange: TBCEditorRange;
+  LCurrentRange: TBCEditorHighlighter.TRange;
 begin
   Result := AIndex;
   if Result > FLines.Count then
@@ -8959,7 +8959,7 @@ var
   LRangeType: TBCEditorRangeType;
   LStart: Integer;
   LToken: string;
-  LHighlighterAttribute: TBCEditorHighlighterAttribute;
+  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   LCursorPoint: TPoint;
   LTextPosition: TBCEditorTextPosition;
   LSecondaryShortCutKey: Word;
@@ -9751,7 +9751,7 @@ var
   LRangeType: TBCEditorRangeType;
   LStart: Integer;
   LToken: string;
-  LHighlighterAttribute: TBCEditorHighlighterAttribute;
+  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   LCursorPoint: TPoint;
   LTextPosition: TBCEditorTextPosition;
 begin
@@ -11102,7 +11102,7 @@ var
 
   function GetBackgroundColor: TColor;
   var
-    LHighlighterAttribute: TBCEditorHighlighterAttribute;
+    LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   begin
     if AMinimap and (moShowBookmarks in FMinimap.Options) and LBookmarkOnCurrentLine then
       Result := FMinimap.Colors.Bookmark
@@ -11834,7 +11834,7 @@ var
     LFromLineText, LToLineText: string;
     LCurrentRow: Integer;
     LFoldRange: TBCEditorCodeFoldingRange;
-    LHighlighterAttribute: TBCEditorHighlighterAttribute;
+    LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
     LTokenText, LNextTokenText: string;
     LTokenPosition, LWordWrapTokenPosition, LTokenLength: Integer;
     LFontStyles: TFontStyles;
@@ -13773,7 +13773,7 @@ begin
                 else
                   LOpenTokenSkipFoldRangeList.Add(LSkipRegionItem);
                 Dec(LPText); { The end of the while loop will increase }
-                Break; { for LIndex := 0 to BCEditor.Highlighter.CompletionProposalSkipRegions... }
+                Break;
               end
               else
                 LPText := LPBookmarkText;
