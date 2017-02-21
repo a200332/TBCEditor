@@ -269,20 +269,6 @@ type
     Text: string;
   end;
 
-  TBCEditorSpecialCharsEndOfLineStyle = (
-    eolArrow,
-    eolEnter,
-    eolPilcrow
-  );
-
-  TBCEditorSpecialCharsOption = (
-    scoTextColor,
-    scoMiddleColor,
-    scoShowOnlyInSelection
-  );
-  TBCEditorSpecialCharsOptions = set of TBCEditorSpecialCharsOption;
-  TBCEditorSpecialCharsStyle = (scsDot, scsSolid);
-
   TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean;
     const ATabChar: Char = BCEDITOR_SPACE_CHAR): string;
 

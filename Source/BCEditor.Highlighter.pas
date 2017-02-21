@@ -6,7 +6,7 @@ uses
   System.Classes, System.SysUtils, Vcl.Controls, Vcl.Graphics,
   JsonDataObjects,
   BCEditor.Consts, BCEditor.Editor.SkipRegions,
-  BCEditor.Editor.CodeFolding.Regions, BCEditor.Highlighter.Comments, BCEditor.Types;
+  BCEditor.Editor.CodeFolding.Regions, BCEditor.Types;
 
 type
   TBCEditorHighlighter = class(TObject)

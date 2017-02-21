@@ -11,7 +11,7 @@ procedure Register;
 implementation
 
 uses
-  DesignIntf;
+  DesignEditors, DesignIntf, StrEdit, VCLEditors;
 
 procedure Register;
 begin
@@ -31,6 +31,10 @@ begin
   UnlistPublishedProperty(TBCEditor, 'ParentFont');
   UnlistPublishedProperty(TBCEditor, 'ParentShowHint');
   UnlistPublishedProperty(TBCEditor, 'ShowHint');
+
+  RegisterPropertyEditor(TypeInfo(Char), nil, '', TCharProperty);
+  RegisterPropertyEditor(TypeInfo(TStrings), nil, '', TStringListProperty);
+  RegisterPropertyEditor(TypeInfo(TShortCut), TBCEditorMacroRecorder, '', TShortCutProperty);
 end;
 
 end.
