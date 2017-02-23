@@ -1,32 +1,70 @@
 unit BCEditor.Editor.Minimap;
 
-interface
+interface {********************************************************************}
 
 uses
-  System.Classes, System.UITypes, Vcl.Graphics, BCEditor.Types, BCEditor.Editor.Minimap.Indicator,
-  BCEditor.Editor.Minimap.Colors, BCEditor.Editor.Minimap.Shadow;
+  System.Classes, System.UITypes, Vcl.Graphics,
+  BCEditor.Types, BCEditor.Consts;
 
 type
   TBCEditorMinimap = class(TPersistent)
+  type
+
+    TColors = class(TPersistent)
+    strict private
+      FBackground: TColor;
+      FBookmark: TColor;
+      FOnChange: TNotifyEvent;
+      FVisibleLines: TColor;
+      procedure DoChange;
+      procedure SetBackground(const AValue: TColor);
+      procedure SetBookmark(const AValue: TColor);
+      procedure SetVisibleLines(const AValue: TColor);
+    public
+      constructor Create;
+      procedure Assign(ASource: TPersistent); override;
+    published
+      property Background: TColor read FBackground write SetBackground default clNone;
+      property Bookmark: TColor read FBookmark write SetBookmark default clMinimapBookmark;
+      property VisibleLines: TColor read FVisibleLines write SetVisibleLines default clMinimapVisibleLines;
+      property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    end;
+
+    TIndicator = class(TPersistent)
+    strict private
+      FAlphaBlending: Byte;
+      FOnChange: TNotifyEvent;
+      FOptions: TBCEditorMinimapIndicatorOptions;
+      procedure DoChange;
+      procedure SetAlphaBlending(const AValue: Byte);
+    public
+      constructor Create;
+      procedure Assign(ASource: TPersistent); override;
+      procedure SetOption(const AOption: TBCEditorMinimapIndicatorOption; const AEnabled: Boolean);
+    published
+      property AlphaBlending: Byte read FAlphaBlending write SetAlphaBlending default 96;
+      property Options: TBCEditorMinimapIndicatorOptions read FOptions write FOptions default [];
+      property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    end;
+
   strict private
     FAlign: TBCEditorMinimapAlign;
     FCharHeight: Integer;
     FClicked: Boolean;
-    FColors: TBCEditorMinimapColors;
+    FColors: TBCEditorMinimap.TColors;
     FCursor: TCursor;
     FDragging: Boolean;
     FFont: TFont;
-    FIndicator: TBCEditorMinimapIndicator;
+    FIndicator: TBCEditorMinimap.TIndicator;
     FOnChange: TNotifyEvent;
     FOptions: TBCEditorMinimapOptions;
-    FShadow: TBCEditorMinimapShadow;
     FTopLine: Integer;
     FVisible: Boolean;
     FVisibleLines: Integer;
     FWidth: Integer;
     procedure DoChange;
     procedure SetAlign(const AValue: TBCEditorMinimapAlign);
-    procedure SetColors(const AValue: TBCEditorMinimapColors);
+    procedure SetColors(const AValue: TBCEditorMinimap.TColors);
     procedure SetFont(AValue: TFont);
     procedure SetOnChange(AValue: TNotifyEvent);
     procedure SetVisible(AValue: Boolean);
@@ -34,9 +72,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-
-    function GetWidth: Integer;
     procedure Assign(ASource: TPersistent); override;
+    function GetWidth: Integer;
     procedure SetOption(const AOption: TBCEditorMinimapOption; const AEnabled: Boolean);
     property CharHeight: Integer read FCharHeight write FCharHeight;
     property Clicked: Boolean read FClicked write FClicked;
@@ -45,21 +82,126 @@ type
     property VisibleLines: Integer read FVisibleLines write FVisibleLines;
   published
     property Align: TBCEditorMinimapAlign read FAlign write SetAlign default maRight;
-    property Colors: TBCEditorMinimapColors read FColors write SetColors;
+    property Colors: TBCEditorMinimap.TColors read FColors write SetColors;
     property Cursor: TCursor read FCursor write FCursor default crArrow;
     property Font: TFont read FFont write SetFont;
-    property Indicator: TBCEditorMinimapIndicator read FIndicator write FIndicator;
-    property OnChange: TNotifyEvent read FOnChange write SetOnChange;
+    property Indicator: TBCEditorMinimap.TIndicator read FIndicator write FIndicator;
     property Options: TBCEditorMinimapOptions read FOptions write FOptions default [];
-    property Shadow: TBCEditorMinimapShadow read FShadow write FShadow;
     property Visible: Boolean read FVisible write SetVisible default False;
     property Width: Integer read FWidth write SetWidth default 140;
+    property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
 
-implementation
+implementation {***************************************************************}
 
 uses
   System.Math;
+
+{ TBCEditorMiniMap.TColors ****************************************************}
+
+constructor TBCEditorMinimap.TColors.Create;
+begin
+  inherited;
+
+  FBackground := clNone;
+  FBookmark := clMinimapBookmark;
+  FVisibleLines := clMinimapVisibleLines;
+end;
+
+procedure TBCEditorMinimap.TColors.Assign(ASource: TPersistent);
+begin
+  if ASource is TBCEditorMinimap.TColors then
+  with ASource as TBCEditorMinimap.TColors do
+  begin
+    Self.FBackground := FBackground;
+    Self.FBookmark := FBookmark;
+    Self.FVisibleLines := FVisibleLines;
+    Self.DoChange;
+  end
+  else
+    inherited Assign(ASource);
+end;
+
+procedure TBCEditorMinimap.TColors.DoChange;
+begin
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TBCEditorMinimap.TColors.SetBackground(const AValue: TColor);
+begin
+  if FBackground <> AValue then
+  begin
+    FBackground := AValue;
+    DoChange;
+  end;
+end;
+
+procedure TBCEditorMinimap.TColors.SetBookmark(const AValue: TColor);
+begin
+  if FBookmark <> AValue then
+  begin
+    FBookmark := AValue;
+    DoChange;
+  end;
+end;
+
+procedure TBCEditorMinimap.TColors.SetVisibleLines(const AValue: TColor);
+begin
+  if FVisibleLines <> AValue then
+  begin
+    FVisibleLines := AValue;
+    DoChange;
+  end;
+end;
+
+{ TBCEditorMiniMap.TIndicator *************************************************}
+
+constructor TBCEditorMinimap.TIndicator.Create;
+begin
+  inherited;
+
+  FAlphaBlending := 96;
+  FOptions := [];
+end;
+
+procedure TBCEditorMinimap.TIndicator.Assign(ASource: TPersistent);
+begin
+  if Assigned(ASource) and (ASource is TBCEditorMinimap.TIndicator) then
+  with ASource as TBCEditorMinimap.TIndicator do
+  begin
+    Self.FAlphaBlending := FAlphaBlending;
+    Self.FOptions := FOptions;
+    Self.DoChange;
+  end
+  else
+    inherited Assign(ASource);
+end;
+
+procedure TBCEditorMinimap.TIndicator.DoChange;
+begin
+  if Assigned(FOnChange) then
+    FOnChange(Self);
+end;
+
+procedure TBCEditorMinimap.TIndicator.SetAlphaBlending(const AValue: Byte);
+begin
+  if FAlphaBlending <> AValue then
+  begin
+    FAlphaBlending := AValue;
+    DoChange;
+  end;
+end;
+
+procedure TBCEditorMinimap.TIndicator.SetOption(const AOption: TBCEditorMinimapIndicatorOption; const AEnabled: Boolean);
+begin
+  if AEnabled then
+    Include(FOptions, AOption)
+  else
+    Exclude(FOptions, AOption);
+end;
+
+{ TBCEditorMiniMap ************************************************************}
 
 constructor TBCEditorMinimap.Create;
 begin
@@ -82,9 +224,8 @@ begin
 
   FTopLine := 1;
 
-  FIndicator := TBCEditorMinimapIndicator.Create;
-  FColors := TBCEditorMinimapColors.Create;
-  FShadow := TBCEditorMinimapShadow.Create;
+  FIndicator := TBCEditorMinimap.TIndicator.Create;
+  FColors := TBCEditorMinimap.TColors.Create;
 end;
 
 destructor TBCEditorMinimap.Destroy;
@@ -92,7 +233,6 @@ begin
   FFont.Free;
   FIndicator.Free;
   FColors.Free;
-  FShadow.Free;
 
   inherited Destroy;
 end;
@@ -104,7 +244,6 @@ begin
   begin
     Self.FAlign := FAlign;
     Self.FColors.Assign(FColors);
-    Self.FShadow.Assign(FShadow);
     Self.FFont.Assign(FFont);
     Self.FOptions := FOptions;
     Self.FVisible := FVisible;
@@ -116,27 +255,18 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCEditorMinimap.SetOnChange(AValue: TNotifyEvent);
-begin
-  FOnChange := AValue;
-  FFont.OnChange := AValue;
-  FColors.OnChange := AValue;
-  FIndicator.OnChange := AValue;
-  FShadow.OnChange := AValue;
-end;
-
 procedure TBCEditorMinimap.DoChange;
 begin
   if Assigned(FOnChange) then
     FOnChange(Self);
 end;
 
-procedure TBCEditorMinimap.SetOption(const AOption: TBCEditorMinimapOption; const AEnabled: Boolean);
+function TBCEditorMinimap.GetWidth: Integer;
 begin
-  if AEnabled then
-    Include(FOptions, AOption)
+  if FVisible then
+    Result := FWidth
   else
-    Exclude(FOptions, AOption);
+    Result := 0;
 end;
 
 procedure TBCEditorMinimap.SetAlign(const AValue: TBCEditorMinimapAlign);
@@ -148,7 +278,7 @@ begin
   end;
 end;
 
-procedure TBCEditorMinimap.SetColors(const AValue: TBCEditorMinimapColors);
+procedure TBCEditorMinimap.SetColors(const AValue: TBCEditorMinimap.TColors);
 begin
   FColors.Assign(AValue);
 end;
@@ -158,22 +288,20 @@ begin
   FFont.Assign(AValue);
 end;
 
-procedure TBCEditorMinimap.SetWidth(AValue: Integer);
+procedure TBCEditorMinimap.SetOnChange(AValue: TNotifyEvent);
 begin
-  AValue := Max(0, AValue);
-  if FWidth <> AValue then
-  begin
-    FWidth := AValue;
-    DoChange;
-  end;
+  FOnChange := AValue;
+  FFont.OnChange := AValue;
+  FColors.OnChange := AValue;
+  FIndicator.OnChange := AValue;
 end;
 
-function TBCEditorMinimap.GetWidth: Integer;
+procedure TBCEditorMinimap.SetOption(const AOption: TBCEditorMinimapOption; const AEnabled: Boolean);
 begin
-  if FVisible then
-    Result := FWidth
+  if AEnabled then
+    Include(FOptions, AOption)
   else
-    Result := 0;
+    Exclude(FOptions, AOption);
 end;
 
 procedure TBCEditorMinimap.SetVisible(AValue: Boolean);
@@ -181,6 +309,16 @@ begin
   if FVisible <> AValue then
   begin
     FVisible := AValue;
+    DoChange;
+  end;
+end;
+
+procedure TBCEditorMinimap.SetWidth(AValue: Integer);
+begin
+  AValue := Max(0, AValue);
+  if FWidth <> AValue then
+  begin
+    FWidth := AValue;
     DoChange;
   end;
 end;

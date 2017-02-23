@@ -1,22 +1,41 @@
 unit BCEditor.Editor.Selection;
 
-interface
+interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Graphics, BCEditor.Editor.Selection.Colors, BCEditor.Types;
+  System.Classes, Vcl.Graphics,
+  BCEditor.Types, BCEditor.Consts;
 
 type
   TBCEditorSelection = class(TPersistent)
+  type
+
+    TColors = class(TPersistent)
+    strict private
+      FBackground: TColor;
+      FForeground: TColor;
+      FOnChange: TNotifyEvent;
+      procedure SetBackground(AValue: TColor);
+      procedure SetForeground(AValue: TColor);
+    public
+      constructor Create;
+      procedure Assign(ASource: TPersistent); override;
+    published
+      property Background: TColor read FBackground write SetBackground default clSelectionColor;
+      property Foreground: TColor read FForeground write SetForeground default clHighLightText;
+      property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    end;
+
   strict private
     FActiveMode: TBCEditorSelectionMode;
-    FColors: TBCEditorSelectionColors;
+    FColors: TBCEditorSelection.TColors;
     FMode: TBCEditorSelectionMode;
     FOnChange: TNotifyEvent;
     FOptions: TBCEditorSelectionOptions;
     FVisible: Boolean;
     procedure DoChange;
     procedure SetActiveMode(const AValue: TBCEditorSelectionMode);
-    procedure SetColors(const AValue: TBCEditorSelectionColors);
+    procedure SetColors(const AValue: TBCEditorSelection.TColors);
     procedure SetMode(const AValue: TBCEditorSelectionMode);
     procedure SetOnChange(AValue: TNotifyEvent);
     procedure SetOptions(AValue: TBCEditorSelectionOptions);
@@ -28,37 +47,60 @@ type
     procedure SetOption(const AOption: TBCEditorSelectionOption; const AEnabled: Boolean);
     property ActiveMode: TBCEditorSelectionMode read FActiveMode write SetActiveMode stored False;
   published
-    property Colors: TBCEditorSelectionColors read FColors write SetColors;
+    property Colors: TBCEditorSelection.TColors read FColors write SetColors;
     property Mode: TBCEditorSelectionMode read FMode write SetMode default smNormal;
     property Options: TBCEditorSelectionOptions read FOptions write SetOptions default [soHighlightSimilarTerms, soTermsCaseSensitive];
     property Visible: Boolean read FVisible write SetVisible default True;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
 
-implementation
+implementation {***************************************************************}
 
-constructor TBCEditorSelection.Create;
+{ TBCEditorSelection.TColors **************************************************}
+
+constructor TBCEditorSelection.TColors.Create;
 begin
   inherited;
 
-  FColors := TBCEditorSelectionColors.Create;
-  FActiveMode := smNormal;
-  FMode := smNormal;
-  FOptions := [soHighlightSimilarTerms, soTermsCaseSensitive];
-  FVisible := True;
+  FBackground := clSelectionColor;
+  FForeground := clHighLightText;
 end;
 
-destructor TBCEditorSelection.Destroy;
+procedure TBCEditorSelection.TColors.Assign(ASource: TPersistent);
 begin
-  FColors.Free;
-  inherited Destroy;
+  if Assigned(ASource) and (ASource is TBCEditorSelection.TColors) then
+  with ASource as TBCEditorSelection.TColors do
+  begin
+    Self.FBackground := FBackground;
+    Self.FForeground := FForeground;
+    if Assigned(Self.FOnChange) then
+      Self.FOnChange(Self);
+  end
+  else
+    inherited Assign(ASource);
 end;
 
-procedure TBCEditorSelection.SetOnChange(AValue: TNotifyEvent);
+procedure TBCEditorSelection.TColors.SetBackground(AValue: TColor);
 begin
-  FOnChange := AValue;
-  FColors.OnChange := FOnChange;
+  if FBackground <> AValue then
+  begin
+    FBackground := AValue;
+    if Assigned(FOnChange) then
+      FOnChange(Self);
+  end;
 end;
+
+procedure TBCEditorSelection.TColors.SetForeground(AValue: TColor);
+begin
+  if FForeground <> AValue then
+  begin
+    FForeground := AValue;
+    if Assigned(FOnChange) then
+      FOnChange(Self);
+  end;
+end;
+
+{ TBCEditorSelection **********************************************************}
 
 procedure TBCEditorSelection.Assign(ASource: TPersistent);
 begin
@@ -77,12 +119,21 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCEditorSelection.SetOption(const AOption: TBCEditorSelectionOption; const AEnabled: Boolean);
+constructor TBCEditorSelection.Create;
 begin
-   if AEnabled then
-    Include(FOptions, AOption)
-  else
-    Exclude(FOptions, AOption);
+  inherited;
+
+  FColors := TBCEditorSelection.TColors.Create;
+  FActiveMode := smNormal;
+  FMode := smNormal;
+  FOptions := [soHighlightSimilarTerms, soTermsCaseSensitive];
+  FVisible := True;
+end;
+
+destructor TBCEditorSelection.Destroy;
+begin
+  FColors.Free;
+  inherited Destroy;
 end;
 
 procedure TBCEditorSelection.DoChange;
@@ -91,7 +142,16 @@ begin
     FOnChange(Self);
 end;
 
-procedure TBCEditorSelection.SetColors(const AValue: TBCEditorSelectionColors);
+procedure TBCEditorSelection.SetActiveMode(const AValue: TBCEditorSelectionMode);
+begin
+  if FActiveMode <> AValue then
+  begin
+    FActiveMode := AValue;
+    DoChange;
+  end;
+end;
+
+procedure TBCEditorSelection.SetColors(const AValue: TBCEditorSelection.TColors);
 begin
   FColors.Assign(AValue);
 end;
@@ -106,11 +166,25 @@ begin
   end;
 end;
 
-procedure TBCEditorSelection.SetActiveMode(const AValue: TBCEditorSelectionMode);
+procedure TBCEditorSelection.SetOnChange(AValue: TNotifyEvent);
 begin
-  if FActiveMode <> AValue then
+  FOnChange := AValue;
+  FColors.OnChange := FOnChange;
+end;
+
+procedure TBCEditorSelection.SetOption(const AOption: TBCEditorSelectionOption; const AEnabled: Boolean);
+begin
+   if AEnabled then
+    Include(FOptions, AOption)
+  else
+    Exclude(FOptions, AOption);
+end;
+
+procedure TBCEditorSelection.SetOptions(AValue: TBCEditorSelectionOptions);
+begin
+  if FOptions <> AValue then
   begin
-    FActiveMode := AValue;
+    FOptions := AValue;
     DoChange;
   end;
 end;
@@ -120,15 +194,6 @@ begin
   if FVisible <> AValue then
   begin
     FVisible := AValue;
-    DoChange;
-  end;
-end;
-
-procedure TBCEditorSelection.SetOptions(AValue: TBCEditorSelectionOptions);
-begin
-  if FOptions <> AValue then
-  begin
-    FOptions := AValue;
     DoChange;
   end;
 end;
