@@ -3,8 +3,8 @@ unit BCEditor.Types;
 interface
 
 uses
-  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls,
-  BCEditor.Consts, System.SysUtils, BCEditor.Editor.CompletionProposal.Columns;
+  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, System.SysUtils,
+  BCEditor.Consts, BCEditor.Editor.CompletionProposal.Columns;
 
 type
   TBCEditorArrayOfString = array of string;
@@ -20,15 +20,6 @@ type
   TBCEditorDropFilesEvent = procedure(ASender: TObject; APos: TPoint; AFiles: TStrings) of object;
 
   TBCEditorPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas) of object;
-
-  TBCEditorReplaceAction = (raCancel, raSkip, raReplace, raReplaceAll);
-
-  TBCEditorReplaceTextEvent = procedure(ASender: TObject; const ASearch, AReplace: string; ALine, AColumn: Integer;
-    ADeleteLine: Boolean; var AAction: TBCEditorReplaceAction) of object;
-
-  TBCEditorScrollEvent = procedure(ASender: TObject; AScrollBar: TScrollBarKind) of object;
-
-  TBCEditorCaretChangedEvent = procedure(ASender: TObject; X, Y: Integer) of object;
 
   TBCEditorMarkPanelPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; const ARect: TRect; const AFirstLine: Integer; const ALastLine: Integer) of object;
   TBCEditorMarkPanelLinePaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; const ARect: TRect; const ALineNumber: Integer) of object;
@@ -68,47 +59,10 @@ type
     );
   TBCEditorTabOptions = set of TBCEditorTabOption;
 
-  PBCEditorSelectionMode = ^TBCEditorSelectionMode;
-  TBCEditorSelectionMode = (
-    smColumn,
-    smNormal
-  );
-
-  TBCEditorSelectionOption = (
-    soALTSetsColumnMode,
-    soExpandRealNumbers,
-    soHighlightSimilarTerms,
-    soTermsCaseSensitive,
-    soToEndOfLine,
-    soTripleClickRowSelect
-  );
-  TBCEditorSelectionOptions = set of TBCEditorSelectionOption;
-
-  TBCEditorReplaceChanges = (
-    rcEngineUpdate
-  );
-  TBCEditorReplaceChangeEvent = procedure(Event: TBCEditorReplaceChanges) of object;
-
   TBCEditorSyncEditOption = (
     seCaseSensitive
   );
   TBCEditorSyncEditOptions = set of TBCEditorSyncEditOption;
-
-  TBCEditorReplaceOption = (
-    roBackwards,
-    roCaseSensitive,
-    roEntireScope,
-    roPrompt,
-    roReplaceAll,
-    roSelectedOnly,
-    roWholeWordsOnly
-  );
-  TBCEditorReplaceOptions = set of TBCEditorReplaceOption;
-
-  TBCEditorReplaceActionOption = (
-    eraReplace,
-    eraDeleteLine
-  );
 
   TBCEditorCompletionProposalOption = (
     cpoAutoInvoke,
@@ -122,24 +76,11 @@ type
   );
   TBCEditorCompletionProposalOptions = set of TBCEditorCompletionProposalOption;
 
-  TBCEditorRightMarginOption = (
-    rmoAutoLinebreak,
-    rmoMouseMove,
-    rmoShowMovingHint
-  );
-  TBCEditorRightMarginOptions = set of TBCEditorRightMarginOption;
-
   TBCEditorTextPosition = record
     Char: Integer;
     Line: Integer;
   end;
   PBCEditorTextPosition = ^TBCEditorTextPosition;
-
-  TBCEditorSearchItem = record
-    BeginTextPosition: TBCEditorTextPosition;
-    EndTextPosition: TBCEditorTextPosition;
-  end;
-  PBCEditorSearchItem = ^TBCEditorSearchItem;
 
   TBCEditorDisplayPosition = record
     Column: Integer;
@@ -156,28 +97,6 @@ type
     btUnspecified,
     btAny,
     btTerm
-  );
-  TBCEditorRangeType = (
-    ttUnspecified,
-    ttAddress,
-    ttAssemblerComment,
-    ttAssemblerReservedWord,
-    ttAttribute,
-    ttBlockComment,
-    ttCharacter,
-    ttDirective,
-    ttHexNumber,
-    ttHighlightedBlock,
-    ttHighlightedBlockSymbol,
-    ttLineComment,
-    ttMailtoLink,
-    ttMethod,
-    ttMethodName,
-    ttNumber,
-    ttReservedWord,
-    ttString,
-    ttSymbol,
-    ttWebLink
   );
 
   TBCEditorKeyPressWEvent = procedure(ASender: TObject; var AKey: Char) of object;
@@ -211,22 +130,6 @@ type
   TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean;
     const ATabChar: Char = BCEDITOR_SPACE_CHAR): string;
 
-  TBCEditorMinimapOption = (
-    moShowBookmarks,
-    moShowIndentGuides,
-    moShowSearchResults,
-    moShowSpecialChars
-  );
-  TBCEditorMinimapOptions = set of TBCEditorMinimapOption;
-
-  TBCEditorMinimapAlign = (maLeft, maRight);
-
-  TBCEditorUndoOption = (
-    uoGroupUndo,
-    uoUndoAfterSave
-  );
-  TBCEditorUndoOptions = set of TBCEditorUndoOption;
-
   TBCEditorCase = (cNone=-1, cUpper=0, cLower=1, cAlternating=2, cSentence=3, cTitle=4, cOriginal=5);
 
   TBCEditorKeyCharType = (ctFoldOpen, ctFoldClose, ctSkipOpen, ctSkipClose);
@@ -254,14 +157,6 @@ type
     cfoUncollapseByHintClick
   );
   TBCEditorCodeFoldingOptions = set of TBCEditorCodeFoldingOption;
-
-  TBCEditorTokenInfoOption = (
-    tioAutoSize
-  );
-  TBCEditorTokenInfoOptions = set of TBCEditorTokenInfoOption;
-
-  TBCEditorMinimapIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
-  TBCEditorMinimapIndicatorOptions = set of TBCEditorMinimapIndicatorOption;
 
   TBCEditorCodeFoldingHintIndicatorOption = (hioShowBorder, hioShowMark);
   TBCEditorCodeFoldingHintIndicatorOptions = set of TBCEditorCodeFoldingHintIndicatorOption;

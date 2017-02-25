@@ -8,6 +8,7 @@ uses
 type
   TBCEditorCaret = class(TPersistent)
   type
+    TChangedEvent = procedure(ASender: TObject; X, Y: Integer) of object;
     TOption = (
       coRightMouseClickMove { When clicking with the right mouse for a popup menu, move the cursor to that location }
     );

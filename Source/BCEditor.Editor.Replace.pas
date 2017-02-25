@@ -8,21 +8,44 @@ uses
 
 type
   TBCEditorReplace = class(TPersistent)
+  type
+    TAction = (raCancel, raSkip, raReplace, raReplaceAll);
+    TActionOption = (
+      eraReplace,
+      eraDeleteLine
+    );
+    TChanges = (
+      rcEngineUpdate
+    );
+    TChangeEvent = procedure(Event: TChanges) of object;
+    TEvent = procedure(ASender: TObject; const ASearch, AReplace: string; ALine, AColumn: Integer;
+      ADeleteLine: Boolean; var AAction: TAction) of object;
+    TOption = (
+      roBackwards,
+      roCaseSensitive,
+      roEntireScope,
+      roPrompt,
+      roReplaceAll,
+      roSelectedOnly,
+      roWholeWordsOnly
+    );
+    TOptions = set of TOption;
+
   strict private
-    FAction: TBCEditorReplaceActionOption;
+    FAction: TActionOption;
     FEngine: TBCEditorSearch.TEngine;
-    FOnChange: TBCEditorReplaceChangeEvent;
-    FOptions: TBCEditorReplaceOptions;
+    FOnChange: TChangeEvent;
+    FOptions: TOptions;
     procedure SetEngine(const AValue: TBCEditorSearch.TEngine);
   public
     constructor Create;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TBCEditorReplaceOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
   published
-    property Action: TBCEditorReplaceActionOption read FAction write FAction default eraReplace;
+    property Action: TActionOption read FAction write FAction default eraReplace;
     property Engine: TBCEditorSearch.TEngine read FEngine write SetEngine default seNormal;
-    property OnChange: TBCEditorReplaceChangeEvent read FOnChange write FOnChange;
-    property Options: TBCEditorReplaceOptions read FOptions write FOptions default [roPrompt];
+    property OnChange: TChangeEvent read FOnChange write FOnChange;
+    property Options: TOptions read FOptions write FOptions default [roPrompt];
   end;
 
 implementation
@@ -49,7 +72,7 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCEditorReplace.SetOption(const AOption: TBCEditorReplaceOption; const AEnabled: Boolean);
+procedure TBCEditorReplace.SetOption(const AOption: TOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

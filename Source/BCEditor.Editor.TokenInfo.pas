@@ -6,16 +6,16 @@ uses
   System.Classes, Vcl.Controls, Vcl.Graphics,
   BCEditor.Types;
 
-const
-  BCEDITOR_TOKEN_INFO_DEFAULT_OPTIONS = [tioAutoSize];
-
 type
   TBCEditorTokenInfo = class(TPersistent)
   type
+    TOption = (
+      tioAutoSize
+    );
+    TOptions = set of TOption;
 
     TTitle = class(TPersistent)
     type
-
       TColors = class(TPersistent)
       strict private
         FBackground: TColor;
@@ -55,13 +55,15 @@ type
       property Reference: TColor read FReference write FReference default clBlue;
     end;
 
+  strict private const
+    DefaultOptions = [tioAutoSize];
   strict private
     FColors: TColors;
     FDelayInterval: Cardinal;
     FEnabled: Boolean;
     FFont: TFont;
     FHeight: Integer;
-    FOptions: TBCEditorTokenInfoOptions;
+    FOptions: TBCEditorTokenInfo.TOptions;
     FTitle: TTitle;
     FWidth: Integer;
     procedure SetFont(const AValue: TFont);
@@ -75,7 +77,7 @@ type
     property Enabled: Boolean read FEnabled write FEnabled default False;
     property Font: TFont read FFont write SetFont;
     property Height: Integer read FHeight write FHeight default 0;
-    property Options: TBCEditorTokenInfoOptions read FOptions write FOptions default BCEDITOR_TOKEN_INFO_DEFAULT_OPTIONS;
+    property Options: TBCEditorTokenInfo.TOptions read FOptions write FOptions default DefaultOptions;
     property Title: TTitle read FTitle write FTitle;
     property Width: Integer read FWidth write FWidth default 0;
   end;
@@ -178,7 +180,7 @@ begin
   FFont.Name := 'Courier New';
   FFont.Size := 8;
   FHeight := 0;
-  FOptions := BCEDITOR_TOKEN_INFO_DEFAULT_OPTIONS;
+  FOptions := DefaultOptions;
   FTitle := TTitle.Create;
   FWidth := 0;
 end;

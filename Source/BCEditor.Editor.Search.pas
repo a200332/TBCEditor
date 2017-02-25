@@ -21,6 +21,11 @@ type
       seRegularExpression,
       seWildcard
     );
+    PItem = ^TItem;
+    TItem = record
+      BeginTextPosition: TBCEditorTextPosition;
+      EndTextPosition: TBCEditorTextPosition;
+    end;
     TOption = (
       soBeepIfStringNotFound,
       soCaseSensitive,
@@ -156,10 +161,10 @@ type
   strict private
     FEnabled: Boolean;
     FEngine: TEngine;
-    FHighlighter: TBCEditorSearch.THighlighter;
-    FInSelection: TBCEditorSearch.TInSelection;
+    FHighlighter: THighlighter;
+    FInSelection: TInSelection;
     FLines: TList;
-    FMap: TBCEditorSearch.TMap;
+    FMap: TMap;
     FOnChange: TChangeEvent;
     FOptions: TOptions;
     FSearchText: string;
@@ -167,9 +172,9 @@ type
     procedure DoChange;
     procedure SetEnabled(const AValue: Boolean);
     procedure SetEngine(const AValue: TEngine);
-    procedure SetHighlighter(const AValue: TBCEditorSearch.THighlighter);
-    procedure SetInSelection(const AValue: TBCEditorSearch.TInSelection);
-    procedure SetMap(const AValue: TBCEditorSearch.TMap);
+    procedure SetHighlighter(const AValue: THighlighter);
+    procedure SetInSelection(const AValue: TInSelection);
+    procedure SetMap(const AValue: TMap);
     procedure SetOnChange(const AValue: TChangeEvent);
     procedure SetSearchText(const AValue: string);
   public
@@ -184,10 +189,10 @@ type
   published
     property Enabled: Boolean read FEnabled write SetEnabled default True;
     property Engine: TEngine read FEngine write SetEngine default seNormal;
-    property Highlighter: TBCEditorSearch.THighlighter read FHighlighter write SetHighlighter;
-    property InSelection: TBCEditorSearch.TInSelection read FInSelection write SetInSelection;
+    property Highlighter: THighlighter read FHighlighter write SetHighlighter;
+    property InSelection: TInSelection read FInSelection write SetInSelection;
     property Lines: TList read FLines write FLines;
-    property Map: TBCEditorSearch.TMap read FMap write SetMap;
+    property Map: TMap read FMap write SetMap;
     property Options: TOptions read FOptions write FOptions default DefaultOptions;
     property SearchText: string read FSearchText write SetSearchText;
     property OnChange: TChangeEvent read FOnChange write SetOnChange;
@@ -273,8 +278,8 @@ end;
 
 procedure TBCEditorSearch.THighlighter.Assign(ASource: TPersistent);
 begin
-  if Assigned(ASource) and (ASource is TBCEditorSearch.THighlighter) then
-  with ASource as TBCEditorSearch.THighlighter do
+  if Assigned(ASource) and (ASource is THighlighter) then
+  with ASource as THighlighter do
   begin
     Self.FColors.Assign(Colors);
     Self.DoChange;
@@ -313,8 +318,8 @@ end;
 
 procedure TBCEditorSearch.TMap.TColors.Assign(ASource: TPersistent);
 begin
-  if Assigned(ASource) and (ASource is TBCEditorSearch.TMap.TColors) then
-  with ASource as TBCEditorSearch.TMap.TColors do
+  if Assigned(ASource) and (ASource is TColors) then
+  with ASource as TColors do
   begin
     Self.FBackground := FBackground;
     Self.FForeground := FForeground;
@@ -378,8 +383,8 @@ end;
 
 procedure TBCEditorSearch.TMap.Assign(ASource: TPersistent);
 begin
-  if ASource is TBCEditorSearch.TMap then
-  with ASource as TBCEditorSearch.TMap do
+  if ASource is TMap then
+  with ASource as TMap do
   begin
     Self.FAlign := FAlign;
     Self.FVisible := FVisible;
@@ -471,8 +476,8 @@ end;
 
 procedure TBCEditorSearch.TInSelection.Assign(ASource: TPersistent);
 begin
-  if Assigned(ASource) and (ASource is TBCEditorSearch.TInSelection) then
-  with ASource as TBCEditorSearch.TInSelection do
+  if Assigned(ASource) and (ASource is TInSelection) then
+  with ASource as TInSelection do
   begin
     Self.FActive := FActive;
     Self.FBackground := FBackground;
@@ -503,8 +508,8 @@ begin
   FEngine := seNormal;
   FMap := TBCEditorSearch.TMap.Create;
   FLines := TList.Create;
-  FHighlighter := TBCEditorSearch.THighlighter.Create;
-  FInSelection := TBCEditorSearch.TInSelection.Create;
+  FHighlighter := THighlighter.Create;
+  FInSelection := TInSelection.Create;
   FOptions := DefaultOptions;
   FEnabled := True;
 end;
@@ -542,7 +547,7 @@ var
   LIndex: Integer;
 begin
   for LIndex := FLines.Count - 1 downto 0 do
-    Dispose(PBCEditorSearchItem(FLines.Items[LIndex]));
+    Dispose(PItem(FLines.Items[LIndex]));
   FLines.Clear;
 end;
 
@@ -555,13 +560,13 @@ end;
 function TBCEditorSearch.GetNextSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
 var
   LLow, LHigh, LMiddle: Integer;
-  LSearchItem: PBCEditorSearchItem;
+  LSearchItem: PItem;
 
   function IsTextPositionBetweenSearchItems: Boolean;
   var
-    LPreviousSearchItem: PBCEditorSearchItem;
+    LPreviousSearchItem: PItem;
   begin
-    LPreviousSearchItem := PBCEditorSearchItem(FLines.Items[LMiddle - 1]);
+    LPreviousSearchItem := PItem(FLines.Items[LMiddle - 1]);
 
     Result :=
       ( (LPreviousSearchItem^.BeginTextPosition.Line < ATextPosition.Line) or
@@ -589,13 +594,13 @@ begin
   if FLines.Count = 0 then
     Exit;
 
-  LSearchItem := PBCEditorSearchItem(FLines.Items[0]);
+  LSearchItem := PItem(FLines.Items[0]);
   if IsSearchItemGreaterThanTextPosition then
     Exit(0);
 
   LHigh := FLines.Count - 1;
 
-  LSearchItem := PBCEditorSearchItem(FLines.Items[LHigh]);
+  LSearchItem := PItem(FLines.Items[LHigh]);
   if IsSearchItemLowerThanTextPosition then
     Exit;
 
@@ -605,7 +610,7 @@ begin
   begin
     LMiddle := (LLow + LHigh) div 2;
 
-    LSearchItem := PBCEditorSearchItem(FLines.Items[LMiddle]);
+    LSearchItem := PItem(FLines.Items[LMiddle]);
 
     if IsTextPositionBetweenSearchItems then
       Exit(LMiddle)
@@ -621,13 +626,13 @@ end;
 function TBCEditorSearch.GetPreviousSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
 var
   LLow, LHigh, LMiddle: Integer;
-  LSearchItem: PBCEditorSearchItem;
+  LSearchItem: PItem;
 
   function IsTextPositionBetweenSearchItems: Boolean;
   var
-    LNextSearchItem: PBCEditorSearchItem;
+    LNextSearchItem: PItem;
   begin
-    LNextSearchItem := PBCEditorSearchItem(FLines.Items[LMiddle + 1]);
+    LNextSearchItem := PItem(FLines.Items[LMiddle + 1]);
 
     Result :=
       ( (LSearchItem^.EndTextPosition.Line < ATextPosition.Line) or
@@ -655,13 +660,13 @@ begin
   if FLines.Count = 0 then
     Exit;
 
-  LSearchItem := PBCEditorSearchItem(FLines.Items[0]);
+  LSearchItem := PItem(FLines.Items[0]);
   if IsSearchItemGreaterThanTextPosition then
     Exit;
 
   LHigh := FLines.Count - 1;
 
-  LSearchItem := PBCEditorSearchItem(FLines.Items[LHigh]);
+  LSearchItem := PItem(FLines.Items[LHigh]);
   if IsSearchItemLowerThanTextPosition then
     Exit(LHigh);
 
@@ -672,7 +677,7 @@ begin
   begin
     LMiddle := (LLow + LHigh) div 2;
 
-    LSearchItem := PBCEditorSearchItem(FLines.Items[LMiddle]);
+    LSearchItem := PItem(FLines.Items[LMiddle]);
 
     if IsTextPositionBetweenSearchItems then
       Exit(LMiddle)
@@ -705,17 +710,17 @@ begin
   end;
 end;
 
-procedure TBCEditorSearch.SetHighlighter(const AValue: TBCEditorSearch.THighlighter);
+procedure TBCEditorSearch.SetHighlighter(const AValue: THighlighter);
 begin
   FHighlighter.Assign(AValue);
 end;
 
-procedure TBCEditorSearch.SetInSelection(const AValue: TBCEditorSearch.TInSelection);
+procedure TBCEditorSearch.SetInSelection(const AValue: TInSelection);
 begin
   FInSelection.Assign(AValue);
 end;
 
-procedure TBCEditorSearch.SetMap(const AValue: TBCEditorSearch.TMap);
+procedure TBCEditorSearch.SetMap(const AValue: TMap);
 begin
   FMap.Assign(AValue);
 end;

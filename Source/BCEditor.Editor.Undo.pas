@@ -4,11 +4,16 @@ interface {********************************************************************}
 
 uses
   System.Classes,
-  BCEditor.Types, BCEditor.Lines;
+  BCEditor.Types, BCEditor.Lines, BCEditor.Editor.Selection;
 
 type
   TBCEditorUndoList = class(TPersistent)
   type
+    TOption = (
+      uoGroupUndo,
+      uoUndoAfterSave
+    );
+    TOptions = set of TOption;
     TUndoType = (utInsert, utPaste, utDragDropInsert, utDelete, utLineBreak,
       utIndent, utUnindent, utCaret, utSelection, utNothing, utGroupBreak);
 
@@ -19,7 +24,7 @@ type
       UndoType: TUndoType;
       SelectionBeginPosition: TBCEditorTextPosition;
       SelectionEndPosition: TBCEditorTextPosition;
-      SelectionMode: TBCEditorSelectionMode;
+      SelectionMode: TBCEditorSelection.TMode;
       Text: string;
       TextCaretPosition: TBCEditorTextPosition;
     end;
@@ -62,7 +67,7 @@ type
     procedure PushItem(AItem: TItem); overload;
     procedure PushItem(AUndoType: TUndoType;
       const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-      const AChangeText: string; ASelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0); overload;
+      const AChangeText: string; ASelectionMode: TBCEditorSelection.TMode; AChangeBlockNumber: Integer = 0); overload;
     procedure Unlock();
     property BlockCount: Integer read FBlockCount;
     property CanUndo: Boolean read GetCanUndo;
@@ -244,7 +249,7 @@ end;
 
 procedure TBCEditorUndoList.PushItem(AUndoType: TUndoType;
   const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-  const AChangeText: string; ASelectionMode: TBCEditorSelectionMode; AChangeBlockNumber: Integer = 0);
+  const AChangeText: string; ASelectionMode: TBCEditorSelection.TMode; AChangeBlockNumber: Integer = 0);
 begin
   if FLockCount = 0 then
   begin

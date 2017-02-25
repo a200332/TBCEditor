@@ -3,12 +3,13 @@ unit BCEditor.Editor.Scroll;
 interface
 
 uses
-  System.Classes, System.UITypes,
+  System.Classes, System.UITypes, Vcl.Forms,
   BCEditor.Editor.Glyph;
 
 type
   TBCEditorScroll = class(TPersistent)
   type
+    TEvent = procedure(ASender: TObject; AScrollBar: TScrollBarKind) of object;
     TOption = (
       soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
       soHintFollows, { The scroll hint follows the mouse when scrolling vertically }

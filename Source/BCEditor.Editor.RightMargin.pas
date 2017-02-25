@@ -9,6 +9,12 @@ uses
 type
   TBCEditorRightMargin = class(TPersistent)
   type
+    TOption = (
+      rmoAutoLinebreak,
+      rmoMouseMove,
+      rmoShowMovingHint
+    );
+    TOptions = set of TOption;
 
     TColors = class(TPersistent)
     strict private
@@ -33,7 +39,7 @@ type
     FMouseOver: Boolean;
     FMoving: Boolean;
     FOnChange: TNotifyEvent;
-    FOptions: TBCEditorRightMarginOptions;
+    FOptions: TOptions;
     FPosition: Integer;
     FVisible: Boolean;
     procedure DoChange;
@@ -45,13 +51,13 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TBCEditorRightMarginOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
     property MouseOver: Boolean read FMouseOver write FMouseOver;
     property Moving: Boolean read FMoving write FMoving;
   published
     property Colors: TBCEditorRightMargin.TColors read FColors write SetColors;
     property Cursor: TCursor read FCursor write FCursor default crHSplit;
-    property Options: TBCEditorRightMarginOptions read FOptions write FOptions default [rmoMouseMove, rmoShowMovingHint];
+    property Options: TOptions read FOptions write FOptions default [rmoMouseMove, rmoShowMovingHint];
     property Position: Integer read FPosition write SetPosition default 80;
     property Visible: Boolean read FVisible write SetVisible default True;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
@@ -160,7 +166,7 @@ begin
   FColors.OnChange := AValue;
 end;
 
-procedure TBCEditorRightMargin.SetOption(const AOption: TBCEditorRightMarginOption; const AEnabled: Boolean);
+procedure TBCEditorRightMargin.SetOption(const AOption: TOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

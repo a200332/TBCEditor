@@ -20,6 +20,14 @@ type
     TAbstractParser = class;
     TAbstractParserArray = array [AnsiChar] of TAbstractParser;
 
+    TMatchingPairMatch = record
+      OpenToken: string;
+      CloseToken: string;
+      OpenTokenPos: TBCEditorTextPosition;
+      CloseTokenPos: TBCEditorTextPosition;
+      TokenAttribute: TAttribute;
+    end;
+
     PMatchingPairToken = ^TMatchingPairToken;
     TMatchingPairToken = record
       OpenToken: string;
@@ -34,14 +42,6 @@ type
       trOpenAndCloseTokenFound
     );
 
-    TMatchingPairMatch = record
-      OpenToken: string;
-      CloseToken: string;
-      OpenTokenPos: TBCEditorTextPosition;
-      CloseTokenPos: TBCEditorTextPosition;
-      TokenAttribute: TAttribute;
-    end;
-
     PElement = ^TElement;
     TElement = record
       Background: TColor;
@@ -49,6 +49,29 @@ type
       Name: string;
       FontStyles: TFontStyles;
     end;
+
+    TTokenType = (
+      ttUnspecified,
+      ttAddress,
+      ttAssemblerComment,
+      ttAssemblerReservedWord,
+      ttAttribute,
+      ttBlockComment,
+      ttCharacter,
+      ttDirective,
+      ttHexNumber,
+      ttHighlightedBlock,
+      ttHighlightedBlockSymbol,
+      ttLineComment,
+      ttMailtoLink,
+      ttMethod,
+      ttMethodName,
+      ttNumber,
+      ttReservedWord,
+      ttString,
+      ttSymbol,
+      ttWebLink
+    );
 
     TInfo = class
       Author: record
@@ -126,9 +149,9 @@ type
 
     TAbstractRule = class(TObject)
     strict private
-      FTokenType: TBCEditorRangeType;
+      FTokenType: TTokenType;
     public
-      property TokenType: TBCEditorRangeType read FTokenType write FTokenType;
+      property TokenType: TTokenType read FTokenType write FTokenType;
     end;
 
     TAbstractToken = class(TObject)
@@ -456,7 +479,7 @@ type
     function GetCurrentRangeAttribute: TAttribute;
     function GetEndOfLine: Boolean;
     function GetTokenAttribute: TAttribute;
-    function GetTokenKind: TBCEditorRangeType;
+    function GetTokenKind: TTokenType;
     function GetTokenLength: Integer;
     function GetTokenPosition: Integer;
     procedure AddKeyChar(AKeyCharType: TBCEditorKeyCharType; AChar: Char);
@@ -1699,15 +1722,15 @@ begin
     Result := ritMultiLineString
 end;
 
-function StrToRangeType(const AString: string): TBCEditorRangeType;
+function StrToRangeType(const AString: string): TBCEditorHighlighter.TTokenType;
 var
   LIndex: Integer;
 begin
-  LIndex := GetEnumValue(TypeInfo(TBCEditorRangeType), 'tt' + AString);
+  LIndex := GetEnumValue(TypeInfo(TBCEditorHighlighter.TTokenType), 'tt' + AString);
   if LIndex = -1 then
     Result := ttUnspecified
   else
-    Result := TBCEditorRangeType(LIndex);
+    Result := TBCEditorHighlighter.TTokenType(LIndex);
 end;
 
 constructor TBCEditorHighlighter.TImportJSON.Create(AHighlighter: TBCEditorHighlighter);
@@ -2723,11 +2746,11 @@ begin
   MainRules.Reset;
 end;
 
-function TBCEditorHighlighter.GetTokenKind: TBCEditorRangeType;
+function TBCEditorHighlighter.GetTokenKind: TTokenType;
 var
   LIndex: Integer;
   LToken: string;
-  LTokenType: TBCEditorRangeType;
+  LTokenType: TTokenType;
   LCurrentRangeKeyList: TKeyList;
 begin
   LTokenType := FCurrentRange.TokenType;

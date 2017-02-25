@@ -9,6 +9,20 @@ uses
 type
   TBCEditorSelection = class(TPersistent)
   type
+    PMode = ^TMode;
+    TMode = (
+      smColumn,
+      smNormal
+    );
+    TOption = (
+      soALTSetsColumnMode,
+      soExpandRealNumbers,
+      soHighlightSimilarTerms,
+      soTermsCaseSensitive,
+      soToEndOfLine,
+      soTripleClickRowSelect
+    );
+    TOptions = set of TOption;
 
     TColors = class(TPersistent)
     strict private
@@ -27,29 +41,29 @@ type
     end;
 
   strict private
-    FActiveMode: TBCEditorSelectionMode;
+    FActiveMode: TMode;
     FColors: TBCEditorSelection.TColors;
-    FMode: TBCEditorSelectionMode;
+    FMode: TMode;
     FOnChange: TNotifyEvent;
-    FOptions: TBCEditorSelectionOptions;
+    FOptions: TOptions;
     FVisible: Boolean;
     procedure DoChange;
-    procedure SetActiveMode(const AValue: TBCEditorSelectionMode);
-    procedure SetColors(const AValue: TBCEditorSelection.TColors);
-    procedure SetMode(const AValue: TBCEditorSelectionMode);
+    procedure SetActiveMode(const AValue: TMode);
+    procedure SetColors(const AValue: TColors);
+    procedure SetMode(const AValue: TMode);
     procedure SetOnChange(AValue: TNotifyEvent);
-    procedure SetOptions(AValue: TBCEditorSelectionOptions);
+    procedure SetOptions(AValue: TOptions);
     procedure SetVisible(const AValue: Boolean);
   public
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TBCEditorSelectionOption; const AEnabled: Boolean);
-    property ActiveMode: TBCEditorSelectionMode read FActiveMode write SetActiveMode stored False;
+    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    property ActiveMode: TMode read FActiveMode write SetActiveMode stored False;
   published
     property Colors: TBCEditorSelection.TColors read FColors write SetColors;
-    property Mode: TBCEditorSelectionMode read FMode write SetMode default smNormal;
-    property Options: TBCEditorSelectionOptions read FOptions write SetOptions default [soHighlightSimilarTerms, soTermsCaseSensitive];
+    property Mode: TMode read FMode write SetMode default smNormal;
+    property Options: TOptions read FOptions write SetOptions default [soHighlightSimilarTerms, soTermsCaseSensitive];
     property Visible: Boolean read FVisible write SetVisible default True;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
@@ -142,7 +156,7 @@ begin
     FOnChange(Self);
 end;
 
-procedure TBCEditorSelection.SetActiveMode(const AValue: TBCEditorSelectionMode);
+procedure TBCEditorSelection.SetActiveMode(const AValue: TMode);
 begin
   if FActiveMode <> AValue then
   begin
@@ -156,7 +170,7 @@ begin
   FColors.Assign(AValue);
 end;
 
-procedure TBCEditorSelection.SetMode(const AValue: TBCEditorSelectionMode);
+procedure TBCEditorSelection.SetMode(const AValue: TMode);
 begin
   if FMode <> AValue then
   begin
@@ -172,7 +186,7 @@ begin
   FColors.OnChange := FOnChange;
 end;
 
-procedure TBCEditorSelection.SetOption(const AOption: TBCEditorSelectionOption; const AEnabled: Boolean);
+procedure TBCEditorSelection.SetOption(const AOption: TOption; const AEnabled: Boolean);
 begin
    if AEnabled then
     Include(FOptions, AOption)
@@ -180,7 +194,7 @@ begin
     Exclude(FOptions, AOption);
 end;
 
-procedure TBCEditorSelection.SetOptions(AValue: TBCEditorSelectionOptions);
+procedure TBCEditorSelection.SetOptions(AValue: TOptions);
 begin
   if FOptions <> AValue then
   begin
