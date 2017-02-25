@@ -4,20 +4,31 @@ interface
 
 uses
   System.Classes, System.UITypes,
-  BCEditor.Types, BCEditor.Editor.Glyph;
+  BCEditor.Editor.Glyph;
 
 type
   TBCEditorScroll = class(TPersistent)
   type
+    TOption = (
+      soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
+      soHintFollows, { The scroll hint follows the mouse when scrolling vertically }
+      soPastEndOfFileMarker, { Allows the cursor to go past the end of file marker }
+      soPastEndOfLine, { Allows the cursor to go past the last character into the white space at the end of a line }
+      soShowVerticalScrollHint, { Shows a hint of the visible line numbers when scrolling vertically }
+      soWheelClickMove { Scrolling by mouse move after wheel click. }
+    );
+    TOptions = set of TOption;
 
     THint = class(TPersistent)
+    type
+      TFormat = (shfTopLineOnly, shfTopToBottom);
     strict private
-      FFormat: TBCEditorScrollHintFormat;
+      FFormat: TFormat;
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
-      property Format: TBCEditorScrollHintFormat read FFormat write FFormat default shfTopLineOnly;
+      property Format: TFormat read FFormat write FFormat default shfTopLineOnly;
     end;
 
   strict private const
@@ -28,23 +39,23 @@ type
     FIndicator: TBCEditorGlyph;
     FMaxWidth: Integer;
     FOnChange: TNotifyEvent;
-    FOptions: TBCEditorScrollOptions;
+    FOptions: TOptions;
     procedure DoChange;
     procedure SetBars(const AValue: System.UITypes.TScrollStyle);
     procedure SetHint(const AValue: TBCEditorScroll.THint);
     procedure SetIndicator(const AValue: TBCEditorGlyph);
     procedure SetOnChange(AValue: TNotifyEvent);
-    procedure SetOptions(const AValue: TBCEditorScrollOptions);
+    procedure SetOptions(const AValue: TOptions);
   public
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TBCEditorScrollOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
   published
     property Bars: System.UITypes.TScrollStyle read FBars write SetBars default System.UITypes.TScrollStyle.ssBoth;
     property Hint: TBCEditorScroll.THint read FHint write SetHint;
     property Indicator: TBCEditorGlyph read FIndicator write SetIndicator;
-    property Options: TBCEditorScrollOptions read FOptions write SetOptions default DefaultOptions;
+    property Options: TOptions read FOptions write SetOptions default DefaultOptions;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
 
@@ -138,7 +149,7 @@ begin
   FOnChange := AValue;
 end;
 
-procedure TBCEditorScroll.SetOption(const AOption: TBCEditorScrollOption; const AEnabled: Boolean);
+procedure TBCEditorScroll.SetOption(const AOption: TOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
@@ -146,7 +157,7 @@ begin
     Exclude(FOptions, AOption);
 end;
 
-procedure TBCEditorScroll.SetOptions(const AValue: TBCEditorScrollOptions);
+procedure TBCEditorScroll.SetOptions(const AValue: TOptions);
 begin
   if FOptions <> AValue then
   begin

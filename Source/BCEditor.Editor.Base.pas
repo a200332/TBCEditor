@@ -141,7 +141,7 @@ type
     FOnCustomTokenAttribute: TBCEditorCustomTokenAttributeEvent;
     FOnDropFiles: TBCEditorDropFilesEvent;
     FOnKeyPressW: TBCEditorKeyPressWEvent;
-    FOnLeftMarginClick: TLeftMarginClickEvent;
+    FOnLeftMarginClick: TBCEditorLeftMargin.TClickEvent;
     FOnLinesDeleted: TBCEditorLines.TChangeEvent;
     FOnLinesInserted: TBCEditorLines.TChangeEvent;
     FOnLinesPutted: TBCEditorLines.TChangeEvent;
@@ -278,7 +278,7 @@ type
     procedure AddIndent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
       const Ident: string; const SelectionMode: TBCEditorSelectionMode);
     procedure AfterSetText(ASender: TObject);
-    procedure AssignSearchEngine(const AEngine: TBCEditorSearchEngine);
+    procedure AssignSearchEngine(const AEngine: TBCEditorSearch.TEngine);
     procedure BeforeSetText(ASender: TObject);
     procedure BookmarkListChange(ASender: TObject);
     procedure CaretChanged(ASender: TObject);
@@ -366,7 +366,7 @@ type
     procedure RightMarginChanged(ASender: TObject);
     procedure ScrollChanged(ASender: TObject);
     procedure ScrollTimerHandler(ASender: TObject);
-    procedure SearchChanged(AEvent: TBCEditorSearchChanges);
+    procedure SearchChanged(AEvent: TBCEditorSearch.TChanges);
     procedure SelectionChanged(ASender: TObject);
     procedure SetActiveLine(const AValue: TBCEditorActiveLine);
     procedure SetBackgroundColor(const AValue: TColor);
@@ -721,7 +721,7 @@ type
     property OnDropFiles: TBCEditorDropFilesEvent read FOnDropFiles write FOnDropFiles;
     property OnKeyPress: TBCEditorKeyPressWEvent read FOnKeyPressW write FOnKeyPressW;
     property OnKeyDown;
-    property OnLeftMarginClick: TLeftMarginClickEvent read FOnLeftMarginClick write FOnLeftMarginClick;
+    property OnLeftMarginClick: TBCEditorLeftMargin.TClickEvent read FOnLeftMarginClick write FOnLeftMarginClick;
     property OnLinesDeleted: TBCEditorLines.TChangeEvent read FOnLinesDeleted write FOnLinesDeleted;
     property OnLinesInserted: TBCEditorLines.TChangeEvent read FOnLinesInserted write FOnLinesInserted;
     property OnLinesPutted: TBCEditorLines.TChangeEvent read FOnLinesPutted write FOnLinesPutted;
@@ -784,7 +784,6 @@ implementation
 
 uses
   Winapi.ShellAPI, Winapi.Imm, System.Math, System.Types, Vcl.Clipbrd, System.Character, Vcl.Menus,
-  BCEditor.Editor.LeftMargin.Border, BCEditor.Editor.LeftMargin.LineNumbers,
   BCEditor.Language,
   BCEditor.Export.HTML, Vcl.Themes, BCEditor.StyleHooks,
   BCEditor.Editor.CompletionProposal.Columns.Items,
@@ -3193,7 +3192,7 @@ begin
   Lines.EndUpdate();
 end;
 
-procedure TBCBaseEditor.AssignSearchEngine(const AEngine: TBCEditorSearchEngine);
+procedure TBCBaseEditor.AssignSearchEngine(const AEngine: TBCEditorSearch.TEngine);
 begin
   if Assigned(FSearchEngine) then
   begin
@@ -5196,7 +5195,7 @@ end;
 procedure TBCBaseEditor.PaintCaretBlock(ADisplayCaretPosition: TBCEditorDisplayPosition);
 var
   LPoint: TPoint;
-  LCaretStyle: TBCEditorCaretStyle;
+  LCaretStyle: TBCEditorCaret.TStyles.TStyle;
   LCaretWidth, LCaretHeight, X, Y: Integer;
   LTempBitmap: Vcl.Graphics.TBitmap;
   LBackgroundColor, LForegroundColor: TColor;
@@ -6753,7 +6752,7 @@ begin
   ComputeScroll(LCursorPoint);
 end;
 
-procedure TBCBaseEditor.SearchChanged(AEvent: TBCEditorSearchChanges);
+procedure TBCBaseEditor.SearchChanged(AEvent: TBCEditorSearch.TChanges);
 begin
   case AEvent of
     scEngineUpdate:
@@ -12336,7 +12335,7 @@ end;
 
 procedure TBCBaseEditor.ResetCaret;
 var
-  LCaretStyle: TBCEditorCaretStyle;
+  LCaretStyle: TBCEditorCaret.TStyles.TStyle;
   LWidth, LHeight: Integer;
 begin
   if FTextEntryMode = temInsert then
@@ -15545,7 +15544,7 @@ var
   LCaretTextPosition: TBCEditorTextPosition;
   LCaretPoint: TPoint;
   LCompositionForm: TCompositionForm;
-  LCaretStyle: TBCEditorCaretStyle;
+  LCaretStyle: TBCEditorCaret.TStyles.TStyle;
   LVisibleChars: Integer;
 begin
   if (PaintLock <> 0) or not (Focused or FAlwaysShowCaret) then

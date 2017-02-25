@@ -9,6 +9,30 @@ uses
 type
   TBCEditorSearch = class(TPersistent)
   type
+    TChanges = (
+      scRefresh,
+      scSearch,
+      scEngineUpdate,
+      scInSelectionActive
+    );
+    TChangeEvent = procedure(Event: TChanges) of object;
+    TEngine = (
+      seNormal,
+      seRegularExpression,
+      seWildcard
+    );
+    TOption = (
+      soBeepIfStringNotFound,
+      soCaseSensitive,
+      soEntireScope,
+      soHighlightResults,
+      soSearchOnTyping,
+      soShowStringNotFound,
+      soShowSearchMatchNotFound,
+      soWholeWordsOnly,
+      soWrapAround
+    );
+    TOptions = set of TBCEditorSearch.TOption;
 
     THighlighter = class(TPersistent)
     type
@@ -18,7 +42,7 @@ type
         FBackground: TColor;
         FBorder: TColor;
         FForeground: TColor;
-        FOnChange: TBCEditorSearchChangeEvent;
+        FOnChange: TChangeEvent;
         procedure DoChange;
         procedure SetBackground(const AValue: TColor);
         procedure SetBorder(const AValue: TColor);
@@ -30,33 +54,38 @@ type
         property Background: TColor read FBackground write SetBackground default clSearchHighlighter;
         property Border: TColor read FBorder write SetBorder default clNone;
         property Foreground: TColor read FForeground write SetForeground default clWindowText;
-        property OnChange: TBCEditorSearchChangeEvent read FOnChange write FOnChange;
+        property OnChange: TChangeEvent read FOnChange write FOnChange;
       end;
 
     strict private
       FColors: TColors;
-      FOnChange: TBCEditorSearchChangeEvent;
+      FOnChange: TChangeEvent;
       procedure DoChange;
       procedure SetColors(const AValue: TColors);
-      procedure SetOnChange(AValue: TBCEditorSearchChangeEvent);
+      procedure SetOnChange(AValue: TChangeEvent);
     public
       constructor Create;
       destructor Destroy; override;
       procedure Assign(ASource: TPersistent); override;
     published
       property Colors: TColors read FColors write SetColors;
-      property OnChange: TBCEditorSearchChangeEvent read FOnChange write SetOnChange;
+      property OnChange: TChangeEvent read FOnChange write SetOnChange;
     end;
 
     TMap = class(TPersistent)
     type
+      TAlign = (saLeft, saRight);
+      TOption = (
+        moShowActiveLine
+      );
+      TOptions = set of TBCEditorSearch.TMap.TOption;
 
       TColors = class(TPersistent)
       strict private
         FActiveLine: TColor;
         FBackground: TColor;
         FForeground: TColor;
-        FOnChange: TBCEditorSearchChangeEvent;
+        FOnChange: TChangeEvent;
         procedure SetActiveLine(AValue: TColor);
         procedure SetBackground(AValue: TColor);
         procedure SetForeground(AValue: TColor);
@@ -67,22 +96,24 @@ type
         property ActiveLine: TColor read FActiveLine write SetActiveLine default clSearchMapActiveLine;
         property Background: TColor read FBackground write SetBackground default clLeftMarginBackground;
         property Foreground: TColor read FForeground write SetForeground default clSearchHighlighter;
-        property OnChange: TBCEditorSearchChangeEvent read FOnChange write FOnChange;
+        property OnChange: TChangeEvent read FOnChange write FOnChange;
       end;
 
+    strict private const
+      DefaultOptions = [moShowActiveLine];
     strict private
-      FAlign: TBCEditorSearchMapAlign;
+      FAlign: TAlign;
       FColors: TColors;
       FCursor: TCursor;
-      FOnChange: TBCEditorSearchChangeEvent;
-      FOptions: TBCEditorSearchMapOptions;
+      FOnChange: TChangeEvent;
+      FOptions: TBCEditorSearch.TMap.TOptions;
       FVisible: Boolean;
       FWidth: Integer;
       procedure DoChange;
-      procedure SetAlign(const AValue: TBCEditorSearchMapAlign);
+      procedure SetAlign(const AValue: TAlign);
       procedure SetColors(const AValue: TColors);
-      procedure SetOnChange(AValue: TBCEditorSearchChangeEvent);
-      procedure SetOptions(const AValue: TBCEditorSearchMapOptions);
+      procedure SetOnChange(AValue: TChangeEvent);
+      procedure SetOptions(const AValue: TBCEditorSearch.TMap.TOptions);
       procedure SetVisible(AValue: Boolean);
       procedure SetWidth(AValue: Integer);
     public
@@ -91,20 +122,20 @@ type
       procedure Assign(ASource: TPersistent); override;
       function GetWidth: Integer;
     published
-      property Align: TBCEditorSearchMapAlign read FAlign write SetAlign default saRight;
+      property Align: TAlign read FAlign write SetAlign default saRight;
       property Colors: TColors read FColors write SetColors;
       property Cursor: TCursor read FCursor write FCursor default crArrow;
-      property Options: TBCEditorSearchMapOptions read FOptions write SetOptions default [moShowActiveLine];
+      property Options: TBCEditorSearch.TMap.TOptions read FOptions write SetOptions default DefaultOptions;
       property Visible: Boolean read FVisible write SetVisible default False;
       property Width: Integer read FWidth write SetWidth default 5;
-      property OnChange: TBCEditorSearchChangeEvent read FOnChange write SetOnChange;
+      property OnChange: TChangeEvent read FOnChange write SetOnChange;
     end;
 
     TInSelection = class(TPersistent)
     strict private
       FActive: Boolean;
       FBackground: TColor;
-      FOnChange: TBCEditorSearchChangeEvent;
+      FOnChange: TChangeEvent;
       FSelectionBeginPosition: TBCEditorTextPosition;
       FSelectionEndPosition: TBCEditorTextPosition;
       procedure DoChange;
@@ -117,29 +148,29 @@ type
     published
       property Active: Boolean read FActive write SetActive default False;
       property Background: TColor read FBackground write FBackground default clSearchInSelectionBackground;
-      property OnChange: TBCEditorSearchChangeEvent read FOnChange write FOnChange;
+      property OnChange: TChangeEvent read FOnChange write FOnChange;
     end;
 
   strict private const
     DefaultOptions = [soHighlightResults, soSearchOnTyping, soBeepIfStringNotFound, soShowSearchMatchNotFound];
   strict private
     FEnabled: Boolean;
-    FEngine: TBCEditorSearchEngine;
+    FEngine: TEngine;
     FHighlighter: TBCEditorSearch.THighlighter;
     FInSelection: TBCEditorSearch.TInSelection;
     FLines: TList;
     FMap: TBCEditorSearch.TMap;
-    FOnChange: TBCEditorSearchChangeEvent;
-    FOptions: TBCEditorSearchOptions;
+    FOnChange: TChangeEvent;
+    FOptions: TOptions;
     FSearchText: string;
     FVisible: Boolean;
     procedure DoChange;
     procedure SetEnabled(const AValue: Boolean);
-    procedure SetEngine(const AValue: TBCEditorSearchEngine);
+    procedure SetEngine(const AValue: TEngine);
     procedure SetHighlighter(const AValue: TBCEditorSearch.THighlighter);
     procedure SetInSelection(const AValue: TBCEditorSearch.TInSelection);
     procedure SetMap(const AValue: TBCEditorSearch.TMap);
-    procedure SetOnChange(const AValue: TBCEditorSearchChangeEvent);
+    procedure SetOnChange(const AValue: TChangeEvent);
     procedure SetSearchText(const AValue: string);
   public
     constructor Create;
@@ -148,18 +179,18 @@ type
     procedure ClearLines;
     function GetNextSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
     function GetPreviousSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
-    procedure SetOption(const AOption: TBCEditorSearchOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
     property Visible: Boolean read FVisible write FVisible;
   published
     property Enabled: Boolean read FEnabled write SetEnabled default True;
-    property Engine: TBCEditorSearchEngine read FEngine write SetEngine default seNormal;
+    property Engine: TEngine read FEngine write SetEngine default seNormal;
     property Highlighter: TBCEditorSearch.THighlighter read FHighlighter write SetHighlighter;
     property InSelection: TBCEditorSearch.TInSelection read FInSelection write SetInSelection;
     property Lines: TList read FLines write FLines;
     property Map: TBCEditorSearch.TMap read FMap write SetMap;
-    property Options: TBCEditorSearchOptions read FOptions write FOptions default DefaultOptions;
+    property Options: TOptions read FOptions write FOptions default DefaultOptions;
     property SearchText: string read FSearchText write SetSearchText;
-    property OnChange: TBCEditorSearchChangeEvent read FOnChange write SetOnChange;
+    property OnChange: TChangeEvent read FOnChange write SetOnChange;
   end;
 
 implementation {***************************************************************}
@@ -263,7 +294,7 @@ begin
   FColors.Assign(AValue);
 end;
 
-procedure TBCEditorSearch.THighlighter.SetOnChange(AValue: TBCEditorSearchChangeEvent);
+procedure TBCEditorSearch.THighlighter.SetOnChange(AValue: TChangeEvent);
 begin
   FOnChange := AValue;
   FColors.OnChange := FOnChange;
@@ -376,7 +407,7 @@ begin
     Result := 0;
 end;
 
-procedure TBCEditorSearch.TMap.SetAlign(const AValue: TBCEditorSearchMapAlign);
+procedure TBCEditorSearch.TMap.SetAlign(const AValue: TAlign);
 begin
   if FAlign <> AValue then
   begin
@@ -390,13 +421,13 @@ begin
   FColors.Assign(AValue);
 end;
 
-procedure TBCEditorSearch.TMap.SetOnChange(AValue: TBCEditorSearchChangeEvent);
+procedure TBCEditorSearch.TMap.SetOnChange(AValue: TChangeEvent);
 begin
   FOnChange := AValue;
   FColors.OnChange := FOnChange;
 end;
 
-procedure TBCEditorSearch.TMap.SetOptions(const AValue: TBCEditorSearchMapOptions);
+procedure TBCEditorSearch.TMap.SetOptions(const AValue: TBCEditorSearch.TMap.TOptions);
 begin
   if FOptions <> AValue then
   begin
@@ -664,7 +695,7 @@ begin
   end;
 end;
 
-procedure TBCEditorSearch.SetEngine(const AValue: TBCEditorSearchEngine);
+procedure TBCEditorSearch.SetEngine(const AValue: TEngine);
 begin
   if FEngine <> AValue then
   begin
@@ -689,7 +720,7 @@ begin
   FMap.Assign(AValue);
 end;
 
-procedure TBCEditorSearch.SetOnChange(const AValue: TBCEditorSearchChangeEvent);
+procedure TBCEditorSearch.SetOnChange(const AValue: TChangeEvent);
 begin
   FOnChange := AValue;
   FMap.OnChange := FOnChange;
@@ -697,7 +728,7 @@ begin
   FInSelection.OnChange := FOnChange;
 end;
 
-procedure TBCEditorSearch.SetOption(const AOption: TBCEditorSearchOption; const AEnabled: Boolean);
+procedure TBCEditorSearch.SetOption(const AOption: TOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

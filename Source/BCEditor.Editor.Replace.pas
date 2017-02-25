@@ -3,23 +3,24 @@ unit BCEditor.Editor.Replace;
 interface
 
 uses
-  System.Classes, BCEditor.Types;
+  System.Classes,
+  BCEditor.Types, BCEditor.Editor.Search;
 
 type
   TBCEditorReplace = class(TPersistent)
   strict private
     FAction: TBCEditorReplaceActionOption;
-    FEngine: TBCEditorSearchEngine;
+    FEngine: TBCEditorSearch.TEngine;
     FOnChange: TBCEditorReplaceChangeEvent;
     FOptions: TBCEditorReplaceOptions;
-    procedure SetEngine(const AValue: TBCEditorSearchEngine);
+    procedure SetEngine(const AValue: TBCEditorSearch.TEngine);
   public
     constructor Create;
     procedure Assign(ASource: TPersistent); override;
     procedure SetOption(const AOption: TBCEditorReplaceOption; const AEnabled: Boolean);
   published
     property Action: TBCEditorReplaceActionOption read FAction write FAction default eraReplace;
-    property Engine: TBCEditorSearchEngine read FEngine write SetEngine default seNormal;
+    property Engine: TBCEditorSearch.TEngine read FEngine write SetEngine default seNormal;
     property OnChange: TBCEditorReplaceChangeEvent read FOnChange write FOnChange;
     property Options: TBCEditorReplaceOptions read FOptions write FOptions default [roPrompt];
   end;
@@ -56,7 +57,7 @@ begin
     Exclude(FOptions, AOption);
 end;
 
-procedure TBCEditorReplace.SetEngine(const AValue: TBCEditorSearchEngine);
+procedure TBCEditorReplace.SetEngine(const AValue: TBCEditorSearch.TEngine);
 begin
   if FEngine <> AValue then
   begin

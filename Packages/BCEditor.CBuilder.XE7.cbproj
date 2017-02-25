@@ -131,26 +131,8 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.Base.pas">
             <BuildOrder>5</BuildOrder>
         </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.Caret.MultiEdit.Colors.pas">
-            <BuildOrder>7</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.MultiEdit.pas">
-            <BuildOrder>8</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.NonBlinking.Colors.pas">
-            <BuildOrder>7</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.NonBlinking.pas">
-            <BuildOrder>8</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.Offsets.pas">
-            <BuildOrder>9</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.pas">
             <BuildOrder>10</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.Styles.pas">
-            <BuildOrder>11</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Colors.pas">
             <BuildOrder>12</BuildOrder>
@@ -205,30 +187,6 @@
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.KeyCommands.pas">
             <BuildOrder>28</BuildOrder>
-        </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.Marks.pas">
-            <BuildOrder>29</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.MarksPanel.pas">
-            <BuildOrder>29</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.Bookmarks.pas">
-            <BuildOrder>30</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.Border.pas">
-            <BuildOrder>31</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.Colors.pas">
-            <BuildOrder>32</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.LineNumbers.pas">
-            <BuildOrder>33</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.LineState.Colors.pas">
-            <BuildOrder>34</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.LineState.pas">
-            <BuildOrder>35</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.LeftMargin.pas">
             <BuildOrder>36</BuildOrder>

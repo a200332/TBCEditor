@@ -12,8 +12,6 @@ type
 
   TBCEditorCharMethod = function(const AChar: Char): Boolean of object;
 
-  TBCEditorCaretStyle = (csVerticalLine, csThinVerticalLine, csHorizontalLine, csThinHorizontalLine, csHalfBlock, csBlock);
-
   TBCEditorCompletionProposalEvent = procedure(Sender: TObject; AColumns: TBCEditorCompletionProposalColumns;
     const AInput: string; var ACanExecute: Boolean) of object;
   TBCEditorCompletionProposalSelectedEvent = procedure(Sender: TObject; var ASelectedItem: string) of object;
@@ -60,28 +58,7 @@ type
   );
   TBCEditorOptions = set of TBCEditorOption;
 
-  TBCEditorCaretOption = (
-    coRightMouseClickMove { When clicking with the right mouse for a popup menu, move the cursor to that location }
-  );
-  TBCEditorCaretOptions = set of TBCEditorCaretOption;
-
-  TBCEditorCaretMultiEditOption = (
-    meoShowActiveLine,
-    meoShowGhost { Ghost caret follows mouse cursor when moved }
-  );
-  TBCEditorCaretMultiEditOptions = set of TBCEditorCaretMultiEditOption;
-
   TBCEditorTextEntryMode = (temInsert, temOverwrite);
-
-  TBCEditorScrollOption = (
-    soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
-    soHintFollows, { The scroll hint follows the mouse when scrolling vertically }
-    soPastEndOfFileMarker, { Allows the cursor to go past the end of file marker }
-    soPastEndOfLine, { Allows the cursor to go past the last character into the white space at the end of a line }
-    soShowVerticalScrollHint, { Shows a hint of the visible line numbers when scrolling vertically }
-    soWheelClickMove { Scrolling by mouse move after wheel click. }
-  );
-  TBCEditorScrollOptions = set of TBCEditorScrollOption;
 
   TBCEditorTabOption = (
     toColumns,
@@ -107,31 +84,10 @@ type
   );
   TBCEditorSelectionOptions = set of TBCEditorSelectionOption;
 
-  TBCEditorSearchChanges = (
-    scRefresh,
-    scSearch,
-    scEngineUpdate,
-    scInSelectionActive
-  );
-  TBCEditorSearchChangeEvent = procedure(Event: TBCEditorSearchChanges) of object;
-
   TBCEditorReplaceChanges = (
     rcEngineUpdate
   );
   TBCEditorReplaceChangeEvent = procedure(Event: TBCEditorReplaceChanges) of object;
-
-  TBCEditorSearchOption = (
-    soBeepIfStringNotFound,
-    soCaseSensitive,
-    soEntireScope,
-    soHighlightResults,
-    soSearchOnTyping,
-    soShowStringNotFound,
-    soShowSearchMatchNotFound,
-    soWholeWordsOnly,
-    soWrapAround
-  );
-  TBCEditorSearchOptions = set of TBCEditorSearchOption;
 
   TBCEditorSyncEditOption = (
     seCaseSensitive
@@ -154,17 +110,6 @@ type
     eraDeleteLine
   );
 
-  TBCEditorSearchEngine = (
-    seNormal,
-    seRegularExpression,
-    seWildcard
-  );
-
-  TBCEditorSearchMapOption = (
-    moShowActiveLine
-  );
-  TBCEditorSearchMapOptions = set of TBCEditorSearchMapOption;
-
   TBCEditorCompletionProposalOption = (
     cpoAutoInvoke,
     cpoAutoConstraints,
@@ -176,12 +121,6 @@ type
     cpoUseHighlighterColumnFont
   );
   TBCEditorCompletionProposalOptions = set of TBCEditorCompletionProposalOption;
-
-  TBCEditorLeftMarginBookMarkPanelOption = (
-    bpoToggleBookmarkByClick,
-    bpoToggleMarkByClick
-  );
-  TBCEditorLeftMarginBookMarkPanelOptions = set of TBCEditorLeftMarginBookMarkPanelOption;
 
   TBCEditorRightMarginOption = (
     rmoAutoLinebreak,
@@ -272,13 +211,6 @@ type
   TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean;
     const ATabChar: Char = BCEDITOR_SPACE_CHAR): string;
 
-  TBCEditorLeftMarginLineNumberOption = (
-    lnoIntens,
-    lnoLeadingZeros,
-    lnoAfterLastLine
-  );
-  TBCEditorLeftMarginLineNumberOptions = set of TBCEditorLeftMarginLineNumberOption;
-
   TBCEditorMinimapOption = (
     moShowBookmarks,
     moShowIndentGuides,
@@ -288,7 +220,6 @@ type
   TBCEditorMinimapOptions = set of TBCEditorMinimapOption;
 
   TBCEditorMinimapAlign = (maLeft, maRight);
-  TBCEditorSearchMapAlign = (saLeft, saRight);
 
   TBCEditorUndoOption = (
     uoGroupUndo,
@@ -328,10 +259,6 @@ type
     tioAutoSize
   );
   TBCEditorTokenInfoOptions = set of TBCEditorTokenInfoOption;
-
-  TBCEditorLeftMarginBorderStyle = (mbsNone, mbsMiddle, mbsRight);
-
-  TBCEditorScrollHintFormat = (shfTopLineOnly, shfTopToBottom);
 
   TBCEditorMinimapIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
   TBCEditorMinimapIndicatorOptions = set of TBCEditorMinimapIndicatorOption;
