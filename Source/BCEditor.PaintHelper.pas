@@ -106,7 +106,7 @@ type
     FFontStock: TBCEditorFontStock;
     FHandle: HDC;
     FSaveHandle: Integer;
-    FStockBitmap: TBitmap;
+    FStockBitmap: Graphics.TBitmap;
   protected
     property DrawingCount: Integer read FDrawingCount;
   public
@@ -125,7 +125,7 @@ type
     property Color: TColor read FColor;
     property FixedSizeFont: Boolean read FFixedSizeFont;
     property FontStock: TBCEditorFontStock read FFontStock;
-    property StockBitmap: TBitmap read FStockBitmap;
+    property StockBitmap: Graphics.TBitmap read FStockBitmap;
   end;
 
   EBCEditorPaintHelperException = class(Exception);
@@ -496,7 +496,7 @@ begin
   inherited Create;
 
   FFontStock := TBCEditorFontStock.Create(ABaseFont);
-  FStockBitmap := TBitmap.Create;
+  FStockBitmap := Graphics.TBitmap.Create;
   FStockBitmap.Canvas.Brush.Color := clWhite;
   FCalcExtentBaseStyle := ACalcExtentBaseStyle;
   SetBaseFont(ABaseFont);

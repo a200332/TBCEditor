@@ -509,7 +509,7 @@ constructor TBCEditorCodeFolding.TRegion.Create(AItemClass: TCollectionItemClass
 begin
   inherited Create(AItemClass);
 
-  FSkipRegions := TBCEditorCodeFolding.TSkipRegions.Create(TItem);
+  FSkipRegions := TBCEditorCodeFolding.TSkipRegions.Create(TSkipRegions.TItem);
   FEscapeChar := BCEDITOR_NONE_CHAR;
   FStringEscapeChar := BCEDITOR_NONE_CHAR;
   FFoldTags := False;

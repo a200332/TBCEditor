@@ -1,10 +1,12 @@
-unit TBCEditorDemo.Forms.Main;
+unit Main;
 
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, BCEditor.Editor.Base, BCEditor.Editor, Vcl.ExtCtrls, Vcl.StdCtrls;
+  SysUtils, Variants, Classes,
+  Windows, Messages,
+  Graphics, Controls, Forms, Dialogs, ExtCtrls, StdCtrls,
+  BCEditor.Editor.Base, BCEditor.Editor;
 
 type
   TMainForm = class(TForm)
@@ -18,7 +20,8 @@ type
     procedure ListBoxHighlightersClick(Sender: TObject);
     procedure ListBoxColorsClick(Sender: TObject);
   private
-    { Private declarations }
+    ColorsPath: string;
+    HighlightersPath: string;
     procedure SetSelectedColor;
     procedure SetSelectedHighlighter;
   end;
@@ -40,29 +43,25 @@ begin
       AListBox.AddItem(LSearchRec.Name, nil);
     until FindNext(LSearchRec) <> 0;
   finally
-    FindClose(LSearchRec);
+    SysUtils.FindClose(LSearchRec);
   end;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
-var
-  LApplicationPath, LHighlighterPath, LColorsPath: string;
 begin
-  LApplicationPath := IncludeTrailingPathDelimiter(ExtractFilePath(Application.ExeName));
-  with Editor.Directories do
-  begin
-    LHighlighterPath := IncludeTrailingPathDelimiter(LApplicationPath + Highlighters);
-    LColorsPath := IncludeTrailingPathDelimiter(LApplicationPath + Colors);
-  end;
+  HighlightersPath := ExpandFileName('Highlighters\');
+  ColorsPath := ExpandFileName('Colors\');
 
-  AddFileNamesFromPathIntoListBox(LHighlighterPath, ListBoxHighlighters);
-  AddFileNamesFromPathIntoListBox(LColorsPath, ListBoxColors);
+  AddFileNamesFromPathIntoListBox(HighlightersPath, ListBoxHighlighters);
+  AddFileNamesFromPathIntoListBox(ColorsPath, ListBoxColors);
 
   with ListBoxHighlighters do
-    Selected[Items.IndexOf('Object Pascal.json')] := True;
+    if (Items.IndexOf('Object Pascal.json') >= 0) then
+      Selected[Items.IndexOf('Object Pascal.json')] := True;
 
   with ListBoxColors do
-    Selected[Items.IndexOf('Default.json')] := True;
+    if (Items.IndexOf('Default.json') >= 0) then
+      Selected[Items.IndexOf('Default.json')] := True;
 
   SetSelectedHighlighter;
   SetSelectedColor;
@@ -71,13 +70,17 @@ end;
 procedure TMainForm.SetSelectedColor;
 begin
   with ListBoxColors do
-    Editor.Highlighter.Colors.LoadFromFile(Items[ItemIndex]);
+    if (ItemIndex >= 0) then
+      with Editor.Directories do
+        Editor.Highlighter.Colors.LoadFromFile(ColorsPath + Items[ItemIndex]);
 end;
 
 procedure TMainForm.SetSelectedHighlighter;
 begin
   with ListBoxHighlighters do
-    Editor.Highlighter.LoadFromFile(Items[ItemIndex]);
+    if (ItemIndex >= 0) then
+      with Editor.Directories do
+        Editor.Highlighter.LoadFromFile(HighlightersPath + Items[ItemIndex]);
   Editor.Lines.Text := Editor.Highlighter.Info.General.Sample;
 end;
 

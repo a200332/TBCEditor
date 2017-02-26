@@ -29,7 +29,7 @@ type
     end;
 
   strict private
-    FBitmap: TBitmap;
+    FBitmap: Graphics.TBitmap;
     FColors: TBCEditorWordWrap.TColors;
     FEnabled: Boolean;
     FIndicator: TBCEditorGlyph;
@@ -149,7 +149,7 @@ begin
     FBitmap.Free;
     FBitmap := nil;
   end;
-  FBitmap := TBitmap.Create;
+  FBitmap := Graphics.TBitmap.Create;
   with FBitmap do
   begin
     Canvas.Brush.Color := clFuchsia;

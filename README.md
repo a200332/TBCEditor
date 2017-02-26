@@ -23,18 +23,7 @@ A syntax highlighting edit control for the RAD Studio (Delphi/C++ Builder) with 
 
 <h3>Demo</h3>
 
-BCEditor Control Demo v. 2.0.0 (dev).
-
-  * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo32.zip">32-bit Windows</a>
-  * <a href="http://www.bonecode.com/downloads/BCEditorComponentDemo64.zip">64-bit Windows</a>
-
-The latest update: 05.02.2017 20:19, UTC+02:00
-
-<h3>Projects using the control</h3>
-
-* <a href="http://www.bonecode.com">EditBone</a>
-* <a href="http://www.mitec.cz/ibq.html">MiTeC Interbase Query</a>
-* <a href="http://www.mitec.cz/sqliteq.html">MiTeC SQLite Query</a>
+  * <a href="files/801953/BCEditor_Demo.zip">BCEditor Demo</a>
 
 <h3>Screenshots</h3>
 

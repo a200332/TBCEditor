@@ -12,7 +12,7 @@ type
   strict private
     FBackgroundColor: TColor;
     FBorderColor: TColor;
-    FBufferBitmap: TBitmap;
+    FBufferBitmap: Graphics.TBitmap;
     FEffectiveItemHeight: Integer;
     FFont: TFont;
     FFontHeight: Integer;

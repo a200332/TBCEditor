@@ -1,36 +1,36 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  Caption = 'TBCEditor Demo'
-  ClientHeight = 596
-  ClientWidth = 914
+  Caption = 'BCEditor Demo'
+  ClientHeight = 642
+  ClientWidth = 984
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -12
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 106
+  TextHeight = 14
   object SplitterVertical: TSplitter
-    Left = 207
+    Left = 223
     Top = 0
-    Height = 596
+    Height = 642
   end
   object PanelLeft: TPanel
     Left = 0
     Top = 0
-    Width = 207
-    Height = 596
+    Width = 223
+    Height = 642
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 0
     object SplitterHorizontal: TSplitter
       Left = 0
-      Top = 466
-      Width = 207
+      Top = 502
+      Width = 223
       Height = 3
       Cursor = crVSplit
       Align = alBottom
@@ -38,13 +38,13 @@ object MainForm: TMainForm
     object ListBoxColors: TListBox
       AlignWithMargins = True
       Left = 3
-      Top = 469
-      Width = 204
-      Height = 124
+      Top = 505
+      Width = 220
+      Height = 134
       Margins.Top = 0
       Margins.Right = 0
       Align = alBottom
-      ItemHeight = 13
+      ItemHeight = 14
       TabOrder = 0
       OnClick = ListBoxColorsClick
     end
@@ -52,22 +52,22 @@ object MainForm: TMainForm
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 204
-      Height = 463
+      Width = 220
+      Height = 499
       Margins.Right = 0
       Margins.Bottom = 0
       Align = alClient
-      ItemHeight = 13
+      ItemHeight = 14
       TabOrder = 1
       OnClick = ListBoxHighlightersClick
     end
   end
   object Editor: TBCEditor
     AlignWithMargins = True
-    Left = 210
+    Left = 226
     Top = 3
-    Width = 701
-    Height = 590
+    Width = 755
+    Height = 636
     Cursor = crIBeam
     Margins.Left = 0
     ActiveLine.Indicator.Visible = False
@@ -98,6 +98,7 @@ object MainForm: TMainForm
     CompletionProposal.ShortCut = 16416
     CompletionProposal.Trigger.Chars = '.'
     CompletionProposal.Trigger.Enabled = False
+    CompletionProposal.Width = 280
     Directories.Colors = 'Colors'
     Directories.Highlighters = 'Highlighters'
     Font.Charset = DEFAULT_CHARSET
@@ -110,6 +111,8 @@ object MainForm: TMainForm
     LeftMargin.Font.Height = -11
     LeftMargin.Font.Name = 'Courier New'
     LeftMargin.Font.Style = []
+    Lines.Strings = (
+      '')
     LineSpacing = 0
     MatchingPair.Enabled = True
     Minimap.Font.Charset = DEFAULT_CHARSET
@@ -130,6 +133,7 @@ object MainForm: TMainForm
     TokenInfo.Title.Font.Height = -11
     TokenInfo.Title.Font.Name = 'Courier New'
     TokenInfo.Title.Font.Style = []
+    UndoOptions = [uoGroupUndo]
     WordWrap.Indicator.Bitmap.Data = {
       7E030000424D7E0300000000000036000000280000000F0000000E0000000100
       2000000000004803000000000000000000000000000000000000FF00FF00FF00

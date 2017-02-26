@@ -9,8 +9,8 @@ uses
 type
   TBCEditorGlyph = class(TPersistent)
   strict private
-    FBitmap: TBitmap;
-    FInternalGlyph: TBitmap;
+    FBitmap: Graphics.TBitmap;
+    FInternalGlyph: Graphics.TBitmap;
     FInternalMaskColor: TColor;
     FLeft: Integer;
     FMaskColor: TColor;
@@ -19,7 +19,7 @@ type
     function GetHeight: Integer;
     function GetWidth: Integer;
     procedure GlyphChange(ASender: TObject);
-    procedure SetBitmap(AValue: TBitmap);
+    procedure SetBitmap(AValue: Graphics.TBitmap);
     procedure SetLeft(AValue: Integer);
     procedure SetMaskColor(AValue: TColor);
     procedure SetVisible(AValue: Boolean);
@@ -31,7 +31,7 @@ type
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
   published
-    property Bitmap: TBitmap read FBitmap write SetBitmap;
+    property Bitmap: Graphics.TBitmap read FBitmap write SetBitmap;
     property Left: Integer read FLeft write SetLeft default 2;
     property MaskColor: TColor read FMaskColor write SetMaskColor default clNone;
     property Visible: Boolean read FVisible write SetVisible default True;

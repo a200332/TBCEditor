@@ -214,7 +214,7 @@ end;
 
 procedure TBCEditorStyleHook.DrawHorzScrollBar(AHandle: HDC);
 var
-  B: TBitmap;
+  B: Graphics.TBitmap;
   Details: TThemedElementDetails;
   R: TRect;
 begin
@@ -222,7 +222,7 @@ begin
     Exit;
   if FHorzScrollBarWindow.Visible and StyleServices.Available then
   begin
-    B := TBitmap.Create;
+    B := Graphics.TBitmap.Create;
     try
       B.Width := FHorzScrollBarRect.Width;
       B.Height := FHorzScrollBarRect.Height;
@@ -261,7 +261,7 @@ end;
 
 procedure TBCEditorStyleHook.DrawVertScrollBar(AHandle: HDC);
 var
-  B: TBitmap;
+  B: Graphics.TBitmap;
   Details: TThemedElementDetails;
   R: TRect;
 begin
@@ -269,7 +269,7 @@ begin
     Exit;
   if FVertScrollBarWindow.Visible and StyleServices.Available then
   begin
-    B := TBitmap.Create;
+    B := Graphics.TBitmap.Create;
     try
       B.Width := FVertScrollBarRect.Width;
       B.Height := FVertScrollBarWindow.Height;

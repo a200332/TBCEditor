@@ -88,13 +88,13 @@ type
     FMatchingPairMatchStack: array of TBCEditorMatchingPairTokenMatch;
     FMatchingPairOpenDuplicate, FMatchingPairCloseDuplicate: array of Integer;
     FMinimap: TBCEditorMinimap;
-    FMinimapBufferBitmap: TBitmap;
+    FMinimapBufferBitmap: Graphics.TBitmap;
     FMinimapClickOffsetY: Integer;
-    FMinimapIndicatorBitmap: TBitmap;
+    FMinimapIndicatorBitmap: Graphics.TBitmap;
     FMinimapIndicatorBlendFunction: TBlendFunction;
     FMinimapShadowAlphaArray: TBCEditorArrayOfSingle;
     FMinimapShadowAlphaByteArray: PByteArray;
-    FMinimapShadowBitmap: TBitmap;
+    FMinimapShadowBitmap: Graphics.TBitmap;
     FMinimapShadowBlendFunction: TBlendFunction;
     FModified: Boolean;
     FMouseDownX: Integer;
@@ -229,7 +229,7 @@ type
     procedure CompletionProposalTimerHandler(ASender: TObject);
     procedure ComputeScroll(const APoint: TPoint);
     procedure CreateLineNumbersCache(const AResetCache: Boolean = False);
-    procedure CreateShadowBitmap(const AClipRect: TRect; ABitmap: TBitmap;
+    procedure CreateShadowBitmap(const AClipRect: TRect; ABitmap: Graphics.TBitmap;
       const AShadowAlphaArray: TBCEditorArrayOfSingle; const AShadowAlphaByteArray: PByteArray);
     procedure DeflateMinimapAndSearchMapRect(var ARect: TRect);
     procedure DeleteChar;
@@ -771,10 +771,12 @@ implementation
 {$R BCEditor.res}
 
 uses
-  Math, Types, RegularExpressions, Character,
+  Math, Types, Character,
   ShellAPI, Imm,
-  Clipbrd, Menus, Themes,
-  BCEditor.Language, BCEditor.Export.HTML, BCEditor.StyleHooks;
+  Clipbrd, Menus,
+  BCEditor.Language,
+  BCEditor.Export.HTML, Vcl.Themes, BCEditor.StyleHooks,
+  System.RegularExpressions;
 
 type
   TBCEditorAccessWinControl = class(TWinControl);
@@ -2132,7 +2134,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.CreateShadowBitmap(const AClipRect: TRect; ABitmap: TBitmap;
+procedure TBCBaseEditor.CreateShadowBitmap(const AClipRect: TRect; ABitmap: Graphics.TBitmap;
   const AShadowAlphaArray: TBCEditorArrayOfSingle; const AShadowAlphaByteArray: PByteArray);
 var
   LRow, LColumn: Integer;
@@ -7945,12 +7947,12 @@ begin
   if FMinimap.Visible then
   begin
     if not Assigned(FMinimapBufferBitmap) then
-      FMinimapBufferBitmap := TBitmap.Create;
+      FMinimapBufferBitmap := Graphics.TBitmap.Create;
     FMinimapBufferBitmap.Height := 0;
 
     if ioUseBlending in FMinimap.Indicator.Options then
       if not Assigned(FMinimapIndicatorBitmap) then
-        FMinimapIndicatorBitmap := TBitmap.Create;
+        FMinimapIndicatorBitmap := Graphics.TBitmap.Create;
   end
   else
     FreeMinimapBitmaps;
@@ -9038,7 +9040,7 @@ var
   LPoint: TPoint;
   LCaretStyle: TBCEditorCaret.TStyles.TStyle;
   LCaretWidth, LCaretHeight, X, Y: Integer;
-  LTempBitmap: TBitmap;
+  LTempBitmap: Graphics.TBitmap;
   LBackgroundColor, LForegroundColor: TColor;
 begin
   if (HandleAllocated) then
@@ -9095,7 +9097,7 @@ begin
           X := 1;
         end;
     end;
-    LTempBitmap := TBitmap.Create;
+    LTempBitmap := Graphics.TBitmap.Create;
     try
       { Background }
       LTempBitmap.Canvas.Pen.Color := LBackgroundColor;
@@ -13343,7 +13345,6 @@ end;
 procedure TBCBaseEditor.SetFocus;
 begin
   Windows.SetFocus(Handle);
-
   inherited;
 end;
 
@@ -15486,6 +15487,8 @@ begin
     else
       FWindowProducedMessage := False;
   end;
+
+  inherited;
 end;
 
 function TBCBaseEditor.WordEnd: TBCEditorTextPosition;

@@ -24,7 +24,7 @@ type
 
   TBCEditorTokenInfoPopupWindow = class(TBCEditorPopupWindow)
   strict private
-    FBitmapBuffer: TBitmap;
+    FBitmapBuffer: Graphics.TBitmap;
     FContent: TBCEditorLines;
     FContentTextTokensList: TList;
     FMaxHeight: Integer;
