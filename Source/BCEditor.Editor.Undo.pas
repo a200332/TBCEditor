@@ -3,7 +3,7 @@ unit BCEditor.Editor.Undo;
 interface {********************************************************************}
 
 uses
-  System.Classes,
+  Classes,
   BCEditor.Types, BCEditor.Lines, BCEditor.Editor.Selection;
 
 type

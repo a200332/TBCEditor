@@ -3,9 +3,9 @@ unit BCEditor.Editor.CodeFolding;
 interface {********************************************************************}
 
 uses
-  System.Classes, System.SysUtils, Vcl.Graphics, System.Types, Vcl.Controls,
-  BCEditor.Types, BCEditor.Consts,
-  BCEditor.Editor.Glyph;
+  Classes, SysUtils, Types,
+  Graphics, Controls,
+  BCEditor.Types, BCEditor.Consts, BCEditor.Editor.Glyph;
 
 type
   TBCEditorCodeFolding = class(TPersistent)
@@ -275,7 +275,7 @@ type
           property Mark: TColor read FMark write FMark default clLeftMarginFontForeground;
         end;
 
-        TPadding = class(Vcl.Controls.TPadding)
+        TPadding = class(Controls.TPadding)
         protected
           class procedure InitDefaults(Margins: TMargins); override;
         published
@@ -376,7 +376,7 @@ type
 implementation {***************************************************************}
 
 uses
-  System.Math,
+  Math,
   BCEditor.Utils;
 
 { TBCEditorCodeFolding.TColors *************************************************}

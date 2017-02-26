@@ -3,7 +3,9 @@ unit BCEditor.Export.HTML;
 interface
 
 uses
-  System.Classes, System.SysUtils, Vcl.Graphics, BCEditor.Lines, BCEditor.Highlighter;
+  Classes, SysUtils,
+  Graphics,
+  BCEditor.Lines, BCEditor.Highlighter;
 
 type
   TBCEditorExportHTML = class(TObject)
@@ -13,22 +15,22 @@ type
     FHighlighter: TBCEditorHighlighter;
     FLines: TBCEditorLines;
     FStringList: TStrings;
-    procedure CreateHTMLDocument;
+    procedure CreateFooter;
     procedure CreateHeader;
+    procedure CreateHTMLDocument;
     procedure CreateInternalCSS;
     procedure CreateLines;
-    procedure CreateFooter;
   public
     constructor Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string); overload;
     destructor Destroy; override;
-
     procedure SaveToStream(AStream: TStream; AEncoding: System.SysUtils.TEncoding);
   end;
 
 implementation
 
 uses
-  Winapi.Windows, System.UITypes,
+  UITypes,
+  Windows,
   BCEditor.Consts, BCEditor.Utils;
 
 constructor TBCEditorExportHTML.Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
@@ -52,6 +54,27 @@ begin
   inherited Destroy;
 end;
 
+procedure TBCEditorExportHTML.CreateFooter;
+begin
+  FStringList.Add('</body>');
+  FStringList.Add('</html>');
+end;
+
+procedure TBCEditorExportHTML.CreateHeader;
+begin
+  FStringList.Add('<!DOCTYPE HTML>');
+  FStringList.Add('');
+  FStringList.Add('<html>');
+  FStringList.Add('<head>');
+  FStringList.Add('  <meta charset="' + FCharSet + '">');
+
+  CreateInternalCSS;
+
+  FStringList.Add('</head>');
+  FStringList.Add('');
+  FStringList.Add('<body class="Editor">');
+end;
+
 procedure TBCEditorExportHTML.CreateHTMLDocument;
 begin
   if not Assigned(FHighlighter) then
@@ -62,21 +85,6 @@ begin
   CreateHeader;
   CreateLines;
   CreateFooter;
-end;
-
-procedure TBCEditorExportHTML.CreateHeader;
-begin
-  FStringList.Add('<!DOCTYPE HTML>');
-  FStringList.Add('');
-  FStringList.Add('<html>');
-  FStringList.Add('<head>');
-	FStringList.Add('  <meta charset="' + FCharSet + '">');
-
-  CreateInternalCSS;
-
-  FStringList.Add('</head>');
-  FStringList.Add('');
-  FStringList.Add('<body class="Editor">');
 end;
 
 procedure TBCEditorExportHTML.CreateInternalCSS;
@@ -171,12 +179,6 @@ begin
   end;
   if LPreviousElement <> '' then
     FStringList.Add('</span>');
-end;
-
-procedure TBCEditorExportHTML.CreateFooter;
-begin
-  FStringList.Add('</body>');
-  FStringList.Add('</html>');
 end;
 
 procedure TBCEditorExportHTML.SaveToStream(AStream: TStream; AEncoding: System.SysUtils.TEncoding);

@@ -3,8 +3,11 @@ unit BCEditor.Print;
 interface {********************************************************************}
 
 uses
-  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Printers, BCEditor.Editor.Base, BCEditor.Types,
-  BCEditor.Utils, BCEditor.Highlighter, BCEditor.Editor.Selection, BCEditor.PaintHelper;
+  SysUtils, Classes,
+  Windows,
+  Graphics, Printers,
+  BCEditor.Editor.Base, BCEditor.Types, BCEditor.Utils, BCEditor.Highlighter,
+  BCEditor.Editor.Selection, BCEditor.PaintHelper;
 
 type
   TBCEditorPrinterInfo = class
@@ -22,6 +25,7 @@ type
     FXPixPermm: Single;
     FYPixPerInch: Integer;
     FYPixPermm: Single;
+    procedure FillDefault;
     function GetBottomMargin: Integer;
     function GetLeftMargin: Integer;
     function GetPhysicalHeight: Integer;
@@ -34,7 +38,6 @@ type
     function GetXPixPermm: Single;
     function GetYPixPerInch: Integer;
     function GetYPixPermm: Single;
-    procedure FillDefault;
   public
     function PixFromBottom(const AValue: Double): Integer;
     function PixFromLeft(const AValue: Double): Integer;
@@ -360,7 +363,7 @@ function WrapTextEx(const ALine: string; ABreakChars: TSysCharSet; AMaxColumn: I
 implementation {***************************************************************}
 
 uses
-  System.UITypes, System.Types, System.Math,
+  UITypes, Types, Math,
   BCEditor.Consts;
 
 const
@@ -500,36 +503,6 @@ begin
   end;
 end;
 
-{ TBCEditorPrinterInfo ********************************************************}
-
-function TBCEditorPrinterInfo.PixFromBottom(const AValue: Double): Integer;
-begin
-  if not FIsUpdated then
-    UpdatePrinter;
-  Result := Round(AValue * FYPixPermm - FBottomMargin);
-end;
-
-function TBCEditorPrinterInfo.PixFromLeft(const AValue: Double): Integer;
-begin
-  if not FIsUpdated then
-    UpdatePrinter;
-  Result := Round(AValue * FXPixPermm - FLeftMargin);
-end;
-
-function TBCEditorPrinterInfo.PixFromRight(const AValue: Double): Integer;
-begin
-  if not FIsUpdated then
-    UpdatePrinter;
-  Result := Round(AValue * FXPixPermm - FRightMargin);
-end;
-
-function TBCEditorPrinterInfo.PixFromTop(const AValue: Double): Integer;
-begin
-  if not FIsUpdated then
-    UpdatePrinter;
-  Result := Round(AValue * FYPixPermm - FTopMargin);
-end;
-
 procedure TBCEditorPrinterInfo.FillDefault;
 begin
   FPhysicalWidth := 2481;
@@ -630,6 +603,36 @@ begin
   Result := FYPixPermm;
 end;
 
+{ TBCEditorPrinterInfo ********************************************************}
+
+function TBCEditorPrinterInfo.PixFromBottom(const AValue: Double): Integer;
+begin
+  if not FIsUpdated then
+    UpdatePrinter;
+  Result := Round(AValue * FYPixPermm - FBottomMargin);
+end;
+
+function TBCEditorPrinterInfo.PixFromLeft(const AValue: Double): Integer;
+begin
+  if not FIsUpdated then
+    UpdatePrinter;
+  Result := Round(AValue * FXPixPermm - FLeftMargin);
+end;
+
+function TBCEditorPrinterInfo.PixFromRight(const AValue: Double): Integer;
+begin
+  if not FIsUpdated then
+    UpdatePrinter;
+  Result := Round(AValue * FXPixPermm - FRightMargin);
+end;
+
+function TBCEditorPrinterInfo.PixFromTop(const AValue: Double): Integer;
+begin
+  if not FIsUpdated then
+    UpdatePrinter;
+  Result := Round(AValue * FYPixPermm - FTopMargin);
+end;
+
 procedure TBCEditorPrinterInfo.UpdatePrinter;
 begin
   FIsUpdated := True;
@@ -639,8 +642,8 @@ begin
     FillDefault;
     Exit;
   end;
-  FPhysicalWidth := GetDeviceCaps(Printer.Handle, Winapi.Windows.PhysicalWidth);
-  FPhysicalHeight := GetDeviceCaps(Printer.Handle, Winapi.Windows.PhysicalHeight);
+  FPhysicalWidth := GetDeviceCaps(Printer.Handle, PhysicalWidth);
+  FPhysicalHeight := GetDeviceCaps(Printer.Handle, PhysicalHeight);
   FPrintableWidth := Printer.PageWidth;
   FPrintableHeight := Printer.PageHeight;
   FLeftMargin := GetDeviceCaps(Printer.Handle, PhysicalOffsetX);
@@ -1445,7 +1448,7 @@ begin
       end;
     end;
     LOldAlign := SetTextAlign(ACanvas.Handle, TA_BASELINE);
-    Winapi.Windows.ExtTextOut(ACanvas.Handle, X, Y + TLineInfo(FLineInfo[LCurrentLine - 1]).MaxBaseDistance, 0, nil, PChar(S),
+    ExtTextOut(ACanvas.Handle, X, Y + TLineInfo(FLineInfo[LCurrentLine - 1]).MaxBaseDistance, 0, nil, PChar(S),
       Length(S), nil);
     SetTextAlign(ACanvas.Handle, LOldAlign);
   end;
@@ -1928,11 +1931,11 @@ var
     if Highlight and Assigned(FHighlighter) and (FLines.Count > 0) then
     begin
       SetBkMode(FCanvas.Handle, TRANSPARENT);
-      Winapi.Windows.ExtTextOut(FCanvas.Handle, X, Y, 0, @LClipRect, PChar(AText), Length(AText), nil);
+      ExtTextOut(FCanvas.Handle, X, Y, 0, @LClipRect, PChar(AText), Length(AText), nil);
       SetBkMode(FCanvas.Handle, OPAQUE);
     end
     else
-      Winapi.Windows.ExtTextOut(FCanvas.Handle, X, Y, 0, nil, PChar(AText), Length(AText), nil);
+      ExtTextOut(FCanvas.Handle, X, Y, 0, nil, PChar(AText), Length(AText), nil);
   end;
 
   procedure SplitToken;
@@ -2088,7 +2091,7 @@ begin
     LRect.Right := FMargins.PixelRight;
     LRect.Top := FMargins.PixelTop;
     LRect.Bottom := FMargins.PixelBottom;
-    Winapi.Windows.ExtTextOut(FCanvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+    ExtTextOut(FCanvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
     FMargins.InitPage(FCanvas, APageNumber, FPrinterInfo, FLineNumbers, FLineNumbersInMargin, FLines.Count - 1 + FLineOffset);
     FHeader.Print(FCanvas, APageNumber + FPageOffset);
     if FPages.Count > 0 then

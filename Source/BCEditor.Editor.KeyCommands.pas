@@ -3,7 +3,8 @@ unit BCEditor.Editor.KeyCommands;
 interface
 
 uses
-  System.Classes, System.SysUtils, Vcl.Menus;
+  Classes, SysUtils,
+  Menus;
 
 const
   ecNone = 0;
@@ -151,8 +152,8 @@ type
 
   TBCEditorHookedCommandHandler = class(TObject)
   strict private
-    FEvent: TBCEditorHookedCommandEvent;
     FData: Pointer;
+    FEvent: TBCEditorHookedCommandEvent;
   public
     constructor Create(AEvent: TBCEditorHookedCommandEvent; AData: pointer);
     function Equals(AEvent: TBCEditorHookedCommandEvent): Boolean; reintroduce;
@@ -162,32 +163,32 @@ type
 
   TBCEditorKeyCommand = class(TCollectionItem)
   strict private
+    FCommand: TBCEditorCommand;
     FKey: Word;
     FSecondaryKey: Word;
-    FShiftState: TShiftState;
     FSecondaryShiftState: TShiftState;
-    FCommand: TBCEditorCommand;
-    function GetShortCut: TShortCut;
+    FShiftState: TShiftState;
     function GetSecondaryShortCut: TShortCut;
+    function GetShortCut: TShortCut;
     procedure SetCommand(const AValue: TBCEditorCommand);
     procedure SetKey(const AValue: Word);
     procedure SetSecondaryKey(const AValue: Word);
-    procedure SetShiftState(const AValue: TShiftState);
     procedure SetSecondaryShiftState(const AValue: TShiftState);
-    procedure SetShortCut(const AValue: TShortCut);
     procedure SetSecondaryShortCut(const AValue: TShortCut);
+    procedure SetShiftState(const AValue: TShiftState);
+    procedure SetShortCut(const AValue: TShortCut);
   protected
     function GetDisplayName: string; override;
   public
     procedure Assign(ASource: TPersistent); override;
     property Key: Word read FKey write SetKey;
     property SecondaryKey: Word read FSecondaryKey write SetSecondaryKey;
-    property ShiftState: TShiftState read FShiftState write SetShiftState;
     property SecondaryShiftState: TShiftState read FSecondaryShiftState write SetSecondaryShiftState;
+    property ShiftState: TShiftState read FShiftState write SetShiftState;
   published
     property Command: TBCEditorCommand read FCommand write SetCommand;
-    property ShortCut: TShortCut read GetShortCut write SetShortCut default 0;
     property SecondaryShortCut: TShortCut read GetSecondaryShortCut write SetSecondaryShortCut default 0;
+    property ShortCut: TShortCut read GetShortCut write SetShortCut default 0;
   end;
 
   EBCEditorKeyCommandException = class(Exception);
@@ -201,17 +202,15 @@ type
     function GetOwner: TPersistent; override;
   public
     constructor Create(AOwner: TPersistent);
-
+    procedure Add(const ACommand: TBCEditorCommand; const AShift: TShiftState; const AKey: Word);
+    procedure Assign(ASource: TPersistent); override;
     function FindCommand(ACommand: TBCEditorCommand): Integer;
     function FindKeyCode(AKeyCode: Word; AShift: TShiftState): Integer;
     function FindKeyCodes(AKeyCode: Word; AShift: TShiftState; ASecondaryKeycode: Word; ASecondaryShift: TShiftState): Integer;
     function FindShortcut(AShortCut: TShortCut): Integer;
     function FindShortcuts(AShortCut, ASecondaryShortCut: TShortCut): Integer;
     function NewItem: TBCEditorKeyCommand;
-    procedure Add(const ACommand: TBCEditorCommand; const AShift: TShiftState; const AKey: Word);
-    procedure Assign(ASource: TPersistent); override;
     procedure ResetDefaults;
-  public
     property Items[AIndex: Integer]: TBCEditorKeyCommand read GetItem write SetItem; default;
   end;
 
@@ -221,7 +220,8 @@ function EditorCommandToIdent(ACommand: LongInt; var AIdent: string): Boolean;
 implementation
 
 uses
-  Winapi.Windows, BCEditor.Language;
+  Windows,
+  BCEditor.Language;
 
 type
   TBCEditorCommandString = record
@@ -439,9 +439,14 @@ begin
     Result := inherited GetDisplayName;
 end;
 
+function TBCEditorKeyCommand.GetSecondaryShortCut: TShortCut;
+begin
+  Result := Menus.ShortCut(SecondaryKey, SecondaryShiftState);
+end;
+
 function TBCEditorKeyCommand.GetShortCut: TShortCut;
 begin
-  Result := Vcl.Menus.ShortCut(Key, ShiftState);
+  Result := Menus.ShortCut(Key, ShiftState);
 end;
 
 procedure TBCEditorKeyCommand.SetCommand(const AValue: TBCEditorCommand);
@@ -454,34 +459,6 @@ procedure TBCEditorKeyCommand.SetKey(const AValue: Word);
 begin
   if FKey <> AValue then
     FKey := AValue;
-end;
-
-procedure TBCEditorKeyCommand.SetShiftState(const AValue: TShiftState);
-begin
-  if FShiftState <> AValue then
-    FShiftState := AValue;
-end;
-
-procedure TBCEditorKeyCommand.SetShortCut(const AValue: TShortCut);
-var
-  LNewKey: Word;
-  LNewShiftState: TShiftState;
-  LDuplicate: Integer;
-begin
-  if AValue <> 0 then
-  begin
-    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(AValue, SecondaryShortCut);
-    if (LDuplicate <> -1) and (LDuplicate <> Self.Index) then
-      raise EBCEditorKeyCommandException.Create(SBCEditorDuplicateShortcut);
-  end;
-
-  Vcl.Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
-
-  if (LNewKey <> Key) or (LNewShiftState <> ShiftState) then
-  begin
-    Key := LNewKey;
-    ShiftState := LNewShiftState;
-  end;
 end;
 
 procedure TBCEditorKeyCommand.SetSecondaryKey(const AValue: Word);
@@ -509,7 +486,7 @@ begin
       raise EBCEditorKeyCommandException.Create(SBCEditOrduplicateShortcut);
   end;
 
-  Vcl.Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
+  Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
   if (LNewKey <> SecondaryKey) or (LNewShiftState <> SecondaryShiftState) then
   begin
     SecondaryKey := LNewKey;
@@ -517,16 +494,39 @@ begin
   end;
 end;
 
-function TBCEditorKeyCommand.GetSecondaryShortCut: TShortCut;
+procedure TBCEditorKeyCommand.SetShiftState(const AValue: TShiftState);
 begin
-  Result := Vcl.Menus.ShortCut(SecondaryKey, SecondaryShiftState);
+  if FShiftState <> AValue then
+    FShiftState := AValue;
 end;
 
-{ TBCEditorKeyCommands }
-
-function TBCEditorKeyCommands.NewItem: TBCEditorKeyCommand;
+procedure TBCEditorKeyCommand.SetShortCut(const AValue: TShortCut);
+var
+  LNewKey: Word;
+  LNewShiftState: TShiftState;
+  LDuplicate: Integer;
 begin
-  Result := TBCEditorKeyCommand(inherited Add);
+  if AValue <> 0 then
+  begin
+    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(AValue, SecondaryShortCut);
+    if (LDuplicate <> -1) and (LDuplicate <> Self.Index) then
+      raise EBCEditorKeyCommandException.Create(SBCEditorDuplicateShortcut);
+  end;
+
+  ShortCutToKey(AValue, LNewKey, LNewShiftState);
+
+  if (LNewKey <> Key) or (LNewShiftState <> ShiftState) then
+  begin
+    Key := LNewKey;
+    ShiftState := LNewShiftState;
+  end;
+end;
+
+constructor TBCEditorKeyCommands.Create(AOwner: TPersistent);
+begin
+  inherited Create(TBCEditorKeyCommand);
+
+  FOwner := AOwner;
 end;
 
 procedure TBCEditorKeyCommands.Add(const ACommand: TBCEditorCommand; const AShift: TShiftState; const AKey: Word);
@@ -553,13 +553,6 @@ begin
   end
   else
     inherited Assign(ASource);
-end;
-
-constructor TBCEditorKeyCommands.Create(AOwner: TPersistent);
-begin
-  inherited Create(TBCEditorKeyCommand);
-
-  FOwner := AOwner;
 end;
 
 function TBCEditorKeyCommands.FindCommand(ACommand: TBCEditorCommand): Integer;
@@ -633,6 +626,13 @@ end;
 function TBCEditorKeyCommands.GetOwner: TPersistent;
 begin
   Result := FOwner;
+end;
+
+{ TBCEditorKeyCommands }
+
+function TBCEditorKeyCommands.NewItem: TBCEditorKeyCommand;
+begin
+  Result := TBCEditorKeyCommand(inherited Add);
 end;
 
 procedure TBCEditorKeyCommands.ResetDefaults;

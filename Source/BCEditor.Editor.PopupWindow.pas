@@ -3,27 +3,20 @@ unit BCEditor.Editor.PopupWindow;
 interface
 
 uses
-  Winapi.Messages, System.Classes, System.Types, Vcl.Forms,
-  Vcl.Controls{$if defined(USE_ALPHASKINS)}, sCommonData, acSBUtils,
-  sStyleSimply{$endif};
+  Classes, Types,
+  Messages,
+  Forms, Controls;
 
 type
   TBCEditorPopupWindow = class(TCustomControl)
   private
-{$if defined(USE_ALPHASKINS)}
-    FCommonData: TsScrollWndData;
-    FScrollWnd: TacScrollWnd;
-{$endif}
     FEditor: TCustomControl;
     FOriginalHeight: Integer;
     FOriginalWidth: Integer;
     FPopupParent: TCustomForm;
     procedure SetPopupParent(Value: TCustomForm);
-    procedure WMEraseBkgnd(var AMessage: TMessage); message WM_ERASEBKGND;
-{$if defined(USE_VCL_STYLES)}
-    procedure WMNCPaint(var AMessage: TWMNCPaint); message WM_NCPAINT;
-{$endif}
     procedure WMActivate(var Msg: TWMActivate); message WM_ACTIVATE;
+    procedure WMEraseBkgnd(var AMessage: TMessage); message WM_ERASEBKGND;
   protected
     FActiveControl: TWinControl;
     procedure CreateParams(var Params: TCreateParams); override;
@@ -31,33 +24,21 @@ type
     procedure Show(Origin: TPoint); virtual;
   public
     constructor Create(const AEditor: TCustomControl); reintroduce;
-    destructor Destroy; override;
-    procedure CreateWnd; override;
     procedure IncSize(const AWidth: Integer; const AHeight: Integer);
     procedure SetOriginalSize;
-    procedure WndProc(var AMessage: TMessage); override;
     property ActiveControl: TWinControl read FActiveControl;
     property Editor: TCustomControl read FEditor;
     property PopupParent: TCustomForm read FPopupParent write SetPopupParent;
-{$if defined(USE_ALPHASKINS)}
-    property SkinData: TsScrollWndData read FCommonData write FCommonData;
-{$endif}
   end;
 
 implementation
 
 uses
-  Winapi.Windows, System.SysUtils{$if defined(USE_VCL_STYLES)}, Vcl.Themes{$endif}
-  {$if defined(USE_ALPHASKINS)}, Winapi.CommCtrl, sVCLUtils, sMessages, sConst, sSkinProps{$endif};
+  SysUtils,
+  Windows;
 
 constructor TBCEditorPopupWindow.Create(const AEditor: TCustomControl);
 begin
-  {$if defined(USE_ALPHASKINS)}
-  FCommonData := TsScrollWndData.Create(Self, True);
-  FCommonData.COC := COC_TsListBox;
-  if FCommonData.SkinSection = '' then
-    FCommonData.SkinSection := s_Edit;
-{$endif}
   inherited Create(nil);
 
   ControlStyle := ControlStyle + [csNoDesignVisible, csReplicatable];
@@ -69,53 +50,21 @@ begin
   Visible := False;
 end;
 
-destructor TBCEditorPopupWindow.Destroy;
+procedure TBCEditorPopupWindow.CreateParams(var Params: TCreateParams);
 begin
-  inherited Destroy;
+  inherited CreateParams(Params);
 
-  {$if defined(USE_ALPHASKINS)}
-  if Assigned(FScrollWnd) then
-    FreeAndNil(FScrollWnd);
-  if Assigned(FCommonData) then
-    FreeAndNil(FCommonData);
-  {$endif}
+  Params.Style := WS_POPUP or WS_BORDER;
+  Params.WindowClass.Style := Params.WindowClass.Style or CS_DROPSHADOW;
+
+  if (Assigned(PopupParent)) then
+    Params.WndParent := PopupParent.Handle;
 end;
 
-procedure TBCEditorPopupWindow.CreateWnd;
-{$if defined(USE_ALPHASKINS)}
-var
-  LSkinParams: TacSkinParams;
-{$endif}
+procedure TBCEditorPopupWindow.Hide;
 begin
-  inherited;
-{$if defined(USE_ALPHASKINS)}
-  FCommonData.Loaded(False);
-  if (FScrollWnd <> nil) and FScrollWnd.Destroyed then
-    FreeAndNil(FScrollWnd);
-
-  if FScrollWnd = nil then
-    FScrollWnd := TacEditWnd.Create(Handle, SkinData, SkinData.SkinManager, LSkinParams, False);
-{$endif}
-end;
-
-procedure TBCEditorPopupWindow.SetOriginalSize;
-begin
-  FOriginalHeight := Height;
-  FOriginalWidth := Width;
-end;
-
-procedure TBCEditorPopupWindow.SetPopupParent(Value: TCustomForm);
-begin
-  if (Value <> FPopupParent) then
-  begin
-    if FPopupParent <> nil then
-      FPopupParent.RemoveFreeNotification(Self);
-    FPopupParent := Value;
-    if Value <> nil then
-      Value.FreeNotification(Self);
-    if HandleAllocated and not (csDesigning in ComponentState) then
-      RecreateWnd;
-  end;
+  SetWindowPos(Handle, 0, 0, 0, 0, 0, SWP_HIDEWINDOW or SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER);
+  Visible := False;
 end;
 
 procedure TBCEditorPopupWindow.IncSize(const AWidth: Integer; const AHeight: Integer);
@@ -139,21 +88,24 @@ begin
   SetBounds(Left, Top, LWidth, LHeight);
 end;
 
-procedure TBCEditorPopupWindow.Hide;
+procedure TBCEditorPopupWindow.SetOriginalSize;
 begin
-  SetWindowPos(Handle, 0, 0, 0, 0, 0, SWP_HIDEWINDOW or SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER);
-  Visible := False;
+  FOriginalHeight := Height;
+  FOriginalWidth := Width;
 end;
 
-procedure TBCEditorPopupWindow.CreateParams(var Params: TCreateParams);
+procedure TBCEditorPopupWindow.SetPopupParent(Value: TCustomForm);
 begin
-  inherited CreateParams(Params);
-
-  Params.Style := WS_POPUP or WS_BORDER;
-  Params.WindowClass.Style := Params.WindowClass.Style or CS_DROPSHADOW;
-
-  if (Assigned(PopupParent)) then
-    Params.WndParent := PopupParent.Handle;
+  if (Value <> FPopupParent) then
+  begin
+    if FPopupParent <> nil then
+      FPopupParent.RemoveFreeNotification(Self);
+    FPopupParent := Value;
+    if Value <> nil then
+      Value.FreeNotification(Self);
+    if HandleAllocated and not (csDesigning in ComponentState) then
+      RecreateWnd;
+  end;
 end;
 
 procedure TBCEditorPopupWindow.Show(Origin: TPoint);
@@ -164,44 +116,6 @@ begin
 
   Visible := True;
 end;
-
-procedure TBCEditorPopupWindow.WMEraseBkgnd(var AMessage: TMessage);
-begin
-  AMessage.Result := 1;
-end;
-
-{$if defined(USE_VCL_STYLES)}
-procedure TBCEditorPopupWindow.WMNCPaint(var AMessage: TWMNCPaint);
-var
-  LBorderHeight: Integer;
-  LBorderWidth: Integer;
-  LExStyle: Integer;
-  LRect: TRect;
-  LTempRgn: HRGN;
-begin
-  if StyleServices.Enabled then
-  begin
-    LExStyle := GetWindowLong(Handle, GWL_EXSTYLE);
-    if (LExStyle and WS_EX_CLIENTEDGE) <> 0 then
-    begin
-      GetWindowRect(Handle, LRect);
-      LBorderWidth := GetSystemMetrics(SM_CXEDGE);
-      LBorderHeight := GetSystemMetrics(SM_CYEDGE);
-      InflateRect(LRect, -LBorderWidth, -LBorderHeight);
-      LTempRgn := CreateRectRgnIndirect(LRect);
-      DefWindowProc(Handle, AMessage.Msg, wParam(LTempRgn), 0);
-      DeleteObject(LTempRgn);
-    end
-    else
-      DefaultHandler(AMessage);
-  end
-  else
-    DefaultHandler(AMessage);
-
-  if StyleServices.Enabled then
-    StyleServices.PaintBorder(Self, False);
-end;
-{$endif}
 
 procedure TBCEditorPopupWindow.WMActivate(var Msg: TWMActivate);
 begin
@@ -214,33 +128,9 @@ begin
     Hide();
 end;
 
-procedure TBCEditorPopupWindow.WndProc(var AMessage: TMessage);
+procedure TBCEditorPopupWindow.WMEraseBkgnd(var AMessage: TMessage);
 begin
-{$if defined(USE_ALPHASKINS)}
-  if AMessage.Msg = SM_ALPHACMD then
-    case AMessage.WParamHi of
-      AC_CTRLHANDLED:
-        begin
-          AMessage.Result := 1;
-          Exit;
-        end;
-      AC_GETDEFINDEX:
-        begin
-          if FCommonData.SkinManager <> nil then
-            AMessage.Result := FCommonData.SkinManager.ConstData.Sections[ssEdit] + 1;
-          Exit;
-        end;
-      AC_REFRESH:
-        if (ACUInt(AMessage.LParam) = ACUInt(SkinData.SkinManager)) and Visible then
-        begin
-          CommonWndProc(AMessage, FCommonData);
-          RefreshEditScrolls(SkinData, FScrollWnd);
-          SendMessage(Handle, WM_NCPAINT, 0, 0);
-          Exit;
-        end;
-    end;
-{$endif}
-  inherited;
+  AMessage.Result := 1;
 end;
 
 end.

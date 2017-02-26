@@ -3,7 +3,8 @@ unit BCEditor.Editor.Minimap;
 interface {********************************************************************}
 
 uses
-  System.Classes, System.UITypes, Vcl.Graphics,
+  Classes, UITypes,
+  Graphics,
   BCEditor.Types, BCEditor.Consts;
 
 type
@@ -106,7 +107,7 @@ type
 implementation {***************************************************************}
 
 uses
-  System.Math;
+  Math;
 
 { TBCEditorMiniMap.TColors ****************************************************}
 

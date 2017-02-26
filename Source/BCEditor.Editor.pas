@@ -9,19 +9,19 @@ type
   TBCCustomEditor = class(TBCBaseEditor)
   strict private
     FDocumentName: string;
-    FFilePath: string;
-    FFileName: string;
     FFileDateTime: TDateTime;
-    FSearchString: string;
+    FFileName: string;
+    FFilePath: string;
     FMacroRecorder: TBCEditorMacroRecorder;
+    FSearchString: string;
     procedure SetDocumentName(const AName: string);
   protected
     procedure DoOnProcessCommand(var Command: TBCEditorCommand; var AChar: Char; Data: Pointer); override;
   public
     property DocumentName: string read FDocumentName write SetDocumentName;
-    property FilePath: string read FFilePath;
-    property FileName: string read FFileName;
     property FileDateTime: TDateTime read FFileDateTime write FFileDateTime;
+    property FileName: string read FFileName;
+    property FilePath: string read FFilePath;
     property MacroRecorder: TBCEditorMacroRecorder read FMacroRecorder write FMacroRecorder;
     property SearchString: string read FSearchString write FSearchString;
   end;
@@ -52,16 +52,15 @@ type
     property Name;
     property OnAfterBookmarkPlaced;
     property OnAfterDeleteBookmark;
-    property OnAfterMarkPanelPaint;
-    property OnAfterMarkPlaced;
     property OnAfterDeleteMark;
     property OnAfterLinePaint;
+    property OnAfterMarkPanelPaint;
+    property OnAfterMarkPlaced;
     property OnBeforeCompletionProposalExecute;
     property OnBeforeDeleteMark;
     property OnBeforeMarkPanelPaint;
     property OnBeforeMarkPlaced;
     property OnBeforeTokenInfoExecute;
-    property OnMarkPanelLinePaint;
     property OnCaretChanged;
     property OnChange;
     property OnClick;
@@ -84,6 +83,7 @@ type
     property OnKeyPress;
     property OnKeyUp;
     property OnLeftMarginClick;
+    property OnMarkPanelLinePaint;
     property OnModified;
     property OnMouseDown;
     property OnMouseMove;
@@ -113,9 +113,6 @@ type
     property Search;
     property Selection;
     property ShowHint;
-    {$if defined(USE_ALPHASKINS)}
-    property SkinData;
-    {$endif}
     property SpecialChars;
     property SyncEdit;
     property TabOrder;
@@ -126,16 +123,17 @@ type
     property TokenInfo;
     property UndoOptions;
     property UnknownChars;
+    property Visible;
     property WantReturns;
     property Width;
-    property Visible;
     property WordWrap;
   end;
 
 implementation
 
 uses
-  Winapi.Windows, System.Classes, System.SysUtils;
+  Classes, SysUtils,
+  Windows;
 
 procedure TBCCustomEditor.DoOnProcessCommand(var Command: TBCEditorCommand; var AChar: Char; Data: Pointer);
 begin

@@ -3,7 +3,8 @@ unit BCEditor.Editor.MatchingPair;
 interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Graphics,
+  Classes,
+  Graphics,
   BCEditor.Consts;
 
 type

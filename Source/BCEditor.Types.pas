@@ -3,7 +3,9 @@ unit BCEditor.Types;
 interface
 
 uses
-  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, System.SysUtils,
+  Classes, SysUtils,
+  Windows,
+  Forms, Graphics, Controls,
   BCEditor.Consts;
 
 type

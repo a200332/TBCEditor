@@ -11,7 +11,8 @@ unit BCEditor.Editor.TokenInfo.PopupWindow;
 interface
 
 uses
-  System.Classes, System.Types, Vcl.Graphics, Vcl.Controls,
+  Classes, Types,
+  Graphics, Controls,
   BCEditor.Types, BCEditor.Lines, BCEditor.Editor.PopupWindow, BCEditor.Editor.TokenInfo;
 
 type
@@ -23,7 +24,7 @@ type
 
   TBCEditorTokenInfoPopupWindow = class(TBCEditorPopupWindow)
   strict private
-    FBitmapBuffer: Vcl.Graphics.TBitmap;
+    FBitmapBuffer: TBitmap;
     FContent: TBCEditorLines;
     FContentTextTokensList: TList;
     FMaxHeight: Integer;
@@ -38,7 +39,6 @@ type
   public
     constructor Create(const AEditor: TCustomControl);
     destructor Destroy; override;
-
     procedure Assign(ASource: TPersistent); override;
     procedure Execute(const APoint: TPoint);
     property Content: TBCEditorLines read FContent write FContent;
@@ -76,7 +76,7 @@ begin
   FTitleContent.Clear;
   FTitleContentTextTokensList := TList.Create;
 
-  FBitmapBuffer := Vcl.Graphics.TBitmap.Create;
+  FBitmapBuffer := Graphics.TBitmap.Create;
 end;
 
 destructor TBCEditorTokenInfoPopupWindow.Destroy;
@@ -140,17 +140,6 @@ begin
   Width := Width + 2 * MARGIN_LEFT;
 
   Show(APoint);
-end;
-
-procedure TBCEditorTokenInfoPopupWindow.SetStyles(const AStyles: TBCEditorTokenInfoTextStyles);
-begin
-  FBitmapBuffer.Canvas.Font.Style := [];
-  if tsBold in AStyles then
-    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsBold];
-  if tsItalic in AStyles then
-    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsItalic];
-  if tsReference in AStyles then
-    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsUnderline];
 end;
 
 procedure TBCEditorTokenInfoPopupWindow.Paint;
@@ -401,6 +390,17 @@ begin
   end;
   if LCurrentValue <> '' then
     AddTextToken;
+end;
+
+procedure TBCEditorTokenInfoPopupWindow.SetStyles(const AStyles: TBCEditorTokenInfoTextStyles);
+begin
+  FBitmapBuffer.Canvas.Font.Style := [];
+  if tsBold in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsBold];
+  if tsItalic in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsItalic];
+  if tsReference in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsUnderline];
 end;
 
 end.

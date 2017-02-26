@@ -3,8 +3,11 @@ unit BCEditor.MacroRecorder;
 interface
 
 uses
-  Winapi.Windows, System.WideStrUtils, System.Classes, Vcl.Controls, Vcl.Graphics, BCEditor.Language,
-  Vcl.Menus, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Types, System.SysUtils;
+  WideStrUtils, Classes, SysUtils,
+  Windows, Controls, Graphics,
+  Menus,
+  BCEditor.Language,
+  BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Types;
 
 type
   TBCEditorMacroState = (msStopped, msRecording, msPlaying, msPaused);
@@ -34,7 +37,6 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure Playback(AEditor: TBCBaseEditor); override;
     procedure SaveToStream(AStream: TStream); override;
-  public
     property Command: TBCEditorCommand read FCommand write FCommand;
   end;
 
@@ -48,7 +50,6 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure Playback(AEditor: TBCBaseEditor); override;
     procedure SaveToStream(AStream: TStream); override;
-  public
     property Key: Char read FKey write FKey;
   end;
 
@@ -62,7 +63,6 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure Playback(AEditor: TBCBaseEditor); override;
     procedure SaveToStream(AStream: TStream); override;
-  public
     property Value: string read FString write FString;
   end;
 
@@ -76,7 +76,6 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure Playback(AEditor: TBCBaseEditor); override;
     procedure SaveToStream(AStream: TStream); override;
-  public
     property Position: TBCEditorTextPosition read FPosition write FPosition;
   end;
 
@@ -119,26 +118,24 @@ type
     FRecordCommandID: TBCEditorCommand;
     FState: TBCEditorMacroState;
     function CreateMacroEvent(ACommand: TBCEditorCommand): TBCEditorMacroEvent;
-    function GetIsEmpty: Boolean;
     procedure DoAddEditor(AEditor: TBCBaseEditor);
     procedure DoRemoveEditor(AEditor: TBCBaseEditor);
+    function GetIsEmpty: Boolean;
+    procedure HookEditor(AEditor: TBCBaseEditor; ACommandID: TBCEditorCommand; AOldShortCut, ANewShortCut: TShortCut);
     procedure Notification(AComponent: TComponent; aOperation: TOperation); override;
     procedure OnCommand(ASender: TObject; AAfterProcessing: Boolean; var AHandled: Boolean; var ACommand: TBCEditorCommand;
       var AChar: Char; AData: Pointer; AHandlerData: Pointer);
     procedure SetPlaybackShortCut(const AValue: TShortCut);
     procedure SetRecordShortCut(const AValue: TShortCut);
     procedure StateChanged;
-  protected
-    procedure HookEditor(AEditor: TBCBaseEditor; ACommandID: TBCEditorCommand; AOldShortCut, ANewShortCut: TShortCut);
     procedure UnHookEditor(AEditor: TBCBaseEditor; ACommandID: TBCEditorCommand; AShortCut: TShortCut);
     property PlaybackCommandID: TBCEditorCommand read FPlaybackCommandID;
     property RecordCommandID: TBCEditorCommand read FRecordCommandID;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    function AddEditor(AEditor: TBCBaseEditor): Integer;
-    function RemoveEditor(AEditor: TBCBaseEditor): Integer;
     procedure AddCustomEvent(AEvent: TBCEditorMacroEvent);
+    function AddEditor(AEditor: TBCBaseEditor): Integer;
     procedure AddEvent(ACommand: TBCEditorCommand; AChar: Char; AData: Pointer);
     procedure Clear;
     procedure DeleteEvent(AIndex: Integer);
@@ -150,6 +147,7 @@ type
     procedure Pause;
     procedure PlaybackMacro(AEditor: TBCBaseEditor);
     procedure RecordMacro(AEditor: TBCBaseEditor);
+    function RemoveEditor(AEditor: TBCBaseEditor): Integer;
     procedure Resume;
     procedure SaveToFile(const AFilename: string);
     procedure SaveToStream(ADestination: TStream);
@@ -161,23 +159,23 @@ type
     property Events[AIndex: Integer]: TBCEditorMacroEvent read GetEvent;
     property IsEmpty: Boolean read GetIsEmpty;
     property MacroName: string read FMacroName write FMacroName;
-    property OnStateChange: TNotifyEvent read FOnStateChange write FOnStateChange;
-    property OnUserCommand: TBCEditorUserCommandEvent read FOnUserCommand write FOnUserCommand;
     property PlaybackShortCut: TShortCut read FPlaybackShortCut write SetPlaybackShortCut;
     property RecordShortCut: TShortCut read FRecordShortCut write SetRecordShortCut;
     property SaveMarkerPos: Boolean read FSaveMarkerPos write FSaveMarkerPos default False;
     property State: TBCEditorMacroState read FState;
+    property OnStateChange: TNotifyEvent read FOnStateChange write FOnStateChange;
+    property OnUserCommand: TBCEditorUserCommandEvent read FOnUserCommand write FOnUserCommand;
   published
     property Editor: TBCBaseEditor read GetEditor write SetEditor;
   end;
 
   TBCEditorMacroRecorder = class(TBCBaseEditorMacroRecorder)
   published
-    property SaveMarkerPos;
-    property RecordShortCut;
-    property PlaybackShortCut;
     property OnStateChange;
     property OnUserCommand;
+    property PlaybackShortCut;
+    property RecordShortCut;
+    property SaveMarkerPos;
   end;
 
   EBCEditorMacroRecorderException = class(Exception);
@@ -185,8 +183,27 @@ type
 implementation
 
 uses
-  Vcl.Forms, System.Types,
+  Types,
+  Forms,
   BCEditor.Consts, BCEditor.Lines;
+
+const
+  ecPluginBase = 64000;
+
+var
+  GCurrentCommand: Integer = ecPluginBase;
+
+function NewPluginCommand: TBCEditorCommand;
+begin
+  Result := GCurrentCommand;
+  Inc(GCurrentCommand);
+end;
+
+procedure ReleasePluginCommand(ACommand: TBCEditorCommand);
+begin
+  if ACommand = GCurrentCommand - 1 then
+    GCurrentCommand := ACommand;
+end;
 
 { TBCEditorDatAEvent }
 
@@ -211,6 +228,26 @@ procedure TBCEditorDataEvent.SaveToStream(AStream: TStream);
 begin
   inherited;
   AStream.Write(FData, SizeOf(FData));
+end;
+
+constructor TBCBaseEditorMacroRecorder.Create(AOwner: TComponent);
+begin
+  inherited;
+  FMacroName := 'unnamed';
+  FRecordCommandID := NewPluginCommand;
+  FPlaybackCommandID := NewPluginCommand;
+  FRecordShortCut := ShortCut(Ord('R'), [ssCtrl, ssShift]);
+  FPlaybackShortCut := ShortCut(Ord('P'), [ssCtrl, ssShift]);
+end;
+
+destructor TBCBaseEditorMacroRecorder.Destroy;
+begin
+  while Assigned(FEditors) do
+    RemoveEditor(Editors[0]);
+  Clear;
+  inherited;
+  ReleasePluginCommand(PlaybackCommandID);
+  ReleasePluginCommand(RecordCommandID);
 end;
 
 { TBCBaseEditorMacroRecorder }
@@ -258,28 +295,6 @@ begin
   end;
 end;
 
-const
-  ecPluginBase = 64000;
-
-var
-  GCurrentCommand: Integer = ecPluginBase;
-
-function NewPluginCommand: TBCEditorCommand;
-begin
-  Result := GCurrentCommand;
-  Inc(GCurrentCommand);
-end;
-
-constructor TBCBaseEditorMacroRecorder.Create(AOwner: TComponent);
-begin
-  inherited;
-  FMacroName := 'unnamed';
-  FRecordCommandID := NewPluginCommand;
-  FPlaybackCommandID := NewPluginCommand;
-  FRecordShortCut := Vcl.Menus.ShortCut(Ord('R'), [ssCtrl, ssShift]);
-  FPlaybackShortCut := Vcl.Menus.ShortCut(Ord('P'), [ssCtrl, ssShift]);
-end;
-
 function TBCBaseEditorMacroRecorder.CreateMacroEvent(ACommand: TBCEditorCommand): TBCEditorMacroEvent;
 
   function WantDefaultEvent(var AEvent: TBCEditorMacroEvent): Boolean;
@@ -312,11 +327,6 @@ begin
   end;
 end;
 
-function TBCBaseEditorMacroRecorder.GetEditors(AIndex: Integer): TBCBaseEditor;
-begin
-  Result := TBCBaseEditor(FEditors[AIndex]);
-end;
-
 procedure TBCBaseEditorMacroRecorder.DeleteEvent(AIndex: Integer);
 var
   LObject: Pointer;
@@ -324,65 +334,6 @@ begin
   LObject := FEvents[AIndex];
   FEvents.Delete(AIndex);
   TObject(LObject).Free;
-end;
-
-procedure ReleasePluginCommand(ACommand: TBCEditorCommand);
-begin
-  if ACommand = GCurrentCommand - 1 then
-    GCurrentCommand := ACommand;
-end;
-
-destructor TBCBaseEditorMacroRecorder.Destroy;
-begin
-  while Assigned(FEditors) do
-    RemoveEditor(Editors[0]);
-  Clear;
-  inherited;
-  ReleasePluginCommand(PlaybackCommandID);
-  ReleasePluginCommand(RecordCommandID);
-end;
-
-function TBCBaseEditorMacroRecorder.GetEditor: TBCBaseEditor;
-begin
-  if Assigned(FEditors) then
-    Result := FEditors[0]
-  else
-    Result := nil;
-end;
-
-procedure TBCBaseEditorMacroRecorder.SetEditor(const AValue: TBCBaseEditor);
-var
-  LEditor: TBCBaseEditor;
-begin
-  LEditor := Editor;
-  if LEditor <> AValue then
-    try
-      if Assigned(LEditor) and (FEditors.Count = 1) then
-        RemoveEditor(LEditor);
-      if Assigned(AValue) then
-        AddEditor(AValue);
-    except
-      if [csDesigning] * ComponentState = [csDesigning] then
-        Application.HandleException(Self)
-      else
-        raise;
-    end;
-end;
-
-function TBCBaseEditorMacroRecorder.GetEditorCount: Integer;
-begin
-  if Assigned(FEditors) then
-    Result := FEditors.Count
-  else
-    Result := 0;
-end;
-
-procedure TBCBaseEditorMacroRecorder.Notification(AComponent: TComponent; AOperation: TOperation);
-begin
-  inherited;
-  if AOperation = opRemove then
-    if (AComponent = Editor) or (AComponent is TBCBaseEditor) then
-      RemoveEditor(TBCBaseEditor(AComponent));
 end;
 
 procedure TBCBaseEditorMacroRecorder.DoAddEditor(AEditor: TBCBaseEditor);
@@ -402,6 +353,45 @@ begin
   raise EBCEditorMacroRecorderException.Create(AMessage);
 end;
 
+function TBCBaseEditorMacroRecorder.GetAsString: string;
+var
+  LIndex: Integer;
+  LEvent: string;
+begin
+  Result := 'macro ' + MacroName + SLineBreak + 'begin' + SLineBreak;
+  if Assigned(FEvents) then
+  begin
+    for LIndex := 0 to FEvents.Count - 1 do
+    begin
+      LEvent := Events[LIndex].AsString;
+      if LEvent <> '' then
+        Result := Result + '  ' + LEvent + SLineBreak;
+    end;
+  end;
+  Result := Result + 'end';
+end;
+
+function TBCBaseEditorMacroRecorder.GetEditor: TBCBaseEditor;
+begin
+  if Assigned(FEditors) then
+    Result := FEditors[0]
+  else
+    Result := nil;
+end;
+
+function TBCBaseEditorMacroRecorder.GetEditorCount: Integer;
+begin
+  if Assigned(FEditors) then
+    Result := FEditors.Count
+  else
+    Result := 0;
+end;
+
+function TBCBaseEditorMacroRecorder.GetEditors(AIndex: Integer): TBCBaseEditor;
+begin
+  Result := TBCBaseEditor(FEditors[AIndex]);
+end;
+
 function TBCBaseEditorMacroRecorder.GetEvent(AIndex: Integer): TBCEditorMacroEvent;
 begin
   Result := TBCEditorMacroEvent(FEvents[AIndex]);
@@ -418,6 +408,42 @@ end;
 function TBCBaseEditorMacroRecorder.GetIsEmpty: Boolean;
 begin
   Result := not Assigned(FEvents) or (FEvents.Count = 0);
+end;
+
+procedure TBCBaseEditorMacroRecorder.HookEditor(AEditor: TBCBaseEditor; ACommandID: TBCEditorCommand;
+  AOldShortCut, ANewShortCut: TShortCut);
+var
+  LIndex: Integer;
+  LKeyCommand: TBCEditorKeyCommand;
+begin
+  Assert(ANewShortCut <> 0);
+  if [csDesigning] * ComponentState = [csDesigning] then
+    if TBCBaseEditor(AEditor).KeyCommands.FindShortcut(ANewShortCut) >= 0 then
+      raise EBCEditorMacroRecorderException.Create(SBCEditorShortcutAlreadyExists)
+    else
+      Exit;
+  if AOldShortCut <> 0 then
+  begin
+    LIndex := TBCBaseEditor(AEditor).KeyCommands.FindShortcut(AOldShortCut);
+    if LIndex >= 0 then
+    begin
+      LKeyCommand := TBCBaseEditor(AEditor).KeyCommands[LIndex];
+      if LKeyCommand.Command = ACommandID then
+      begin
+        LKeyCommand.ShortCut := ANewShortCut;
+        Exit;
+      end;
+    end;
+  end;
+  LKeyCommand := TBCBaseEditor(AEditor).KeyCommands.NewItem;
+  try
+    LKeyCommand.ShortCut := ANewShortCut;
+  except
+    LKeyCommand.Free;
+    raise;
+  end;
+  LKeyCommand.Command := ACommandID;
+  AEditor.RegisterCommandHandler(OnCommand, Self);
 end;
 
 procedure TBCBaseEditorMacroRecorder.InsertCustomEvent(AIndex: Integer; AEvent: TBCEditorMacroEvent);
@@ -439,6 +465,19 @@ begin
   except
     LEvent.Free;
     raise;
+  end;
+end;
+
+procedure TBCBaseEditorMacroRecorder.LoadFromFile(const AFilename: string);
+var
+  LFileStream: TFileStream;
+begin
+  LFileStream := TFileStream.Create(AFilename, fmOpenRead);
+  try
+    LoadFromStream(LFileStream);
+    MacroName := ChangeFileExt(ExtractFileName(AFilename), '');
+  finally
+    LFileStream.Free;
   end;
 end;
 
@@ -464,6 +503,14 @@ begin
     FEvents.Add(LEvent);
     Inc(LIndex);
   end;
+end;
+
+procedure TBCBaseEditorMacroRecorder.Notification(AComponent: TComponent; AOperation: TOperation);
+begin
+  inherited;
+  if AOperation = opRemove then
+    if (AComponent = Editor) or (AComponent is TBCBaseEditor) then
+      RemoveEditor(TBCBaseEditor(AComponent));
 end;
 
 procedure TBCBaseEditorMacroRecorder.OnCommand(ASender: TObject; AAfterProcessing: Boolean; var AHandled: Boolean;
@@ -591,6 +638,18 @@ begin
   StateChanged;
 end;
 
+procedure TBCBaseEditorMacroRecorder.SaveToFile(const AFilename: string);
+var
+  LFileStream: TFileStream;
+begin
+  LFileStream := TFileStream.Create(AFilename, fmCreate);
+  try
+    SaveToStream(LFileStream);
+  finally
+    LFileStream.Free;
+  end;
+end;
+
 procedure TBCBaseEditorMacroRecorder.SaveToStream(ADestination: TStream);
 var
   i, LCount: Integer;
@@ -599,78 +658,6 @@ begin
   ADestination.Write(LCount, SizeOf(LCount));
   for i := 0 to LCount - 1 do
     Events[i].SaveToStream(ADestination);
-end;
-
-procedure TBCBaseEditorMacroRecorder.SetRecordShortCut(const AValue: TShortCut);
-var
-  LIndex: Integer;
-begin
-  if FRecordShortCut <> AValue then
-  begin
-    if Assigned(FEditors) then
-      if AValue <> 0 then
-      for LIndex := 0 to FEditors.Count - 1 do
-        HookEditor(Editors[LIndex], FRecordCommandID, FRecordShortCut, AValue)
-      else
-      for LIndex := 0 to FEditors.Count - 1 do
-        UnHookEditor(Editors[LIndex], FRecordCommandID, FRecordShortCut);
-    FRecordShortCut := AValue;
-  end;
-end;
-
-procedure TBCBaseEditorMacroRecorder.SetPlaybackShortCut(const AValue: TShortCut);
-var
-  LIndex: Integer;
-begin
-  if FPlaybackShortCut <> AValue then
-  begin
-    if Assigned(FEditors) then
-      if AValue <> 0 then
-      for LIndex := 0 to FEditors.Count - 1 do
-        HookEditor(Editors[LIndex], FPlaybackCommandID, FPlaybackShortCut, AValue)
-      else
-      for LIndex := 0 to FEditors.Count - 1 do
-        UnHookEditor(Editors[LIndex], FPlaybackCommandID, FPlaybackShortCut);
-    FPlaybackShortCut := AValue;
-  end;
-end;
-
-procedure TBCBaseEditorMacroRecorder.StateChanged;
-begin
-  if Assigned(OnStateChange) then
-    OnStateChange(Self);
-end;
-
-procedure TBCBaseEditorMacroRecorder.Stop;
-begin
-  if FState = msStopped then
-    Exit;
-  FState := msStopped;
-  FCurrentEditor := nil;
-  if FEvents.Count = 0 then
-  begin
-    FEvents.Free;
-    FEvents := nil;
-  end;
-  StateChanged;
-end;
-
-function TBCBaseEditorMacroRecorder.GetAsString: string;
-var
-  LIndex: Integer;
-  LEvent: string;
-begin
-  Result := 'macro ' + MacroName + SLineBreak + 'begin' + SLineBreak;
-  if Assigned(FEvents) then
-  begin
-    for LIndex := 0 to FEvents.Count - 1 do
-    begin
-      LEvent := Events[LIndex].AsString;
-      if LEvent <> '' then
-        Result := Result + '  ' + LEvent + SLineBreak;
-    end;
-  end;
-  Result := Result + 'end';
 end;
 
 procedure TBCBaseEditorMacroRecorder.SetAsString(const AValue: string);
@@ -710,65 +697,77 @@ begin
   end;
 end;
 
-procedure TBCBaseEditorMacroRecorder.LoadFromFile(const AFilename: string);
+procedure TBCBaseEditorMacroRecorder.SetEditor(const AValue: TBCBaseEditor);
 var
-  LFileStream: TFileStream;
+  LEditor: TBCBaseEditor;
 begin
-  LFileStream := TFileStream.Create(AFilename, fmOpenRead);
-  try
-    LoadFromStream(LFileStream);
-    MacroName := ChangeFileExt(ExtractFileName(AFilename), '');
-  finally
-    LFileStream.Free;
-  end;
+  LEditor := Editor;
+  if LEditor <> AValue then
+    try
+      if Assigned(LEditor) and (FEditors.Count = 1) then
+        RemoveEditor(LEditor);
+      if Assigned(AValue) then
+        AddEditor(AValue);
+    except
+      if [csDesigning] * ComponentState = [csDesigning] then
+        Application.HandleException(Self)
+      else
+        raise;
+    end;
 end;
 
-procedure TBCBaseEditorMacroRecorder.SaveToFile(const AFilename: string);
-var
-  LFileStream: TFileStream;
-begin
-  LFileStream := TFileStream.Create(AFilename, fmCreate);
-  try
-    SaveToStream(LFileStream);
-  finally
-    LFileStream.Free;
-  end;
-end;
-
-procedure TBCBaseEditorMacroRecorder.HookEditor(AEditor: TBCBaseEditor; ACommandID: TBCEditorCommand;
-  AOldShortCut, ANewShortCut: TShortCut);
+procedure TBCBaseEditorMacroRecorder.SetPlaybackShortCut(const AValue: TShortCut);
 var
   LIndex: Integer;
-  LKeyCommand: TBCEditorKeyCommand;
 begin
-  Assert(ANewShortCut <> 0);
-  if [csDesigning] * ComponentState = [csDesigning] then
-    if TBCBaseEditor(AEditor).KeyCommands.FindShortcut(ANewShortCut) >= 0 then
-      raise EBCEditorMacroRecorderException.Create(SBCEditorShortcutAlreadyExists)
-    else
-      Exit;
-  if AOldShortCut <> 0 then
+  if FPlaybackShortCut <> AValue then
   begin
-    LIndex := TBCBaseEditor(AEditor).KeyCommands.FindShortcut(AOldShortCut);
-    if LIndex >= 0 then
-    begin
-      LKeyCommand := TBCBaseEditor(AEditor).KeyCommands[LIndex];
-      if LKeyCommand.Command = ACommandID then
-      begin
-        LKeyCommand.ShortCut := ANewShortCut;
-        Exit;
-      end;
-    end;
+    if Assigned(FEditors) then
+      if AValue <> 0 then
+      for LIndex := 0 to FEditors.Count - 1 do
+        HookEditor(Editors[LIndex], FPlaybackCommandID, FPlaybackShortCut, AValue)
+      else
+      for LIndex := 0 to FEditors.Count - 1 do
+        UnHookEditor(Editors[LIndex], FPlaybackCommandID, FPlaybackShortCut);
+    FPlaybackShortCut := AValue;
   end;
-  LKeyCommand := TBCBaseEditor(AEditor).KeyCommands.NewItem;
-  try
-    LKeyCommand.ShortCut := ANewShortCut;
-  except
-    LKeyCommand.Free;
-    raise;
+end;
+
+procedure TBCBaseEditorMacroRecorder.SetRecordShortCut(const AValue: TShortCut);
+var
+  LIndex: Integer;
+begin
+  if FRecordShortCut <> AValue then
+  begin
+    if Assigned(FEditors) then
+      if AValue <> 0 then
+      for LIndex := 0 to FEditors.Count - 1 do
+        HookEditor(Editors[LIndex], FRecordCommandID, FRecordShortCut, AValue)
+      else
+      for LIndex := 0 to FEditors.Count - 1 do
+        UnHookEditor(Editors[LIndex], FRecordCommandID, FRecordShortCut);
+    FRecordShortCut := AValue;
   end;
-  LKeyCommand.Command := ACommandID;
-  AEditor.RegisterCommandHandler(OnCommand, Self);
+end;
+
+procedure TBCBaseEditorMacroRecorder.StateChanged;
+begin
+  if Assigned(OnStateChange) then
+    OnStateChange(Self);
+end;
+
+procedure TBCBaseEditorMacroRecorder.Stop;
+begin
+  if FState = msStopped then
+    Exit;
+  FState := msStopped;
+  FCurrentEditor := nil;
+  if FEvents.Count = 0 then
+  begin
+    FEvents.Free;
+    FEvents := nil;
+  end;
+  StateChanged;
 end;
 
 procedure TBCBaseEditorMacroRecorder.UnHookEditor(AEditor: TBCBaseEditor; ACommandID: TBCEditorCommand;

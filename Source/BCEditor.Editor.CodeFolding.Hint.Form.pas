@@ -3,7 +3,9 @@ unit BCEditor.Editor.CodeFolding.Hint.Form;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.Classes, System.Types, Vcl.Forms, Vcl.Controls, Vcl.Graphics;
+  Classes, Types,
+  Windows, Messages,
+  Forms, Controls, Graphics;
 
 type
   TBCEditorCodeFoldingHintForm = class(TCustomForm)
@@ -53,14 +55,10 @@ type
 implementation
 
 uses
-  System.SysUtils, System.UITypes, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Utils,
-  BCEditor.Consts{$if defined(USE_ALPHASKINS)}, sSkinProvider, sMessages{$endif};
+  SysUtils, UITypes,
+  BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Utils, BCEditor.Consts;
 
 constructor TBCEditorCodeFoldingHintForm.Create(AOwner: TComponent);
-{$if defined(USE_ALPHASKINS)}
-var
-  LSkinProvider: TsSkinProvider;
-{$endif}
 begin
   CreateNew(AOwner);
 
@@ -68,7 +66,7 @@ begin
   if not (csDesigning in ComponentState) then
     ControlStyle := ControlStyle + [csAcceptsControls];
 
-  FBufferBitmap := Vcl.Graphics.TBitmap.Create;
+  FBufferBitmap := Graphics.TBitmap.Create;
   Visible := False;
 
   Color := FBackgroundColor;
@@ -92,16 +90,6 @@ begin
 
   FHeightBuffer := 0;
   FFont.OnChange := FontChange;
-
-{$if defined(USE_ALPHASKINS)}
-  LSkinProvider := TsSkinProvider(SendMessage(Handle, SM_ALPHACMD, MakeWParam(0, AC_GETPROVIDER), 0));
-  if Assigned(LSkinProvider) then
-  begin
-    LSkinProvider.AllowExtBorders := False;
-    LSkinProvider.DrawNonClientArea := False;
-    LSkinProvider.DrawClientArea := False;
-  end;
-{$endif}
 end;
 
 destructor TBCEditorCodeFoldingHintForm.Destroy;
@@ -259,7 +247,7 @@ var
 begin
   ResetCanvas;
   LRect := ClientRect;
-  Winapi.Windows.ExtTextOut(FBufferBitmap.Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+  ExtTextOut(FBufferBitmap.Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
   FBufferBitmap.Canvas.Pen.Color := FBorderColor;
   FBufferBitmap.Canvas.Rectangle(LRect);
 

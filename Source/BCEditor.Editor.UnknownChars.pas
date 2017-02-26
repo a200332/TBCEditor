@@ -3,7 +3,7 @@ unit BCEditor.Editor.UnknownChars;
 interface
 
 uses
-  System.Classes;
+  Classes;
 
 type
   TBCEditorUnknownChars = class(TPersistent)
@@ -39,6 +39,5 @@ begin
   else
     inherited Assign(ASource);
 end;
-
 
 end.

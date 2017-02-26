@@ -3,7 +3,8 @@ unit BCEditor.Editor.SpecialChars;
 interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Graphics;
+  Classes,
+  Graphics;
 
 type
   TBCEditorSpecialChars = class(TPersistent)

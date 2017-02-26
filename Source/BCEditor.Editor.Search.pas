@@ -3,7 +3,8 @@ unit BCEditor.Editor.Search;
 interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Controls, Vcl.Graphics,
+  Classes,
+  Controls, Graphics,
   BCEditor.Types, BCEditor.Consts;
 
 type
@@ -201,7 +202,7 @@ type
 implementation {***************************************************************}
 
 uses
-  System.Math;
+  Math;
 
 { TBCEditorSearch.THighlighter.TColors ****************************************}
 

@@ -3,7 +3,9 @@ unit BCEditor.Editor.ActiveLine;
 interface
 
 uses
-  System.Classes, Vcl.Graphics, BCEditor.Editor.Glyph, BCEditor.Consts;
+  Classes,
+  Graphics,
+  BCEditor.Editor.Glyph, BCEditor.Consts;
 
 type
   TBCEditorActiveLine = class(TPersistent)
@@ -24,8 +26,8 @@ type
   published
     property Color: TColor read FColor write SetColor default clActiveLineBackground;
     property Indicator: TBCEditorGlyph read FIndicator write SetIndicator;
-    property OnChange: TNotifyEvent read FOnChange write SetOnChange;
     property Visible: Boolean read FVisible write SetVisible default True;
+    property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
 
 implementation
@@ -61,12 +63,6 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCEditorActiveLine.SetOnChange(AValue: TNotifyEvent);
-begin
-  FOnChange := AValue;
-  FIndicator.OnChange := AValue;
-end;
-
 procedure TBCEditorActiveLine.DoChange(ASender: TObject);
 begin
   if Assigned(FOnChange) then
@@ -85,6 +81,12 @@ end;
 procedure TBCEditorActiveLine.SetIndicator(const AValue: TBCEditorGlyph);
 begin
   FIndicator.Assign(AValue);
+end;
+
+procedure TBCEditorActiveLine.SetOnChange(AValue: TNotifyEvent);
+begin
+  FOnChange := AValue;
+  FIndicator.OnChange := AValue;
 end;
 
 procedure TBCEditorActiveLine.SetVisible(const AValue: Boolean);

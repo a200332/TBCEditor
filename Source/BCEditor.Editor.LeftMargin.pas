@@ -3,9 +3,9 @@ unit BCEditor.Editor.LeftMargin;
 interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Graphics, System.UITypes, Vcl.ImgList,
-  BCEditor.Editor.Marks,
-  BCEditor.Consts;
+  Classes, UITypes,
+  Graphics, ImgList,
+  BCEditor.Editor.Marks, BCEditor.Consts;
 
 type
   TBCEditorLeftMargin = class(TPersistent)
@@ -231,7 +231,7 @@ type
 implementation {***************************************************************}
 
 uses
-  System.SysUtils, System.Math,
+  SysUtils, Math,
   BCEditor.Utils;
 
 { TBCEditorLeftMargin.TColors *************************************************}

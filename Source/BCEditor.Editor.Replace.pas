@@ -3,7 +3,7 @@ unit BCEditor.Editor.Replace;
 interface
 
 uses
-  System.Classes,
+  Classes,
   BCEditor.Types, BCEditor.Editor.Search;
 
 type

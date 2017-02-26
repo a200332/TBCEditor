@@ -3,7 +3,9 @@ unit BCEditor.Lines;
 interface {********************************************************************}
 
 uses
-  System.SysUtils, Vcl.Graphics, BCEditor.Utils, System.Classes, BCEditor.Consts, BCEditor.Types;
+  SysUtils, Classes,
+  Graphics,
+  BCEditor.Utils, BCEditor.Consts, BCEditor.Types;
 
 type
   TBCEditorLines = class(TStrings)

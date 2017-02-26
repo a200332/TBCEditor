@@ -3,7 +3,7 @@ unit BCEditor.Search;
 interface {********************************************************************}
 
 uses
-  System.Classes, System.RegularExpressions,
+  Classes, RegularExpressions,
   BCEditor.Lines;
 
 type
@@ -21,14 +21,14 @@ type
     function GetResultCount: Integer; virtual; abstract;
     procedure SetPattern(const AValue: string); virtual; abstract;
   public
-    property CaseSensitive: Boolean read FCaseSensitive write SetCaseSensitive default False;
-    procedure Clear; virtual; abstract;
     constructor Create;
+    procedure Clear; virtual; abstract;
+    function SearchAll(const ALines: TBCEditorLines): Integer; virtual; abstract;
+    property CaseSensitive: Boolean read FCaseSensitive write SetCaseSensitive default False;
     property Lengths[const AIndex: Integer]: Integer read GetLength;
     property Pattern: string read GetPattern write SetPattern;
     property ResultCount: Integer read GetResultCount;
     property Results[const AIndex: Integer]: Integer read GetResult;
-    function SearchAll(const ALines: TBCEditorLines): Integer; virtual; abstract;
     property Status: string read FStatus write FStatus;
     property WholeWordsOnly: Boolean read FWholeWordsOnly write FWholeWordsOnly default False;
   end;
@@ -58,15 +58,15 @@ type
     procedure SetPattern(const AValue: string); override;
     function TestWholeWord: Boolean;
   public
-    procedure Clear; override;
-    property Count: Integer read FCount write FCount;
     constructor Create;
     destructor Destroy; override;
+    procedure Clear; override;
     function FindFirst(const AText: string): Integer;
-    property Finished: Boolean read GetFinished;
     function Next: Integer;
-    property Pattern read FCasedPattern;
     function SearchAll(const ALines: TBCEditorLines): Integer; override;
+    property Count: Integer read FCount write FCount;
+    property Finished: Boolean read GetFinished;
+    property Pattern read FCasedPattern;
   end;
 
   TBCEditorRegexSearch = class(TBCEditorSearchBase)
@@ -83,9 +83,9 @@ type
     function GetResultCount: Integer; override;
     procedure SetPattern(const AValue: string); override;
   public
-    procedure Clear; override;
     constructor Create;
     destructor Destroy; override;
+    procedure Clear; override;
     function SearchAll(const ALines: TBCEditorLines): Integer; override;
   end;
 
@@ -104,7 +104,8 @@ type
 implementation {***************************************************************}
 
 uses
-  Winapi.Windows, System.Character, System.SysUtils,
+  Character, SysUtils,
+  Windows,
   BCEditor.Language, BCEditor.Consts;
 
 { TBCEditorSearchBase *********************************************************}

@@ -3,8 +3,9 @@ unit BCEditor.StyleHooks;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, Vcl.Controls, Vcl.Themes, System.Classes, System.Types;
-
+  Classes, Types,
+  Windows, Messages,
+  Controls, Themes;
 const
   CM_UPDATE_VCLSTYLE_SCROLLBARS = CM_BASE + 2050;
 
@@ -90,7 +91,8 @@ type
 implementation
 
 uses
-  Vcl.Graphics, System.SysUtils, System.Math;
+  SysUtils, Math,
+  Graphics;
 
 type
   TWinControlClass = class(TWinControl);

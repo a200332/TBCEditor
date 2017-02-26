@@ -3,7 +3,8 @@ unit BCEditor.Editor.Scroll;
 interface
 
 uses
-  System.Classes, System.UITypes, Vcl.Forms,
+  Classes, UITypes,
+  Forms,
   BCEditor.Editor.Glyph;
 
 type
@@ -63,7 +64,8 @@ type
 implementation {***************************************************************}
 
 uses
-  BCEditor.Utils, BCEditor.Consts, Vcl.Graphics;
+  Graphics,
+  BCEditor.Utils, BCEditor.Consts;
 
 { TBCEditorScroll.THint *******************************************************}
 

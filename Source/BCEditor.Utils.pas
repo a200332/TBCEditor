@@ -3,7 +3,10 @@ unit BCEditor.Utils;
 interface
 
 uses
-  Winapi.Windows, System.Math, System.Classes, Vcl.Graphics, System.UITypes, BCEditor.Consts, BCEditor.Types;
+  Math, Classes, UITypes,
+  Windows,
+  Graphics,
+  BCEditor.Consts, BCEditor.Types;
 
 function ActivateDropShadow(const AHandle: THandle): Boolean;
 function CaseNone(const AChar: Char): Char;
@@ -24,7 +27,8 @@ procedure FreeList(var AList: TList);
 implementation
 
 uses
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.SysUtils, System.Character;
+  SysUtils, Character,
+  Controls, Forms, Dialogs;
 
 function ActivateDropShadow(const AHandle: THandle): Boolean;
 

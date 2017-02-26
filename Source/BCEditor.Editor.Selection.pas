@@ -3,7 +3,8 @@ unit BCEditor.Editor.Selection;
 interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Graphics,
+  Classes,
+  Graphics,
   BCEditor.Types, BCEditor.Consts;
 
 type

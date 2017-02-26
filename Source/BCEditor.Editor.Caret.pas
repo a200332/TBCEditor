@@ -3,7 +3,8 @@ unit BCEditor.Editor.Caret;
 interface {********************************************************************}
 
 uses
-  System.Classes, Vcl.Graphics;
+  Classes,
+  Graphics;
 
 type
   TBCEditorCaret = class(TPersistent)

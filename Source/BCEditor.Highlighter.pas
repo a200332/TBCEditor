@@ -3,10 +3,10 @@ unit BCEditor.Highlighter;
 interface {********************************************************************}
 
 uses
-  System.Classes, System.SysUtils, Vcl.Controls, Vcl.Graphics,
+  Classes, SysUtils,
+  Controls, Graphics,
   JsonDataObjects,
-  BCEditor.Consts,
-  BCEditor.Editor.CodeFolding, BCEditor.Types;
+  BCEditor.Consts, BCEditor.Editor.CodeFolding, BCEditor.Types;
 
 type
   TBCEditorHighlighter = class(TObject)
@@ -521,7 +521,8 @@ type
 implementation {***************************************************************}
 
 uses
-  Vcl.GraphUtil, System.Types, System.IOUtils, System.TypInfo,
+  Types, IOUtils, TypInfo,
+  GraphUtil,
   BCEditor.Editor.Base, BCEditor.Language, BCEditor.Utils,
   BCEditor.Editor.CompletionProposal;
 

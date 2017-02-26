@@ -3,20 +3,17 @@ unit BCEditor.Editor.CompletionProposal.PopupWindow;
 interface
 
 uses
-  Winapi.Messages, System.Classes, System.Types, Vcl.Forms, Vcl.Controls, Vcl.Graphics, BCEditor.Utils,
-  BCEditor.Types, BCEditor.Editor.PopupWindow,
+  Classes, Types,
+  Messages,
+  Forms, Controls, Graphics,
+  BCEditor.Utils, BCEditor.Types, BCEditor.Editor.PopupWindow,
   BCEditor.Editor.CompletionProposal;
-
-{$if defined(USE_VCL_STYLES)}
-const
-  CM_UPDATE_VCLSTYLE_SCROLLBARS = CM_BASE + 2050;
-{$endif}
 
 type
   TBCEditorCompletionProposalPopupWindow = class(TBCEditorPopupWindow)
   strict private
     FAdjustCompletionStart: Boolean;
-    FBitmapBuffer: Vcl.Graphics.TBitmap;
+    FBitmapBuffer: Graphics.TBitmap;
     FCaseSensitive: Boolean;
     FCompletionProposal: TBCEditorCompletionProposal;
     FCompletionStart: Integer;
@@ -53,27 +50,27 @@ type
     procedure MouseDown(AButton: TMouseButton; AShift: TShiftState; X, Y: Integer); override;
     procedure Paint; override;
   public
-    procedure Assign(ASource: TPersistent); override;
     constructor Create(const AEditor: TCustomControl);
-    property CurrentString: string read FCurrentString write SetCurrentString;
     destructor Destroy; override;
+    procedure Assign(ASource: TPersistent); override;
     procedure Execute(const ACurrentString: string; const APoint: TPoint);
     function GetCurrentInput: string;
-    property Items: TBCEditorCompletionProposal.TItems read GetItems;
     procedure MouseWheel(AShift: TShiftState; AWheelDelta: Integer; AMousePos: TPoint);
+    procedure WndProc(var Msg: TMessage); override;
+    property CurrentString: string read FCurrentString write SetCurrentString;
+    property Items: TBCEditorCompletionProposal.TItems read GetItems;
+    property TopLine: Integer read FTopLine write SetTopLine;
     property OnCanceled: TNotifyEvent read FOnCanceled write FOnCanceled;
     property OnSelected: TBCEditorCompletionProposal.TSelectedEvent read FOnSelected write FOnSelected;
-    property TopLine: Integer read FTopLine write SetTopLine;
-    procedure WndProc(var Msg: TMessage); override;
   end;
 
 implementation
 
 uses
-  Winapi.Windows, System.SysUtils, System.UITypes,
-  BCEditor.Consts, System.Math, Vcl.Dialogs,
-  BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Lines
-  {$if defined(USE_VCL_STYLES) or not defined(USE_VCL_STYLES) and not defined(USE_ALPHASKINS)}, Vcl.Themes{$endif};
+  SysUtils, UITypes, Math,
+  Windows,
+  Themes, Dialogs,
+  BCEditor.Consts, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Lines;
 
 constructor TBCEditorCompletionProposalPopupWindow.Create(const AEditor: TCustomControl);
 begin
@@ -89,7 +86,7 @@ begin
   Visible := False;
 
   FItems := TStringList.Create;
-  FBitmapBuffer := Vcl.Graphics.TBitmap.Create;
+  FBitmapBuffer := Graphics.TBitmap.Create;
 
   FOnValidate := HandleOnValidate;
   OnDblClick := HandleDblClick;
@@ -611,7 +608,7 @@ begin
           Canvas.Brush.Color := LColumn.Title.Colors.Background;
           LRect.Left := LColumnWidth;
           LRect.Right := LColumnWidth + LColumn.Width;
-          Winapi.Windows.ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+          ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
           Canvas.Font.Assign(LColumn.Title.Font);
           if LColumn.Title.Visible then
             Canvas.TextOut(FMargin + LColumnWidth, 0, LColumn.Title.Caption);
@@ -778,10 +775,6 @@ begin
 
   if Visible then
     SendMessage(Handle, WM_SETREDRAW, -1, 0);
-
-{$if defined(USE_VCL_STYLES)}
-  Perform(CM_UPDATE_VCLSTYLE_SCROLLBARS, 0, 0);
-{$endif}
 end;
 
 procedure TBCEditorCompletionProposalPopupWindow.WMVScroll(var AMessage: TWMScroll);
