@@ -14,9 +14,13 @@ type
 
   TBCEditorCharMethod = function(const AChar: Char): Boolean of object;
 
+  TBCEditorCaretStyle = (csVerticalLine, csThinVerticalLine, csHorizontalLine, csThinHorizontalLine, csHalfBlock, csBlock);
+
   TBCEditorDropFilesEvent = procedure(ASender: TObject; APos: TPoint; AFiles: TStrings) of object;
 
   TBCEditorPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas) of object;
+
+  TBCEditorReplaceAction = (raCancel, raSkip, raReplace, raReplaceAll);
 
   TBCEditorMarkPanelPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; const ARect: TRect; const AFirstLine: Integer; const ALastLine: Integer) of object;
   TBCEditorMarkPanelLinePaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; const ARect: TRect; const ALineNumber: Integer) of object;
@@ -46,8 +50,23 @@ type
   );
   TBCEditorOptions = set of TBCEditorOption;
 
+  TBCEditorCaretOption = (
+    coRightMouseClickMove { When clicking with the right mouse for a popup menu, move the cursor to that location }
+  );
+  TBCEditorCaretMultiEditOption = (
+    meoShowActiveLine,
+    meoShowGhost { Ghost caret follows mouse cursor when moved }
+  );
   TBCEditorTextEntryMode = (temInsert, temOverwrite);
 
+  TBCEditorScrollOption = (
+    soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
+    soHintFollows, { The scroll hint follows the mouse when scrolling vertically }
+    soPastEndOfFileMarker, { Allows the cursor to go past the end of file marker }
+    soPastEndOfLine, { Allows the cursor to go past the last character into the white space at the end of a line }
+    soShowVerticalScrollHint, { Shows a hint of the visible line numbers when scrolling vertically }
+    soWheelClickMove { Scrolling by mouse move after wheel click. }
+  );
   TBCEditorTabOption = (
     toColumns,
     toPreviousLineIndent,
@@ -56,10 +75,95 @@ type
     );
   TBCEditorTabOptions = set of TBCEditorTabOption;
 
+  PBCEditorSelectionMode = ^TBCEditorSelectionMode;
+  TBCEditorSelectionMode = (
+    smColumn,
+    smNormal
+  );
+
+  TBCEditorSelectionOption = (
+    soALTSetsColumnMode,
+    soExpandRealNumbers,
+    soHighlightSimilarTerms,
+    soTermsCaseSensitive,
+    soToEndOfLine,
+    soTripleClickRowSelect
+  );
+
+  TBCEditorSearchChanges = (
+    scRefresh,
+    scSearch,
+    scEngineUpdate,
+    scInSelectionActive
+  );
+
+  TBCEditorReplaceChanges = (
+    rcEngineUpdate
+  );
+
+  TBCEditorSearchOption = (
+    soBeepIfStringNotFound,
+    soCaseSensitive,
+    soEntireScope,
+    soHighlightResults,
+    soSearchOnTyping,
+    soShowStringNotFound,
+    soShowSearchMatchNotFound,
+    soWholeWordsOnly,
+    soWrapAround
+  );
   TBCEditorSyncEditOption = (
     seCaseSensitive
   );
   TBCEditorSyncEditOptions = set of TBCEditorSyncEditOption;
+
+  TBCEditorReplaceOption = (
+    roBackwards,
+    roCaseSensitive,
+    roEntireScope,
+    roPrompt,
+    roReplaceAll,
+    roSelectedOnly,
+    roWholeWordsOnly
+  );
+
+  TBCEditorReplaceActionOption = (
+    eraReplace,
+    eraDeleteLine
+  );
+
+  TBCEditorSearchEngine = (
+    seNormal,
+    seRegularExpression,
+    seWildcard
+  );
+
+  TBCEditorSearchMapOption = (
+    moShowActiveLine
+  );
+
+  TBCEditorCompletionProposalOption = (
+    cpoAutoInvoke,
+    cpoAutoConstraints,
+    cpoAddHighlighterKeywords,
+    cpoCaseSensitive,
+    cpoFiltered,
+    cpoParseItemsFromText,
+    cpoResizeable,
+    cpoShowShadow,
+    cpoUseHighlighterColumnFont
+  );
+
+  TBCEditorLeftMarginBookMarkPanelOption = (
+    bpoToggleBookmarkByClick,
+    bpoToggleMarkByClick
+  );
+
+  TBCEditorRightMarginOption = (
+    rmoAutoLinebreak,
+    rmoMouseMove,
+    rmoShowMovingHint
+  );
 
   TBCEditorTextPosition = record
     Char: Integer;
@@ -82,6 +186,37 @@ type
     btUnspecified,
     btAny,
     btTerm
+  );
+  TBCEditorRangeType = (
+    ttUnspecified,
+    ttAddress,
+    ttAssemblerComment,
+    ttAssemblerReservedWord,
+    ttAttribute,
+    ttBlockComment,
+    ttCharacter,
+    ttDirective,
+    ttHexNumber,
+    ttHighlightedBlock,
+    ttHighlightedBlockSymbol,
+    ttLineComment,
+    ttMailtoLink,
+    ttMethod,
+    ttMethodName,
+    ttNumber,
+    ttReservedWord,
+    ttString,
+    ttSymbol,
+    ttWebLink
+  );
+
+
+  TBCEditorMatchingTokenResult = (
+    trCloseAndOpenTokenFound,
+    trCloseTokenFound,
+    trNotFound,
+    trOpenTokenFound,
+    trOpenAndCloseTokenFound
   );
 
   TBCEditorKeyPressWEvent = procedure(ASender: TObject; var AKey: Char) of object;
@@ -112,8 +247,49 @@ type
     Text: string;
   end;
 
+  TBCEditorSpecialCharsEndOfLineStyle = (
+    eolArrow,
+    eolEnter,
+    eolPilcrow
+  );
+
+  TBCEditorSpecialCharsOption = (
+    scoTextColor,
+    scoMiddleColor,
+    scoShowOnlyInSelection
+  );
+  TBCEditorSpecialCharsStyle = (scsDot, scsSolid);
+
   TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean;
     const ATabChar: Char = BCEDITOR_SPACE_CHAR): string;
+
+  TBCEditorLeftMarginLineNumberOption = (
+    lnoIntens,
+    lnoLeadingZeros,
+    lnoAfterLastLine
+  );
+
+  TBCEditorMatchingPairOption = (
+    mpoHighlightAfterToken,
+    mpoHighlightUnmatched,
+    mpoUnderline,
+    mpoUseMatchedColor
+  );
+
+  TBCEditorMinimapOption = (
+    moShowBookmarks,
+    moShowIndentGuides,
+    moShowSearchResults,
+    moShowSpecialChars
+  );
+
+  TBCEditorMinimapAlign = (maLeft, maRight);
+  TBCEditorSearchMapAlign = (saLeft, saRight);
+
+  TBCEditorUndoOption = (
+    uoGroupUndo,
+    uoUndoAfterSave
+  );
 
   TBCEditorCase = (cNone=-1, cUpper=0, cLower=1, cAlternating=2, cSentence=3, cTitle=4, cOriginal=5);
 
@@ -122,6 +298,35 @@ type
   TBCEditorSortOrder = (soAsc, soDesc, soRandom);
 
   TBCEditorWordWrapWidth = (wwwPage, wwwRightMargin);
+
+  TBCEditorCodeFoldingMarkStyle = (msCircle, msSquare, msTriangle);
+  TBCEditorCodeFoldingHintIndicatorMarkStyle = (imsThreeDots, imsTriangle);
+  TBCEditorCodeFoldingChanges = (fcEnabled, fcRefresh, fcRescan);
+
+  TBCEditorCodeFoldingOption = (
+    cfoAutoPadding,
+    cfoAutoWidth,
+    cfoFoldMultilineComments,
+    cfoHighlightFoldingLine,
+    cfoHighlightIndentGuides,
+    cfoHighlightMatchingPair,
+    cfoShowCollapsedLine,
+    cfoShowIndentGuides,
+    cfoShowTreeLine,
+    cfoUncollapseByHintClick
+  );
+
+  TBCEditorTokenInfoOption = (
+    tioAutoSize
+  );
+
+  TBCEditorLeftMarginBorderStyle = (mbsNone, mbsMiddle, mbsRight);
+
+  TBCEditorScrollHintFormat = (shfTopLineOnly, shfTopToBottom);
+
+  TBCEditorMinimapIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
+
+  TBCEditorCodeFoldingHintIndicatorOption = (hioShowBorder, hioShowMark);
 
   TBCEditorQuadColor = packed record
   case Boolean of

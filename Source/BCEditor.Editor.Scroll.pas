@@ -5,32 +5,22 @@ interface
 uses
   Classes, UITypes,
   Forms,
-  BCEditor.Editor.Glyph;
+  BCEditor.Editor.Glyph, BCEditor.Types;
 
 type
   TBCEditorScroll = class(TPersistent)
   type
     TEvent = procedure(ASender: TObject; AScrollBar: TScrollBarKind) of object;
-    TOption = (
-      soHalfPage, { When scrolling with page-up and page-down commands, only scroll a half page at a time }
-      soHintFollows, { The scroll hint follows the mouse when scrolling vertically }
-      soPastEndOfFileMarker, { Allows the cursor to go past the end of file marker }
-      soPastEndOfLine, { Allows the cursor to go past the last character into the white space at the end of a line }
-      soShowVerticalScrollHint, { Shows a hint of the visible line numbers when scrolling vertically }
-      soWheelClickMove { Scrolling by mouse move after wheel click. }
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorScrollOption;
 
     THint = class(TPersistent)
-    type
-      TFormat = (shfTopLineOnly, shfTopToBottom);
     strict private
-      FFormat: TFormat;
+      FFormat: TBCEditorScrollHintFormat;
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
-      property Format: TFormat read FFormat write FFormat default shfTopLineOnly;
+      property Format: TBCEditorScrollHintFormat read FFormat write FFormat default shfTopLineOnly;
     end;
 
   strict private const
@@ -52,7 +42,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorScrollOption; const AEnabled: Boolean);
   published
     property Bars: System.UITypes.TScrollStyle read FBars write SetBars default System.UITypes.TScrollStyle.ssBoth;
     property Hint: TBCEditorScroll.THint read FHint write SetHint;
@@ -152,7 +142,7 @@ begin
   FOnChange := AValue;
 end;
 
-procedure TBCEditorScroll.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorScroll.SetOption(const AOption: TBCEditorScrollOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

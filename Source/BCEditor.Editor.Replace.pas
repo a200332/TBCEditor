@@ -9,41 +9,24 @@ uses
 type
   TBCEditorReplace = class(TPersistent)
   type
-    TAction = (raCancel, raSkip, raReplace, raReplaceAll);
-    TActionOption = (
-      eraReplace,
-      eraDeleteLine
-    );
-    TChanges = (
-      rcEngineUpdate
-    );
-    TChangeEvent = procedure(Event: TChanges) of object;
+    TChangeEvent = procedure(Event: TBCEditorReplaceChanges) of object;
     TEvent = procedure(ASender: TObject; const ASearch, AReplace: string; ALine, AColumn: Integer;
-      ADeleteLine: Boolean; var AAction: TAction) of object;
-    TOption = (
-      roBackwards,
-      roCaseSensitive,
-      roEntireScope,
-      roPrompt,
-      roReplaceAll,
-      roSelectedOnly,
-      roWholeWordsOnly
-    );
-    TOptions = set of TOption;
+      ADeleteLine: Boolean; var AAction: TBCEditorReplaceAction) of object;
+    TOptions = set of TBCEditorReplaceOption;
 
   strict private
-    FAction: TActionOption;
-    FEngine: TBCEditorSearch.TEngine;
+    FAction: TBCEditorReplaceActionOption;
+    FEngine: TBCEditorSearchEngine;
     FOnChange: TChangeEvent;
     FOptions: TOptions;
-    procedure SetEngine(const AValue: TBCEditorSearch.TEngine);
+    procedure SetEngine(const AValue: TBCEditorSearchEngine);
   public
     constructor Create;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorReplaceOption; const AEnabled: Boolean);
   published
-    property Action: TActionOption read FAction write FAction default eraReplace;
-    property Engine: TBCEditorSearch.TEngine read FEngine write SetEngine default seNormal;
+    property Action: TBCEditorReplaceActionOption read FAction write FAction default eraReplace;
+    property Engine: TBCEditorSearchEngine read FEngine write SetEngine default seNormal;
     property OnChange: TChangeEvent read FOnChange write FOnChange;
     property Options: TOptions read FOptions write FOptions default [roPrompt];
   end;
@@ -72,7 +55,7 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCEditorReplace.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorReplace.SetOption(const AOption: TBCEditorReplaceOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
@@ -80,7 +63,7 @@ begin
     Exclude(FOptions, AOption);
 end;
 
-procedure TBCEditorReplace.SetEngine(const AValue: TBCEditorSearch.TEngine);
+procedure TBCEditorReplace.SetEngine(const AValue: TBCEditorSearchEngine);
 begin
   if FEngine <> AValue then
   begin

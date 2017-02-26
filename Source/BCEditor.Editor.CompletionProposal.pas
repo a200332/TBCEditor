@@ -4,7 +4,8 @@ interface {********************************************************************}
 
 uses
   Classes,
-  Graphics, Controls, ImgList;
+  Graphics, Controls, ImgList,
+  BCEditor.Types;
 
 type
   TBCEditorCompletionProposal = class(TPersistent)
@@ -13,17 +14,7 @@ type
 
     TEvent = procedure(Sender: TObject; AColumns: TColumns; const AInput: string;
       var ACanExecute: Boolean) of object;
-    TOption = (
-      cpoAutoInvoke,
-      cpoAutoConstraints,
-      cpoAddHighlighterKeywords,
-      cpoCaseSensitive,
-      cpoFiltered,
-      cpoParseItemsFromText,
-      cpoResizeable,
-      cpoUseHighlighterColumnFont
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorCompletionProposalOption;
     TSelectedEvent = procedure(Sender: TObject; var ASelectedItem: string) of object;
     TValidateEvent = procedure(ASender: TObject; Shift: TShiftState; EndToken: Char) of object;
 
@@ -187,7 +178,7 @@ type
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
     procedure ChangeScale(M, D: Integer);
-    procedure SetOption(const AOption: TBCEditorCompletionProposal.TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorCompletionProposalOption; const AEnabled: Boolean);
   published
     property CloseChars: string read FCloseChars write FCloseChars;
     property Colors: TBCEditorCompletionProposal.TColors read FColors write FColors;
@@ -539,7 +530,7 @@ begin
   end;
 end;
 
-procedure TBCEditorCompletionProposal.SetOption(const AOption: TBCEditorCompletionProposal.TOption; const AEnabled: Boolean);
+procedure TBCEditorCompletionProposal.SetOption(const AOption: TBCEditorCompletionProposalOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

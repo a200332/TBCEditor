@@ -4,33 +4,29 @@ interface {********************************************************************}
 
 uses
   Classes,
-  Graphics;
+  Graphics,
+  BCEditor.Types;
 
 type
   TBCEditorCaret = class(TPersistent)
   type
     TChangedEvent = procedure(ASender: TObject; X, Y: Integer) of object;
-    TOption = (
-      coRightMouseClickMove { When clicking with the right mouse for a popup menu, move the cursor to that location }
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorCaretOption;
 
     TStyles = class(TPersistent)
-    type
-      TStyle = (csVerticalLine, csThinVerticalLine, csHorizontalLine, csThinHorizontalLine, csHalfBlock, csBlock);
     strict private
-      FInsert: TStyle;
+      FInsert: TBCEditorCaretStyle;
       FOnChange: TNotifyEvent;
-      FOverwrite: TStyle;
+      FOverwrite: TBCEditorCaretStyle;
       procedure DoChange;
-      procedure SetInsert(const AValue: TStyle);
-      procedure SetOverwrite(const AValue: TStyle);
+      procedure SetInsert(const AValue: TBCEditorCaretStyle);
+      procedure SetOverwrite(const AValue: TBCEditorCaretStyle);
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
-      property Insert: TStyle read FInsert write SetInsert default csThinVerticalLine;
-      property Overwrite: TStyle read FOverwrite write SetOverwrite default csThinVerticalLine;
+      property Insert: TBCEditorCaretStyle read FInsert write SetInsert default csThinVerticalLine;
+      property Overwrite: TBCEditorCaretStyle read FOverwrite write SetOverwrite default csThinVerticalLine;
       property OnChange: TNotifyEvent read FOnChange write FOnChange;
     end;
 
@@ -85,11 +81,7 @@ type
 
     TMultiEdit = class(TPersistent)
     type
-      TOption = (
-        meoShowActiveLine,
-        meoShowGhost { Ghost caret follows mouse cursor when moved }
-      );
-      TOptions = set of TBCEditorCaret.TMultiEdit.TOption;
+      TOptions = set of TBCEditorCaretMultiEditOption;
 
 
       TColors = class(TPersistent)
@@ -111,12 +103,12 @@ type
       FEnabled: Boolean;
       FOnChange: TNotifyEvent;
       FOptions: TBCEditorCaret.TMultiEdit.TOptions;
-      FStyle: TStyles.TStyle;
+      FStyle: TBCEditorCaretStyle;
       procedure DoChange;
       procedure SetColors(AValue: TBCEditorCaret.TMultiEdit.TColors);
       procedure SetEnabled(AValue: Boolean);
       procedure SetOptions(const AValue: TBCEditorCaret.TMultiEdit.TOptions);
-      procedure SetStyle(const AValue: TStyles.TStyle);
+      procedure SetStyle(const AValue: TBCEditorCaretStyle);
     public
       constructor Create;
       destructor Destroy; override;
@@ -125,7 +117,7 @@ type
       property Colors: TBCEditorCaret.TMultiEdit.TColors read FColors write SetColors;
       property Enabled: Boolean read FEnabled write SetEnabled default True;
       property Options: TBCEditorCaret.TMultiEdit.TOptions read FOptions write SetOptions default DefaultOptions;
-      property Style: TStyles.TStyle read FStyle write SetStyle default csThinVerticalLine;
+      property Style: TBCEditorCaretStyle read FStyle write SetStyle default csThinVerticalLine;
       property OnChange: TNotifyEvent read FOnChange write FOnChange;
     end;
 
@@ -149,7 +141,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorCaretOption; const AEnabled: Boolean);
   published
     property MultiEdit: TBCEditorCaret.TMultiEdit read FMultiEdit write SetMultiEdit;
     property NonBlinking: TBCEditorCaret.TNonBlinking read FNonBlinking write SetNonBlinking;
@@ -191,7 +183,7 @@ begin
     FOnChange(Self);
 end;
 
-procedure TBCEditorCaret.TStyles.SetInsert(const AValue: TStyle);
+procedure TBCEditorCaret.TStyles.SetInsert(const AValue: TBCEditorCaretStyle);
 begin
   if FInsert <> AValue then
   begin
@@ -200,7 +192,7 @@ begin
   end;
 end;
 
-procedure TBCEditorCaret.TStyles.SetOverwrite(const AValue: TStyle);
+procedure TBCEditorCaret.TStyles.SetOverwrite(const AValue: TBCEditorCaretStyle);
 begin
   if FOverwrite <> AValue then
   begin
@@ -413,7 +405,7 @@ begin
   end;
 end;
 
-procedure TBCEditorCaret.TMultiEdit.SetStyle(const AValue: TStyles.TStyle);
+procedure TBCEditorCaret.TMultiEdit.SetStyle(const AValue: TBCEditorCaretStyle);
 begin
   if FStyle <> AValue then
   begin
@@ -492,7 +484,7 @@ begin
   FNonBlinking.OnChange := AValue;
 end;
 
-procedure TBCEditorCaret.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorCaret.SetOption(const AOption: TBCEditorCaretOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

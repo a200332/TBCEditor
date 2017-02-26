@@ -5,7 +5,7 @@ interface {********************************************************************}
 uses
   Classes, UITypes,
   Graphics, ImgList,
-  BCEditor.Editor.Marks, BCEditor.Consts;
+  BCEditor.Editor.Marks, BCEditor.Types, BCEditor.Consts;
 
 type
   TBCEditorLeftMargin = class(TPersistent)
@@ -66,11 +66,7 @@ type
     type
       TPanel = class(TPersistent)
       type
-        TOption = (
-          bpoToggleBookmarkByClick,
-          bpoToggleMarkByClick
-        );
-        TOptions = set of TOption;
+        TOptions = set of TBCEditorLeftMarginBookMarkPanelOption;
 
       strict private
         FOnChange: TNotifyEvent;
@@ -116,12 +112,7 @@ type
 
     TLineNumbers = class(TPersistent)
     type
-      TOption = (
-        lnoIntens,
-        lnoLeadingZeros,
-        lnoAfterLastLine
-      );
-      TOptions = set of TOption;
+      TOptions = set of TBCEditorLeftMarginLineNumberOption;
     strict private
       FAutosizeDigitCount: Integer;
       FDigitCount: Integer;
@@ -137,7 +128,7 @@ type
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
-      procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+      procedure SetOption(const AOption: TBCEditorLeftMarginLineNumberOption; const AEnabled: Boolean);
       property AutosizeDigitCount: Integer read FAutosizeDigitCount write FAutosizeDigitCount;
     published
       property DigitCount: Integer read FDigitCount write SetDigitCount default 4;
@@ -166,18 +157,16 @@ type
     end;
 
     TBorder = class(TPersistent)
-    type
-      TStyle = (mbsNone, mbsMiddle, mbsRight);
     strict private
       FOnChange: TNotifyEvent;
-      FStyle: TStyle;
+      FStyle: TBCEditorLeftMarginBorderStyle;
       procedure DoChange;
-      procedure SetStyle(const AValue: TStyle);
+      procedure SetStyle(const AValue: TBCEditorLeftMarginBorderStyle);
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
-      property Style: TStyle read FStyle write SetStyle default mbsNone;
+      property Style: TBCEditorLeftMarginBorderStyle read FStyle write SetStyle default mbsNone;
       property OnChange: TNotifyEvent read FOnChange write FOnChange;
     end;
 
@@ -478,7 +467,7 @@ begin
   end;
 end;
 
-procedure TBCEditorLeftMargin.TLineNumbers.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorLeftMargin.TLineNumbers.SetOption(const AOption: TBCEditorLeftMarginLineNumberOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
@@ -594,7 +583,7 @@ begin
     FOnChange(Self);
 end;
 
-procedure TBCEditorLeftMargin.TBorder.SetStyle(const AValue: TStyle);
+procedure TBCEditorLeftMargin.TBorder.SetStyle(const AValue: TBCEditorLeftMarginBorderStyle);
 begin
   FStyle := AValue;
   DoChange

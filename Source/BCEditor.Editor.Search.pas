@@ -10,35 +10,13 @@ uses
 type
   TBCEditorSearch = class(TPersistent)
   type
-    TChanges = (
-      scRefresh,
-      scSearch,
-      scEngineUpdate,
-      scInSelectionActive
-    );
-    TChangeEvent = procedure(Event: TChanges) of object;
-    TEngine = (
-      seNormal,
-      seRegularExpression,
-      seWildcard
-    );
+    TChangeEvent = procedure(Event: TBCEditorSearchChanges) of object;
     PItem = ^TItem;
     TItem = record
       BeginTextPosition: TBCEditorTextPosition;
       EndTextPosition: TBCEditorTextPosition;
     end;
-    TOption = (
-      soBeepIfStringNotFound,
-      soCaseSensitive,
-      soEntireScope,
-      soHighlightResults,
-      soSearchOnTyping,
-      soShowStringNotFound,
-      soShowSearchMatchNotFound,
-      soWholeWordsOnly,
-      soWrapAround
-    );
-    TOptions = set of TBCEditorSearch.TOption;
+    TOptions = set of TBCEditorSearchOption;
 
     THighlighter = class(TPersistent)
     type
@@ -80,7 +58,6 @@ type
 
     TMap = class(TPersistent)
     type
-      TAlign = (saLeft, saRight);
       TOption = (
         moShowActiveLine
       );
@@ -108,7 +85,7 @@ type
     strict private const
       DefaultOptions = [moShowActiveLine];
     strict private
-      FAlign: TAlign;
+      FAlign: TBCEditorSearchMapAlign;
       FColors: TColors;
       FCursor: TCursor;
       FOnChange: TChangeEvent;
@@ -116,7 +93,7 @@ type
       FVisible: Boolean;
       FWidth: Integer;
       procedure DoChange;
-      procedure SetAlign(const AValue: TAlign);
+      procedure SetAlign(const AValue: TBCEditorSearchMapAlign);
       procedure SetColors(const AValue: TColors);
       procedure SetOnChange(AValue: TChangeEvent);
       procedure SetOptions(const AValue: TBCEditorSearch.TMap.TOptions);
@@ -128,7 +105,7 @@ type
       procedure Assign(ASource: TPersistent); override;
       function GetWidth: Integer;
     published
-      property Align: TAlign read FAlign write SetAlign default saRight;
+      property Align: TBCEditorSearchMapAlign read FAlign write SetAlign default saRight;
       property Colors: TColors read FColors write SetColors;
       property Cursor: TCursor read FCursor write FCursor default crArrow;
       property Options: TBCEditorSearch.TMap.TOptions read FOptions write SetOptions default DefaultOptions;
@@ -161,7 +138,7 @@ type
     DefaultOptions = [soHighlightResults, soSearchOnTyping, soBeepIfStringNotFound, soShowSearchMatchNotFound];
   strict private
     FEnabled: Boolean;
-    FEngine: TEngine;
+    FEngine: TBCEditorSearchEngine;
     FHighlighter: THighlighter;
     FInSelection: TInSelection;
     FLines: TList;
@@ -172,7 +149,7 @@ type
     FVisible: Boolean;
     procedure DoChange;
     procedure SetEnabled(const AValue: Boolean);
-    procedure SetEngine(const AValue: TEngine);
+    procedure SetEngine(const AValue: TBCEditorSearchEngine);
     procedure SetHighlighter(const AValue: THighlighter);
     procedure SetInSelection(const AValue: TInSelection);
     procedure SetMap(const AValue: TMap);
@@ -185,11 +162,11 @@ type
     procedure ClearLines;
     function GetNextSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
     function GetPreviousSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorSearchOption; const AEnabled: Boolean);
     property Visible: Boolean read FVisible write FVisible;
   published
     property Enabled: Boolean read FEnabled write SetEnabled default True;
-    property Engine: TEngine read FEngine write SetEngine default seNormal;
+    property Engine: TBCEditorSearchEngine read FEngine write SetEngine default seNormal;
     property Highlighter: THighlighter read FHighlighter write SetHighlighter;
     property InSelection: TInSelection read FInSelection write SetInSelection;
     property Lines: TList read FLines write FLines;
@@ -413,7 +390,7 @@ begin
     Result := 0;
 end;
 
-procedure TBCEditorSearch.TMap.SetAlign(const AValue: TAlign);
+procedure TBCEditorSearch.TMap.SetAlign(const AValue: TBCEditorSearchMapAlign);
 begin
   if FAlign <> AValue then
   begin
@@ -701,7 +678,7 @@ begin
   end;
 end;
 
-procedure TBCEditorSearch.SetEngine(const AValue: TEngine);
+procedure TBCEditorSearch.SetEngine(const AValue: TBCEditorSearchEngine);
 begin
   if FEngine <> AValue then
   begin
@@ -734,7 +711,7 @@ begin
   FInSelection.OnChange := FOnChange;
 end;
 
-procedure TBCEditorSearch.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorSearch.SetOption(const AOption: TBCEditorSearchOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

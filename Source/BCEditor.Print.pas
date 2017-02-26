@@ -287,7 +287,7 @@ type
     FPrinting: Boolean;
     FSelectionAvailable: Boolean;
     FSelectedOnly: Boolean;
-    FSelectionMode: TBCEditorSelection.TMode;
+    FSelectionMode: TBCEditorSelectionMode;
     FTabWidth: Integer;
     FTitle: string;
     FWrap: Boolean;

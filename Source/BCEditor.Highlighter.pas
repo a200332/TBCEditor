@@ -34,14 +34,6 @@ type
       CloseToken: string;
     end;
 
-    TMatchingTokenResult = (
-      trCloseAndOpenTokenFound,
-      trCloseTokenFound,
-      trNotFound,
-      trOpenTokenFound,
-      trOpenAndCloseTokenFound
-    );
-
     PElement = ^TElement;
     TElement = record
       Background: TColor;
@@ -49,29 +41,6 @@ type
       Name: string;
       FontStyles: TFontStyles;
     end;
-
-    TTokenType = (
-      ttUnspecified,
-      ttAddress,
-      ttAssemblerComment,
-      ttAssemblerReservedWord,
-      ttAttribute,
-      ttBlockComment,
-      ttCharacter,
-      ttDirective,
-      ttHexNumber,
-      ttHighlightedBlock,
-      ttHighlightedBlockSymbol,
-      ttLineComment,
-      ttMailtoLink,
-      ttMethod,
-      ttMethodName,
-      ttNumber,
-      ttReservedWord,
-      ttString,
-      ttSymbol,
-      ttWebLink
-    );
 
     TInfo = class
       Author: record
@@ -149,9 +118,9 @@ type
 
     TAbstractRule = class(TObject)
     strict private
-      FTokenType: TTokenType;
+      FTokenType: TBCEditorRangeType;
     public
-      property TokenType: TTokenType read FTokenType write FTokenType;
+      property TokenType: TBCEditorRangeType read FTokenType write FTokenType;
     end;
 
     TAbstractToken = class(TObject)
@@ -479,7 +448,7 @@ type
     function GetCurrentRangeAttribute: TAttribute;
     function GetEndOfLine: Boolean;
     function GetTokenAttribute: TAttribute;
-    function GetTokenKind: TTokenType;
+    function GetTokenKind: TBCEditorRangeType;
     function GetTokenLength: Integer;
     function GetTokenPosition: Integer;
     procedure AddKeyChar(AKeyCharType: TBCEditorKeyCharType; AChar: Char);
@@ -1724,15 +1693,15 @@ begin
     Result := ritMultiLineString
 end;
 
-function StrToRangeType(const AString: string): TBCEditorHighlighter.TTokenType;
+function StrToRangeType(const AString: string): TBCEditorRangeType;
 var
   LIndex: Integer;
 begin
-  LIndex := GetEnumValue(TypeInfo(TBCEditorHighlighter.TTokenType), 'tt' + AString);
+  LIndex := GetEnumValue(TypeInfo(TBCEditorRangeType), 'tt' + AString);
   if LIndex = -1 then
     Result := ttUnspecified
   else
-    Result := TBCEditorHighlighter.TTokenType(LIndex);
+    Result := TBCEditorRangeType(LIndex);
 end;
 
 constructor TBCEditorHighlighter.TImportJSON.Create(AHighlighter: TBCEditorHighlighter);
@@ -2748,11 +2717,11 @@ begin
   MainRules.Reset;
 end;
 
-function TBCEditorHighlighter.GetTokenKind: TTokenType;
+function TBCEditorHighlighter.GetTokenKind: TBCEditorRangeType;
 var
   LIndex: Integer;
   LToken: string;
-  LTokenType: TTokenType;
+  LTokenType: TBCEditorRangeType;
   LCurrentRangeKeyList: TKeyList;
 begin
   LTokenType := FCurrentRange.TokenType;

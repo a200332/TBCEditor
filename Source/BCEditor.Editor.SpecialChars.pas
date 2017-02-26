@@ -4,15 +4,13 @@ interface {********************************************************************}
 
 uses
   Classes,
-  Graphics;
+  Graphics,
+  BCEditor.Types;
 
 type
   TBCEditorSpecialChars = class(TPersistent)
   type
-
-    TOption = (scoTextColor, scoMiddleColor, scoShowOnlyInSelection);
-    TOptions = set of TOption;
-    TStyle = (scsDot, scsSolid);
+    TOptions = set of TBCEditorSpecialCharsOption;
 
     TSelection = class(TPersistent)
     strict private
@@ -32,23 +30,21 @@ type
     end;
 
     TEndOfLine = class(TPersistent)
-    type
-      TStyle = (eolArrow, eolEnter, eolPilcrow);
     strict private
       FColor: TColor;
       FOnChange: TNotifyEvent;
-      FStyle: TEndOfLine.TStyle;
+      FStyle: TBCEditorSpecialCharsEndOfLineStyle;
       FVisible: Boolean;
       procedure DoChange;
       procedure SetColor(const AValue: TColor);
-      procedure SetStyle(const AValue: TEndOfLine.TStyle);
+      procedure SetStyle(const AValue: TBCEditorSpecialCharsEndOfLineStyle);
       procedure SetVisible(const AValue: Boolean);
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
       property Color: TColor read FColor write SetColor default clBlack;
-      property Style: TEndOfLine.TStyle read FStyle write SetStyle default eolArrow;
+      property Style: TBCEditorSpecialCharsEndOfLineStyle read FStyle write SetStyle default eolArrow;
       property Visible: Boolean read FVisible write SetVisible default False;
       property OnChange: TNotifyEvent read FOnChange write FOnChange;
     end;
@@ -59,7 +55,7 @@ type
     FOnChange: TNotifyEvent;
     FOptions: TOptions;
     FSelection: TSelection;
-    FStyle: TStyle;
+    FStyle: TBCEditorSpecialCharsStyle;
     FVisible: Boolean;
     procedure DoChange;
     procedure SetColor(const AValue: TColor);
@@ -67,19 +63,19 @@ type
     procedure SetOnChange(const AValue: TNotifyEvent);
     procedure SetOptions(AValue: TOptions);
     procedure SetSelection(const AValue: TSelection);
-    procedure SetStyle(const AValue: TStyle);
+    procedure SetStyle(const AValue: TBCEditorSpecialCharsStyle);
     procedure SetVisible(const AValue: Boolean);
   public
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorSpecialCharsOption; const AEnabled: Boolean);
   published
     property Color: TColor read FColor write SetColor default clBlack;
     property EndOfLine: TBCEditorSpecialChars.TEndOfLine read FEndOfLine write SetEndOfLine;
     property Options: TOptions read FOptions write SetOptions default [scoMiddleColor];
     property Selection: TSelection read FSelection write SetSelection;
-    property Style: TStyle read FStyle write SetStyle;
+    property Style: TBCEditorSpecialCharsStyle read FStyle write SetStyle;
     property Visible: Boolean read FVisible write SetVisible default False;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
@@ -173,7 +169,7 @@ begin
   end;
 end;
 
-procedure TBCEditorSpecialChars.TEndOfLine.SetStyle(const AValue: TEndOfLine.TStyle);
+procedure TBCEditorSpecialChars.TEndOfLine.SetStyle(const AValue: TBCEditorSpecialCharsEndOfLineStyle);
 begin
   if FStyle <> AValue then
   begin
@@ -254,7 +250,7 @@ begin
   FSelection.OnChange := FOnChange;
 end;
 
-procedure TBCEditorSpecialChars.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorSpecialChars.SetOption(const AOption: TBCEditorSpecialCharsOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
@@ -280,7 +276,7 @@ begin
   FSelection.Assign(AValue);
 end;
 
-procedure TBCEditorSpecialChars.SetStyle(const AValue: TStyle);
+procedure TBCEditorSpecialChars.SetStyle(const AValue: TBCEditorSpecialCharsStyle);
 begin
   if FStyle <> AValue then
   begin

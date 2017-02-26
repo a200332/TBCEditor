@@ -10,12 +10,7 @@ uses
 type
   TBCEditorRightMargin = class(TPersistent)
   type
-    TOption = (
-      rmoAutoLinebreak,
-      rmoMouseMove,
-      rmoShowMovingHint
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorRightMarginOption;
 
     TColors = class(TPersistent)
     strict private
@@ -52,7 +47,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorRightMarginOption; const AEnabled: Boolean);
     property MouseOver: Boolean read FMouseOver write FMouseOver;
     property Moving: Boolean read FMoving write FMoving;
   published
@@ -167,7 +162,7 @@ begin
   FColors.OnChange := AValue;
 end;
 
-procedure TBCEditorRightMargin.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorRightMargin.SetOption(const AOption: TBCEditorRightMarginOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

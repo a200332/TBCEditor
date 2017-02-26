@@ -5,18 +5,12 @@ interface {********************************************************************}
 uses
   Classes,
   Graphics,
-  BCEditor.Consts;
+  BCEditor.Types, BCEditor.Consts;
 
 type
   TBCEditorMatchingPair = class(TPersistent)
   type
-    TOption = (
-      mpoHighlightAfterToken,
-      mpoHighlightUnmatched,
-      mpoUnderline,
-      mpoUseMatchedColor
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorMatchingPairOption;
 
     TColors = class(TPersistent)
     strict private
@@ -43,7 +37,7 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorMatchingPairOption; const AEnabled: Boolean);
   published
     property Colors: TColors read FColors write SetColors;
     property Enabled: Boolean read FEnabled write FEnabled;
@@ -110,7 +104,7 @@ begin
   FColors.Assign(AValue);
 end;
 
-procedure TBCEditorMatchingPair.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorMatchingPair.SetOption(const AOption: TBCEditorMatchingPairOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

@@ -10,10 +10,7 @@ uses
 type
   TBCEditorTokenInfo = class(TPersistent)
   type
-    TOption = (
-      tioAutoSize
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorTokenInfoOption;
 
     TTitle = class(TPersistent)
     type

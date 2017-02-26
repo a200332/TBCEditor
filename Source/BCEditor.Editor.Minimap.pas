@@ -10,14 +10,7 @@ uses
 type
   TBCEditorMinimap = class(TPersistent)
   type
-    TAlign = (maLeft, maRight);
-    TOption = (
-      moShowBookmarks,
-      moShowIndentGuides,
-      moShowSearchResults,
-      moShowSpecialChars
-    );
-    TOptions = set of TOption;
+    TOptions = set of TBCEditorMinimapOption;
 
     TColors = class(TPersistent)
     strict private
@@ -41,8 +34,7 @@ type
 
     TIndicator = class(TPersistent)
     type
-      TOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
-      TOptions = set of TBCEditorMinimap.TIndicator.TOption;
+      TOptions = set of TBCEditorMinimapIndicatorOption;
     strict private
       FAlphaBlending: Byte;
       FOnChange: TNotifyEvent;
@@ -52,7 +44,7 @@ type
     public
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
-      procedure SetOption(const AOption: TBCEditorMinimap.TIndicator.TOption; const AEnabled: Boolean);
+      procedure SetOption(const AOption: TBCEditorMinimapIndicatorOption; const AEnabled: Boolean);
     published
       property AlphaBlending: Byte read FAlphaBlending write SetAlphaBlending default 96;
       property Options: TBCEditorMinimap.TIndicator.TOptions read FOptions write FOptions default [];
@@ -60,7 +52,7 @@ type
     end;
 
   strict private
-    FAlign: TAlign;
+    FAlign: TBCEditorMinimapAlign;
     FCharHeight: Integer;
     FClicked: Boolean;
     FColors: TBCEditorMinimap.TColors;
@@ -75,7 +67,7 @@ type
     FVisibleLines: Integer;
     FWidth: Integer;
     procedure DoChange;
-    procedure SetAlign(const AValue: TAlign);
+    procedure SetAlign(const AValue: TBCEditorMinimapAlign);
     procedure SetColors(const AValue: TColors);
     procedure SetFont(AValue: TFont);
     procedure SetOnChange(AValue: TNotifyEvent);
@@ -86,14 +78,14 @@ type
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
     function GetWidth: Integer;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorMinimapOption; const AEnabled: Boolean);
     property CharHeight: Integer read FCharHeight write FCharHeight;
     property Clicked: Boolean read FClicked write FClicked;
     property Dragging: Boolean read FDragging write FDragging;
     property TopLine: Integer read FTopLine write FTopLine default 1;
     property VisibleLines: Integer read FVisibleLines write FVisibleLines;
   published
-    property Align: TAlign read FAlign write SetAlign default maRight;
+    property Align: TBCEditorMinimapAlign read FAlign write SetAlign default maRight;
     property Colors: TBCEditorMinimap.TColors read FColors write SetColors;
     property Cursor: TCursor read FCursor write FCursor default crArrow;
     property Font: TFont read FFont write SetFont;
@@ -205,7 +197,7 @@ begin
   end;
 end;
 
-procedure TBCEditorMinimap.TIndicator.SetOption(const AOption: TBCEditorMinimap.TIndicator.TOption; const AEnabled: Boolean);
+procedure TBCEditorMinimap.TIndicator.SetOption(const AOption: TBCEditorMinimapIndicatorOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
@@ -281,7 +273,7 @@ begin
     Result := 0;
 end;
 
-procedure TBCEditorMinimap.SetAlign(const AValue: TAlign);
+procedure TBCEditorMinimap.SetAlign(const AValue: TBCEditorMinimapAlign);
 begin
   if FAlign <> AValue then
   begin
@@ -308,7 +300,7 @@ begin
   FIndicator.OnChange := AValue;
 end;
 
-procedure TBCEditorMinimap.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorMinimap.SetOption(const AOption: TBCEditorMinimapOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)

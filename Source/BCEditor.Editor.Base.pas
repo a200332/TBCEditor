@@ -46,7 +46,7 @@ type
     FCompletionProposal: TBCEditorCompletionProposal;
     FCompletionProposalPopupWindow: TBCEditorCompletionProposalPopupWindow;
     FCompletionProposalTimer: TTimer;
-    FCurrentMatchingPair: TBCEditorHighlighter.TMatchingTokenResult;
+    FCurrentMatchingPair: TBCEditorMatchingTokenResult;
     FCurrentMatchingPairMatch: TBCEditorHighlighter.TMatchingPairMatch;
     FDirectories: TBCEditorDirectories;
     FDisplayCaretX: Integer;
@@ -166,7 +166,7 @@ type
     FResetLineNumbersCache: Boolean;
     FRightMargin: TBCEditorRightMargin;
     FRightMarginMovePosition: Integer;
-    FSaveSelectionMode: TBCEditorSelection.TMode;
+    FSaveSelectionMode: TBCEditorSelectionMode;
     FScroll: TBCEditorScroll;
     FScrollDeltaX: Integer;
     FScrollDeltaY: Integer;
@@ -205,11 +205,11 @@ type
     FWordWrapLineLengths: array of Integer;
     procedure ActiveLineChanged(ASender: TObject);
     procedure AddIndent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-      const Ident: string; const SelectionMode: TBCEditorSelection.TMode);
+      const Ident: string; const SelectionMode: TBCEditorSelectionMode);
     procedure AfterSetText(ASender: TObject);
     function AllWhiteUpToTextPosition(const ATextPosition: TBCEditorTextPosition; const ALine: string; const ALength: Integer): Boolean;
     function AreTextPositionsEqual(const ATextPosition1: TBCEditorTextPosition; const ATextPosition2: TBCEditorTextPosition): Boolean;
-    procedure AssignSearchEngine(const AEngine: TBCEditorSearch.TEngine);
+    procedure AssignSearchEngine(const AEngine: TBCEditorSearchEngine);
     procedure BeforeSetText(ASender: TObject);
     procedure BookmarkListChange(ASender: TObject);
     procedure CaretChanged(ASender: TObject);
@@ -221,7 +221,7 @@ type
     function CodeFoldingFoldRangeForLineTo(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
     function CodeFoldingLineInsideRange(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
     procedure CodeFoldingLinesDeleted(const AFirstLine: Integer; const ACount: Integer);
-    procedure CodeFoldingOnChange(AEvent: TBCEditorCodeFolding.TChanges);
+    procedure CodeFoldingOnChange(AEvent: TBCEditorCodeFoldingChanges);
     function CodeFoldingRangeForLine(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
     procedure CodeFoldingResetCaches;
     function CodeFoldingTreeEndForLine(const ALine: Integer): Boolean;
@@ -260,7 +260,7 @@ type
     function DoSearchReplace(const Action: TSearchReplace): Boolean;
     procedure DoSearchReplaceExecute(Sender: TObject);
     procedure DoSelectedText(const AValue: string); overload;
-    procedure DoSelectedText(const APasteMode: TBCEditorSelection.TMode; const AValue: PChar; const AAddToUndoList: Boolean;
+    procedure DoSelectedText(const APasteMode: TBCEditorSelectionMode; const AValue: PChar; const AAddToUndoList: Boolean;
       const ATextCaretPosition: TBCEditorTextPosition; const AChangeBlockNumber: Integer = 0); overload;
     procedure DoSetBookmark(const ACommand: TBCEditorCommand; AData: Pointer);
     procedure DoShiftTabKey;
@@ -292,7 +292,7 @@ type
     function GetDisplayTextLineNumber(const ADisplayLineNumber: Integer): Integer;
     function GetEndOfLine(const ALine: PChar): PChar;
     function GetHighlighterAttributeAtRowColumn(const ATextPosition: TBCEditorTextPosition; var AToken: string;
-      var ATokenType: TBCEditorHighlighter.TTokenType; var AStart: Integer; var AHighlighterAttribute: TBCEditorHighlighter.TAttribute): Boolean;
+      var ATokenType: TBCEditorRangeType; var AStart: Integer; var AHighlighterAttribute: TBCEditorHighlighter.TAttribute): Boolean;
     function GetHookedCommandHandlersCount: Integer;
     function GetHorizontalScrollMax: Integer;
     function GetLeadingExpandedLength(const AStr: string; const ABorder: Integer = 0): Integer;
@@ -300,7 +300,7 @@ type
     function GetLineHeight: Integer;
     function GetLineIndentLevel(const ALine: Integer): Integer;
     function GetMarkBackgroundColor(const ALine: Integer): TColor;
-    function GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition; var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorHighlighter.TMatchingTokenResult;
+    function GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition; var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorMatchingTokenResult;
     procedure GetMinimapLeftRight(var ALeft: Integer; var ARight: Integer);
     function GetMouseMoveScrollCursorIndex: Integer;
     function GetMouseMoveScrollCursors(const AIndex: Integer): HCursor;
@@ -346,19 +346,19 @@ type
     function NextWordPosition(const ATextPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
     procedure OnCodeFoldingDelayTimer(ASender: TObject);
     procedure OnTokenInfoTimer(ASender: TObject);
-    procedure OpenLink(const AURI: string; ARangeType: TBCEditorHighlighter.TTokenType);
+    procedure OpenLink(const AURI: string; ARangeType: TBCEditorRangeType);
     function PreviousWordPosition: TBCEditorTextPosition; overload;
     function PreviousWordPosition(const ATextPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
     procedure RemoveDuplicateMultiCarets;
     procedure RemoveIndent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-      const Ident: string; const SelectionMode: TBCEditorSelection.TMode);
-    procedure ReplaceChanged(AEvent: TBCEditorReplace.TChanges);
+      const Ident: string; const SelectionMode: TBCEditorSelectionMode);
+    procedure ReplaceChanged(AEvent: TBCEditorReplaceChanges);
     function RescanHighlighterRangesFrom(const AIndex: Integer): Integer;
     procedure RightMarginChanged(ASender: TObject);
     procedure ScrollChanged(ASender: TObject);
     procedure ScrollTimerHandler(ASender: TObject);
     procedure SearchAll(const ASearchText: string = '');
-    procedure SearchChanged(AEvent: TBCEditorSearch.TChanges);
+    procedure SearchChanged(AEvent: TBCEditorSearchChanges);
     procedure SelectionChanged(ASender: TObject);
     procedure SetActiveLine(const AValue: TBCEditorActiveLine);
     procedure SetBackgroundColor(const AValue: TColor);
@@ -467,7 +467,7 @@ type
     procedure DoOnMinimapClick(AButton: TMouseButton; X, Y: Integer);
     procedure DoOnPaint;
     procedure DoOnProcessCommand(var ACommand: TBCEditorCommand; var AChar: Char; AData: Pointer); virtual;
-    function DoOnReplaceText(const ASearch, AReplace: string; ALine, AColumn: Integer; DeleteLine: Boolean): TBCEditorReplace.TAction;
+    function DoOnReplaceText(const ASearch, AReplace: string; ALine, AColumn: Integer; DeleteLine: Boolean): TBCEditorReplaceAction;
     procedure DoOnSearchMapClick(AButton: TMouseButton; X, Y: Integer);
     function DoSearchMatchNotFoundWraparoundDialog: Boolean; virtual;
     procedure DoSearchStringNotFoundDialog; virtual;
@@ -632,7 +632,7 @@ type
     procedure SetMark(const AIndex: Integer; const ATextPosition: TBCEditorTextPosition; const AImageIndex: Integer;
       const AColor: TColor = clNone);
     procedure SetOption(const AOption: TBCEditorOption; const AEnabled: Boolean);
-    procedure SetUndoOption(const AOption: TBCEditorUndoList.TOption; const AEnabled: Boolean);
+    procedure SetUndoOption(const AOption: TBCEditorUndoOption; const AEnabled: Boolean);
     procedure Sort(const ASortOrder: TBCEditorSortOrder = soAsc; const ACaseSensitive: Boolean = False);
     function SplitTextIntoWords(AStringList: TStrings; const ACaseSensitive: Boolean): string;
     function TextToDisplayPosition(const ATextPosition: TBCEditorTextPosition): TBCEditorDisplayPosition;
@@ -1137,7 +1137,7 @@ begin
 end;
 
 procedure TBCBaseEditor.AddIndent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-  const Ident: string; const SelectionMode: TBCEditorSelection.TMode);
+  const Ident: string; const SelectionMode: TBCEditorSelectionMode);
 var
   EndLine: Integer;
   I: Integer;
@@ -1301,7 +1301,7 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCBaseEditor.AssignSearchEngine(const AEngine: TBCEditorSearch.TEngine);
+procedure TBCBaseEditor.AssignSearchEngine(const AEngine: TBCEditorSearchEngine);
 begin
   if Assigned(FSearchEngine) then
   begin
@@ -1610,7 +1610,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.CodeFoldingOnChange(AEvent: TBCEditorCodeFolding.TChanges);
+procedure TBCBaseEditor.CodeFoldingOnChange(AEvent: TBCEditorCodeFoldingChanges);
 begin
   if AEvent = fcEnabled then
   begin
@@ -2312,7 +2312,7 @@ var
   LTextCaretPosition: TBCEditorTextPosition;
   LWordPosition: TBCEditorTextPosition;
   LHelper: string;
-  LOldSelectionMode: TBCEditorSelection.TMode;
+  LOldSelectionMode: TBCEditorSelectionMode;
 begin
   LTextCaretPosition := TextCaretPosition;
   if ACommand = ecDeleteLastWord then
@@ -2968,7 +2968,7 @@ procedure TBCBaseEditor.DoBlockIndent();
 var
   Indent: string;
   LTextCaretPosition: TBCEditorTextPosition;
-  LSelectionMode: TBCEditorSelection.TMode;
+  LSelectionMode: TBCEditorSelectionMode;
   LSelectionBeginPosition: TBCEditorTextPosition;
   LSelectionEndPosition: TBCEditorTextPosition;
 begin
@@ -3019,7 +3019,7 @@ var
   LIndex, LStringToDeleteIndex: Integer;
   LLength, LCaretPositionX, LDeleteIndex, LDeletionLength, LFirstIndent, LLastIndent, LLastLine: Integer;
   LLineText: string;
-  LOldSelectionMode: TBCEditorSelection.TMode;
+  LOldSelectionMode: TBCEditorSelectionMode;
   LSomethingToDelete: Boolean;
 
   function GetDeletionLength: Integer;
@@ -3514,7 +3514,7 @@ var
   LTextCaretPosition: TBCEditorTextPosition;
   LStartPositionOfBlock: TBCEditorTextPosition;
   LEndPositionOfBlock: TBCEditorTextPosition;
-  LPasteMode: TBCEditorSelection.TMode;
+  LPasteMode: TBCEditorSelectionMode;
   LLength, LCharCount: Integer;
   LSpaces: string;
 begin
@@ -4106,7 +4106,7 @@ begin
     FOnProcessUserCommand(Self, ACommand, AChar, AData);
 end;
 
-function TBCBaseEditor.DoOnReplaceText(const ASearch, AReplace: string; ALine, AColumn: Integer; DeleteLine: Boolean): TBCEditorReplace.TAction;
+function TBCBaseEditor.DoOnReplaceText(const ASearch, AReplace: string; ALine, AColumn: Integer; DeleteLine: Boolean): TBCEditorReplaceAction;
 begin
   Result := raCancel;
   if Assigned(FOnReplaceText) then
@@ -4310,7 +4310,7 @@ begin
   DoSelectedText(FSelection.ActiveMode, PChar(AValue), True, TextCaretPosition);
 end;
 
-procedure TBCBaseEditor.DoSelectedText(const APasteMode: TBCEditorSelection.TMode; const AValue: PChar; const AAddToUndoList: Boolean;
+procedure TBCBaseEditor.DoSelectedText(const APasteMode: TBCEditorSelectionMode; const AValue: PChar; const AAddToUndoList: Boolean;
   const ATextCaretPosition: TBCEditorTextPosition; const AChangeBlockNumber: Integer = 0);
 var
   LBeginTextPosition, LEndTextPosition: TBCEditorTextPosition;
@@ -6073,7 +6073,7 @@ begin
 end;
 
 function TBCBaseEditor.GetHighlighterAttributeAtRowColumn(const ATextPosition: TBCEditorTextPosition;
-  var AToken: string; var ATokenType: TBCEditorHighlighter.TTokenType; var AStart: Integer;
+  var AToken: string; var ATokenType: TBCEditorRangeType; var AStart: Integer;
   var AHighlighterAttribute: TBCEditorHighlighter.TAttribute): Boolean;
 var
   LPositionX, LPositionY: Integer;
@@ -6228,7 +6228,7 @@ begin
 end;
 
 function TBCBaseEditor.GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition;
-  var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorHighlighter.TMatchingTokenResult;
+  var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorMatchingTokenResult;
 var
   LIndex, LCount: Integer;
   LTokenMatch: TBCEditorHighlighter.PMatchingPairToken;
@@ -6780,7 +6780,7 @@ end;
 
 function TBCBaseEditor.GetTextBetween(const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition): string;
 var
-  LSelectionMode: TBCEditorSelection.TMode;
+  LSelectionMode: TBCEditorSelectionMode;
 begin
   LSelectionMode := FSelection.Mode;
   FSelection.Mode := smNormal;
@@ -7529,7 +7529,7 @@ var
   LData: Pointer;
   LChar: Char;
   LEditorCommand: TBCEditorCommand;
-  LRangeType: TBCEditorHighlighter.TTokenType;
+  LRangeType: TBCEditorRangeType;
   LStart: Integer;
   LToken: string;
   LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
@@ -7723,7 +7723,7 @@ end;
 
 procedure TBCBaseEditor.LinesChanged(ASender: TObject);
 var
-  LOldMode: TBCEditorSelection.TMode;
+  LOldMode: TBCEditorSelectionMode;
 begin
   Exclude(FStateFlags, sfLinesChanging);
   if Visible and HandleAllocated then
@@ -8401,7 +8401,7 @@ end;
 
 procedure TBCBaseEditor.MouseUp(AButton: TMouseButton; AShift: TShiftState; X, Y: Integer);
 var
-  LRangeType: TBCEditorHighlighter.TTokenType;
+  LRangeType: TBCEditorRangeType;
   LStart: Integer;
   LToken: string;
   LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
@@ -8869,7 +8869,7 @@ begin
   end
 end;
 
-procedure TBCBaseEditor.OpenLink(const AURI: string; ARangeType: TBCEditorHighlighter.TTokenType);
+procedure TBCBaseEditor.OpenLink(const AURI: string; ARangeType: TBCEditorRangeType);
 var
   LURI: string;
 begin
@@ -9038,7 +9038,7 @@ end;
 procedure TBCBaseEditor.PaintCaretBlock(ADisplayCaretPosition: TBCEditorDisplayPosition);
 var
   LPoint: TPoint;
-  LCaretStyle: TBCEditorCaret.TStyles.TStyle;
+  LCaretStyle: TBCEditorCaretStyle;
   LCaretWidth, LCaretHeight, X, Y: Integer;
   LTempBitmap: Graphics.TBitmap;
   LBackgroundColor, LForegroundColor: TColor;
@@ -11859,7 +11859,7 @@ begin
 end;
 
 procedure TBCBaseEditor.RemoveIndent(const TextBeginPosition, TextEndPosition: TBCEditorTextPosition;
-  const Ident: string; const SelectionMode: TBCEditorSelection.TMode);
+  const Ident: string; const SelectionMode: TBCEditorSelectionMode);
 var
   EndLine: Integer;
   I: Integer;
@@ -11920,7 +11920,7 @@ begin
   FKeyboardHandler.RemoveMouseUpHandler(AHandler);
 end;
 
-procedure TBCBaseEditor.ReplaceChanged(AEvent: TBCEditorReplace.TChanges);
+procedure TBCBaseEditor.ReplaceChanged(AEvent: TBCEditorReplaceChanges);
 begin
   case AEvent of
     rcEngineUpdate:
@@ -11955,7 +11955,7 @@ var
   LPaintLocked: Boolean;
   LIsPrompt, LIsReplaceAll, LIsDeleteLine: Boolean;
   LFound: Boolean;
-  LActionReplace: TBCEditorReplace.TAction;
+  LActionReplace: TBCEditorReplaceAction;
   LTextPosition: TBCEditorTextPosition;
   LItemIndex: Integer;
   LSearchItem: TBCEditorSearch.PItem;
@@ -12155,7 +12155,7 @@ end;
 
 procedure TBCBaseEditor.ResetCaret;
 var
-  LCaretStyle: TBCEditorCaret.TStyles.TStyle;
+  LCaretStyle: TBCEditorCaretStyle;
   LWidth, LHeight: Integer;
 begin
   if FTextEntryMode = temInsert then
@@ -13111,7 +13111,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.SearchChanged(AEvent: TBCEditorSearch.TChanges);
+procedure TBCBaseEditor.SearchChanged(AEvent: TBCEditorSearchChanges);
 begin
   case AEvent of
     scEngineUpdate:
@@ -13248,7 +13248,7 @@ end;
 
 procedure TBCBaseEditor.SetCaretAndSelection(const ACaretPosition, ABlockBeginPosition, ABlockEndPosition: TBCEditorTextPosition);
 var
-  LOldSelectionMode: TBCEditorSelection.TMode;
+  LOldSelectionMode: TBCEditorSelectionMode;
 begin
   LOldSelectionMode := FSelection.ActiveMode;
   IncPaintLock;
@@ -13692,7 +13692,7 @@ end;
 procedure TBCBaseEditor.SetTextBetween(const ATextBeginPosition: TBCEditorTextPosition;
   const ATextEndPosition: TBCEditorTextPosition; const AValue: string);
 var
-  LSelectionMode: TBCEditorSelection.TMode;
+  LSelectionMode: TBCEditorSelectionMode;
 begin
   LSelectionMode := FSelection.Mode;
   FSelection.Mode := smNormal;
@@ -13775,7 +13775,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.SetUndoOption(const AOption: TBCEditorUndoList.TOption; const AEnabled: Boolean);
+procedure TBCBaseEditor.SetUndoOption(const AOption: TBCEditorUndoOption; const AEnabled: Boolean);
 begin
   if (AEnabled) then
     Include(FUndoOptions, AOption)
@@ -14783,7 +14783,7 @@ var
   LCaretTextPosition: TBCEditorTextPosition;
   LCaretPoint: TPoint;
   LCompositionForm: TCompositionForm;
-  LCaretStyle: TBCEditorCaret.TStyles.TStyle;
+  LCaretStyle: TBCEditorCaretStyle;
   LVisibleChars: Integer;
 begin
   if (PaintLock <> 0) or not (Focused or FAlwaysShowCaret) then

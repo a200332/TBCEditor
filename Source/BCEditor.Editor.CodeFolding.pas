@@ -13,22 +13,8 @@ type
     TAllRanges = class;
     TSkipRegions = class;
 
-    TOption = (
-      cfoAutoPadding,
-      cfoAutoWidth,
-      cfoFoldMultilineComments,
-      cfoHighlightFoldingLine,
-      cfoHighlightIndentGuides,
-      cfoHighlightMatchingPair,
-      cfoShowCollapsedLine,
-      cfoShowIndentGuides,
-      cfoShowTreeLine,
-      cfoUncollapseByHintClick
-    );
-    TOptions = set of TOption;
-    TMarkStyle = (msCircle, msSquare, msTriangle);
-    TChanges = (fcEnabled, fcRefresh, fcRescan);
-    TChangeEvent = procedure(Event: TChanges) of object;
+    TOptions = set of TBCEditorCodeFoldingOption;
+    TChangeEvent = procedure(Event: TBCEditorCodeFoldingChanges) of object;
 
     TColors = class(TPersistent)
     strict private
@@ -257,9 +243,7 @@ type
 
       TIndicator = class(TPersistent)
       type
-        TMarkStyle = (imsThreeDots, imsTriangle);
-        TOption = (hioShowBorder, hioShowMark);
-        TOptions = set of TBCEditorCodeFolding.THint.TIndicator.TOption;
+        TOptions = set of TBCEditorCodeFoldingHintIndicatorOption;
 
         TColors = class(TPersistent)
         strict private
@@ -290,7 +274,7 @@ type
       strict private
         FColors: TIndicator.TColors;
         FGlyph: TBCEditorGlyph;
-        FMarkStyle: TIndicator.TMarkStyle;
+        FMarkStyle: TBCEditorCodeFoldingHintIndicatorMarkStyle;
         FOptions: TBCEditorCodeFolding.THint.TIndicator.TOptions;
         FPadding: TPadding;
         FVisible: Boolean;
@@ -303,7 +287,7 @@ type
       published
         property Colors: TIndicator.TColors read FColors write FColors;
         property Glyph: TBCEditorGlyph read FGlyph write SetGlyph;
-        property MarkStyle: TIndicator.TMarkStyle read FMarkStyle write FMarkStyle default imsThreeDots;
+        property MarkStyle: TBCEditorCodeFoldingHintIndicatorMarkStyle read FMarkStyle write FMarkStyle default imsThreeDots;
         property Options: TBCEditorCodeFolding.THint.TIndicator.TOptions read FOptions write FOptions default DefaultOptions;
         property Padding: TPadding read FPadding write FPadding;
         property Visible: Boolean read FVisible write FVisible default True;
@@ -338,7 +322,7 @@ type
     FColors: TColors;
     FDelayInterval: Cardinal;
     FHint: THint;
-    FMarkStyle: TMarkStyle;
+    FMarkStyle: TBCEditorCodeFoldingMarkStyle;
     FMouseOverHint: Boolean;
     FOnChange: TChangeEvent;
     FOptions: TOptions;
@@ -348,7 +332,7 @@ type
     procedure DoChange;
     procedure SetColors(const AValue: TColors);
     procedure SetHint(AValue: THint);
-    procedure SetMarkStyle(const AValue: TMarkStyle);
+    procedure SetMarkStyle(const AValue: TBCEditorCodeFoldingMarkStyle);
     procedure SetOnChange(AValue: TChangeEvent);
     procedure SetOptions(AValue: TOptions);
     procedure SetPadding(const AValue: Integer);
@@ -359,13 +343,13 @@ type
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
     function GetWidth: Integer;
-    procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
+    procedure SetOption(const AOption: TBCEditorCodeFoldingOption; const AEnabled: Boolean);
     property MouseOverHint: Boolean read FMouseOverHint write FMouseOverHint;
   published
     property Colors: TColors read FColors write SetColors;
     property DelayInterval: Cardinal read FDelayInterval write FDelayInterval default 300;
     property Hint: THint read FHint write SetHint;
-    property MarkStyle: TMarkStyle read FMarkStyle write SetMarkStyle default msSquare;
+    property MarkStyle: TBCEditorCodeFoldingMarkStyle read FMarkStyle write SetMarkStyle default msSquare;
     property Options: TOptions read FOptions write SetOptions default DefaultOptions;
     property Padding: Integer read FPadding write SetPadding default 2;
     property Visible: Boolean read FVisible write SetVisible default False;
@@ -1025,7 +1009,7 @@ begin
   FHint.Assign(AValue);
 end;
 
-procedure TBCEditorCodeFolding.SetMarkStyle(const AValue: TMarkStyle);
+procedure TBCEditorCodeFolding.SetMarkStyle(const AValue: TBCEditorCodeFoldingMarkStyle);
 begin
   if FMarkStyle <> AValue then
   begin
@@ -1040,7 +1024,7 @@ begin
   FColors.OnChange := AValue;
 end;
 
-procedure TBCEditorCodeFolding.SetOption(const AOption: TOption; const AEnabled: Boolean);
+procedure TBCEditorCodeFolding.SetOption(const AOption: TBCEditorCodeFoldingOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
