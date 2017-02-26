@@ -4,18 +4,13 @@ interface
 
 uses
   Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, System.SysUtils,
-  BCEditor.Consts, BCEditor.Editor.CompletionProposal.Columns;
+  BCEditor.Consts;
 
 type
   TBCEditorArrayOfString = array of string;
   TBCEditorArrayOfSingle = array of Single;
 
   TBCEditorCharMethod = function(const AChar: Char): Boolean of object;
-
-  TBCEditorCompletionProposalEvent = procedure(Sender: TObject; AColumns: TBCEditorCompletionProposalColumns;
-    const AInput: string; var ACanExecute: Boolean) of object;
-  TBCEditorCompletionProposalSelectedEvent = procedure(Sender: TObject; var ASelectedItem: string) of object;
-  TBCEditorCompletionProposalValidateEvent = procedure(ASender: TObject; Shift: TShiftState; EndToken: Char) of object;
 
   TBCEditorDropFilesEvent = procedure(ASender: TObject; APos: TPoint; AFiles: TStrings) of object;
 
@@ -63,18 +58,6 @@ type
     seCaseSensitive
   );
   TBCEditorSyncEditOptions = set of TBCEditorSyncEditOption;
-
-  TBCEditorCompletionProposalOption = (
-    cpoAutoInvoke,
-    cpoAutoConstraints,
-    cpoAddHighlighterKeywords,
-    cpoCaseSensitive,
-    cpoFiltered,
-    cpoParseItemsFromText,
-    cpoResizeable,
-    cpoUseHighlighterColumnFont
-  );
-  TBCEditorCompletionProposalOptions = set of TBCEditorCompletionProposalOption;
 
   TBCEditorTextPosition = record
     Char: Integer;
@@ -138,29 +121,6 @@ type
 
   TBCEditorWordWrapWidth = (wwwPage, wwwRightMargin);
 
-  TBCEditorCodeFoldingMarkStyle = (msCircle, msSquare, msTriangle);
-  TBCEditorCodeFoldingHintIndicatorMarkStyle = (imsThreeDots, imsTriangle);
-  TBCEditorCodeFoldingChanges = (fcEnabled, fcRefresh, fcRescan);
-
-  TBCEditorCodeFoldingChangeEvent = procedure(Event: TBCEditorCodeFoldingChanges) of object;
-
-  TBCEditorCodeFoldingOption = (
-    cfoAutoPadding,
-    cfoAutoWidth,
-    cfoFoldMultilineComments,
-    cfoHighlightFoldingLine,
-    cfoHighlightIndentGuides,
-    cfoHighlightMatchingPair,
-    cfoShowCollapsedLine,
-    cfoShowIndentGuides,
-    cfoShowTreeLine,
-    cfoUncollapseByHintClick
-  );
-  TBCEditorCodeFoldingOptions = set of TBCEditorCodeFoldingOption;
-
-  TBCEditorCodeFoldingHintIndicatorOption = (hioShowBorder, hioShowMark);
-  TBCEditorCodeFoldingHintIndicatorOptions = set of TBCEditorCodeFoldingHintIndicatorOption;
-
   TBCEditorQuadColor = packed record
   case Boolean of
     True: (Blue, Green, Red, Alpha: Byte);
@@ -168,29 +128,6 @@ type
   end;
   PBCEditorQuadColor = ^TBCEditorQuadColor;
 
-  TBCEditorCodeFoldingHintIndicatorPadding = class(TPadding)
-  protected
-    class procedure InitDefaults(Margins: TMargins); override;
-  published
-    property Left default 0;
-    property Top default 1;
-    property Right default 0;
-    property Bottom default 1;
-  end;
-
 implementation
-
-{ TBCEditorCodeFoldingHintIndicatorPadding }
-
-class procedure TBCEditorCodeFoldingHintIndicatorPadding.InitDefaults(Margins: TMargins);
-begin
-  with Margins do
-  begin
-    Left := 0;
-    Right := 0;
-    Top := 1;
-    Bottom := 1;
-  end;
-end;
 
 end.

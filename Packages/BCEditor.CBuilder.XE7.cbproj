@@ -134,47 +134,14 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.pas">
             <BuildOrder>10</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Colors.pas">
-            <BuildOrder>12</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Regions.pas">
-            <BuildOrder>13</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Colors.pas">
-            <BuildOrder>14</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Hint.pas">
-            <BuildOrder>15</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.pas">
             <BuildOrder>16</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Ranges.pas">
-            <BuildOrder>17</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Colors.pas">
-            <BuildOrder>19</BuildOrder>
-        </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.items.pas">
-            <BuildOrder>20</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.pas">
-            <BuildOrder>20</BuildOrder>
-        </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Title.Colors.pas">
-            <BuildOrder>20</BuildOrder>
-        </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Columns.Title.pas">
-            <BuildOrder>20</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.PopupWindow.pas">
             <BuildOrder>21</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.pas">
             <BuildOrder>22</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.Trigger.pas">
-            <BuildOrder>23</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Directories.pas">
             <BuildOrder>25</BuildOrder>
@@ -220,9 +187,6 @@
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Selection.pas">
             <BuildOrder>55</BuildOrder>
-        </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.SkipRegions.pas">
-            <BuildOrder>56</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.SpecialChars.pas">
             <BuildOrder>58</BuildOrder>
@@ -294,12 +258,6 @@
             <BuildOrder>92</BuildOrder>
         </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Form.pas">
-            <BuildOrder>93</BuildOrder>
-        </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Indicator.Colors.pas">
-            <BuildOrder>93</BuildOrder>
-        </DelphiCompile>
-				<DelphiCompile Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Indicator.pas">
             <BuildOrder>93</BuildOrder>
         </DelphiCompile>
         <BuildConfiguration Include="Release">

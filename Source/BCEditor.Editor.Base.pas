@@ -5,12 +5,12 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.Classes, System.SysUtils, System.Contnrs, System.UITypes, Vcl.Forms, Vcl.StdActns,
   Vcl.Controls, Vcl.Graphics, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Dialogs, BCEditor.Consts, BCEditor.Editor.ActiveLine,
-  BCEditor.Editor.Marks, BCEditor.Editor.Caret, BCEditor.Editor.CodeFolding, BCEditor.Editor.CodeFolding.Regions,
-  BCEditor.Editor.CodeFolding.Ranges, BCEditor.Types, BCEditor.Editor.CompletionProposal,
+  BCEditor.Editor.Marks, BCEditor.Editor.Caret, BCEditor.Editor.CodeFolding,
+  BCEditor.Types, BCEditor.Editor.CompletionProposal,
   BCEditor.Editor.CompletionProposal.PopupWindow, BCEditor.Editor.Glyph, BCEditor.Editor.InternalImage,
   BCEditor.Editor.KeyCommands, BCEditor.Editor.LeftMargin, BCEditor.Editor.MatchingPair, BCEditor.Editor.Minimap,
   BCEditor.Editor.Replace, BCEditor.Editor.RightMargin, BCEditor.Editor.Scroll, BCEditor.Editor.Search,
-  BCEditor.Editor.Directories, BCEditor.Editor.Selection, BCEditor.Editor.SkipRegions, BCEditor.Editor.SpecialChars,
+  BCEditor.Editor.Directories, BCEditor.Editor.Selection, BCEditor.Editor.SpecialChars,
   BCEditor.Editor.Tabs, BCEditor.Editor.Undo, BCEditor.Editor.WordWrap,
   BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter,
   BCEditor.KeyboardHandler, BCEditor.Lines, BCEditor.Search, BCEditor.PaintHelper, BCEditor.Editor.SyncEdit,
@@ -21,10 +21,10 @@ type
   TBCBaseEditor = class(TCustomControl)
   strict private const
     UM_FREE_COMPLETIONPROPOSAL_POPUPWINDOW = WM_USER;
-    OptionsDefault = [eoAutoIndent, eoDragDropEditing];
+    DefaultOptions = [eoAutoIndent, eoDragDropEditing];
   strict private
     FActiveLine: TBCEditorActiveLine;
-    FAllCodeFoldingRanges: TBCEditorAllCodeFoldingRanges;
+    FAllCodeFoldingRanges: TBCEditorCodeFolding.TAllRanges;
     FAltEnabled: Boolean;
     FAlwaysShowCaret: Boolean;
     FAlwaysShowCaretBeforePopup: Boolean;
@@ -40,8 +40,8 @@ type
     FCodeFolding: TBCEditorCodeFolding;
     FCodeFoldingDelayTimer: TTimer;
     FCodeFoldingHintForm: TBCEditorCodeFoldingHintForm;
-    FCodeFoldingRangeFromLine: array of TBCEditorCodeFoldingRange;
-    FCodeFoldingRangeToLine: array of TBCEditorCodeFoldingRange;
+    FCodeFoldingRangeFromLine: array of TBCEditorCodeFolding.TRanges.TRange;
+    FCodeFoldingRangeToLine: array of TBCEditorCodeFolding.TRanges.TRange;
     FCodeFoldingTreeLine: array of Boolean;
     FCommandDrop: Boolean;
 {$if defined(USE_ALPHASKINS)}
@@ -58,7 +58,7 @@ type
     FEncoding: TEncoding;
     FFontDummy: TFont;
     FForegroundColor: TColor;
-    FHighlightedFoldRange: TBCEditorCodeFoldingRange;
+    FHighlightedFoldRange: TBCEditorCodeFolding.TRanges.TRange;
     FHighlighter: TBCEditorHighlighter;
     FHookedCommandHandlers: TObjectList;
     FHorizontalScrollPosition: Integer;
@@ -118,7 +118,7 @@ type
     FOnAfterLinePaint: TBCEditorLinePaintEvent;
     FOnBeforeMarkPanelPaint: TBCEditorMarkPanelPaintEvent;
     FOnBeforeMarkPlaced: TBCEditorMarkEvent;
-    FOnBeforeCompletionProposalExecute: TBCEditorCompletionProposalEvent;
+    FOnBeforeCompletionProposalExecute: TBCEditorCompletionProposal.TEvent;
     FOnBeforeDeleteMark: TBCEditorMarkEvent;
     FOnBeforeTokenInfoExecute: TBCEditorTokenInfoEvent;
     FOnMarkPanelLinePaint: TBCEditorMarkPanelLinePaintEvent;
@@ -136,7 +136,7 @@ type
     FOnContextHelp: TBCEditorContextHelpEvent;
     FOnCreateFileStream: TBCEditorCreateFileStreamEvent;
     FOnCompletionProposalCanceled: TNotifyEvent;
-    FOnCompletionProposalSelected: TBCEditorCompletionProposalSelectedEvent;
+    FOnCompletionProposalSelected: TBCEditorCompletionProposal.TSelectedEvent;
     FOnCustomLineColors: TBCEditorCustomLineColorsEvent;
     FOnCustomTokenAttribute: TBCEditorCustomTokenAttributeEvent;
     FOnDropFiles: TBCEditorDropFilesEvent;
@@ -209,10 +209,10 @@ type
     FWordWrapLineLengths: array of Integer;
     function AllWhiteUpToTextPosition(const ATextPosition: TBCEditorTextPosition; const ALine: string; const ALength: Integer): Boolean;
     function AreTextPositionsEqual(const ATextPosition1: TBCEditorTextPosition; const ATextPosition2: TBCEditorTextPosition): Boolean;
-    function CodeFoldingCollapsableFoldRangeForLine(const ALine: Integer): TBCEditorCodeFoldingRange;
-    function CodeFoldingFoldRangeForLineTo(const ALine: Integer): TBCEditorCodeFoldingRange;
-    function CodeFoldingLineInsideRange(const ALine: Integer): TBCEditorCodeFoldingRange;
-    function CodeFoldingRangeForLine(const ALine: Integer): TBCEditorCodeFoldingRange;
+    function CodeFoldingCollapsableFoldRangeForLine(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
+    function CodeFoldingFoldRangeForLineTo(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
+    function CodeFoldingLineInsideRange(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
+    function CodeFoldingRangeForLine(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
     function CodeFoldingTreeEndForLine(const ALine: Integer): Boolean;
     function CodeFoldingTreeLineForLine(const ALine: Integer): Boolean;
     function DoOnCodeFoldingHintClick(const APoint: TPoint): Boolean;
@@ -284,11 +284,11 @@ type
     procedure CaretChanged(ASender: TObject);
     procedure CheckIfAtMatchingKeywords;
     procedure ClearCodeFolding;
-    procedure CodeFoldingCollapse(AFoldRange: TBCEditorCodeFoldingRange);
+    procedure CodeFoldingCollapse(AFoldRange: TBCEditorCodeFolding.TRanges.TRange);
     procedure CodeFoldingLinesDeleted(const AFirstLine: Integer; const ACount: Integer);
-    procedure CodeFoldingOnChange(AEvent: TBCEditorCodeFoldingChanges);
+    procedure CodeFoldingOnChange(AEvent: TBCEditorCodeFolding.TChanges);
     procedure CodeFoldingResetCaches;
-    procedure CodeFoldingExpand(AFoldRange: TBCEditorCodeFoldingRange);
+    procedure CodeFoldingExpand(AFoldRange: TBCEditorCodeFolding.TRanges.TRange);
     procedure CompletionProposalTimerHandler(ASender: TObject);
     procedure ComputeScroll(const APoint: TPoint);
     procedure CreateLineNumbersCache(const AResetCache: Boolean = False);
@@ -418,7 +418,7 @@ type
     procedure UMFreeCompletionProposalPopupWindow(var AMessage: TMessage); message UM_FREE_COMPLETIONPROPOSAL_POPUPWINDOW;
     procedure UndoRedoAdded(ASender: TObject);
     procedure UpdateFoldRanges(const ACurrentLine: Integer; const ALineCount: Integer); overload;
-    procedure UpdateFoldRanges(AFoldRanges: TBCEditorCodeFoldingRanges; const ALineCount: Integer); overload;
+    procedure UpdateFoldRanges(AFoldRanges: TBCEditorCodeFolding.TRanges; const ALineCount: Integer); overload;
     procedure UpdateScrollBars;
     procedure UpdateWordWrap(const AValue: Boolean);
     procedure WMCaptureChanged(var AMessage: TMessage); message WM_CAPTURECHANGED;
@@ -508,8 +508,8 @@ type
     procedure PaintCaretBlock(ADisplayCaretPosition: TBCEditorDisplayPosition);
     procedure PaintCodeFolding(AClipRect: TRect; AFirstRow, ALastRow: Integer);
     procedure PaintCodeFoldingLine(AClipRect: TRect; ALine: Integer);
-    procedure PaintCodeFoldingCollapsedLine(AFoldRange: TBCEditorCodeFoldingRange; const ALineRect: TRect);
-    procedure PaintCodeFoldingCollapseMark(AFoldRange: TBCEditorCodeFoldingRange; const ACurrentLineText: string;
+    procedure PaintCodeFoldingCollapsedLine(AFoldRange: TBCEditorCodeFolding.TRanges.TRange; const ALineRect: TRect);
+    procedure PaintCodeFoldingCollapseMark(AFoldRange: TBCEditorCodeFolding.TRanges.TRange; const ACurrentLineText: string;
       const ATokenPosition, ATokenLength, ALine: Integer; ALineRect: TRect);
     procedure PaintGuides(const AFirstRow, ALastRow: Integer; const AMinimap: Boolean);
     procedure PaintLeftMargin(const AClipRect: TRect; const AFirstLine, ALastTextLine, ALastLine: Integer);
@@ -663,7 +663,7 @@ type
     procedure WndProc(var AMessage: TMessage); override;
     property ActiveLine: TBCEditorActiveLine read FActiveLine write SetActiveLine;
     property BackgroundColor: TColor read FBackgroundColor write SetBackgroundColor default clWindow;
-    property AllCodeFoldingRanges: TBCEditorAllCodeFoldingRanges read FAllCodeFoldingRanges;
+    property AllCodeFoldingRanges: TBCEditorCodeFolding.TAllRanges read FAllCodeFoldingRanges;
     property AlwaysShowCaret: Boolean read FAlwaysShowCaret write SetAlwaysShowCaret;
     property Bookmarks: TBCEditorMarkList read FBookmarkList;
     property BorderStyle: TBorderStyle read FBorderStyle write SetBorderStyle default bsSingle;
@@ -703,7 +703,7 @@ type
     property OnAfterDeleteBookmark: TNotifyEvent read FOnAfterDeleteBookmark write FOnAfterDeleteBookmark;
     property OnAfterDeleteMark: TNotifyEvent read FOnAfterDeleteMark write FOnAfterDeleteMark;
     property OnAfterLinePaint: TBCEditorLinePaintEvent read FOnAfterLinePaint write FOnAfterLinePaint;
-    property OnBeforeCompletionProposalExecute: TBCEditorCompletionProposalEvent read FOnBeforeCompletionProposalExecute write FOnBeforeCompletionProposalExecute;
+    property OnBeforeCompletionProposalExecute: TBCEditorCompletionProposal.TEvent read FOnBeforeCompletionProposalExecute write FOnBeforeCompletionProposalExecute;
     property OnBeforeDeleteMark: TBCEditorMarkEvent read FOnBeforeDeleteMark write FOnBeforeDeleteMark;
     property OnBeforeMarkPanelPaint: TBCEditorMarkPanelPaintEvent read FOnBeforeMarkPanelPaint write FOnBeforeMarkPanelPaint;
     property OnBeforeMarkPlaced: TBCEditorMarkEvent read FOnBeforeMarkPlaced write FOnBeforeMarkPlaced;
@@ -713,7 +713,7 @@ type
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
     property OnCommandProcessed: TBCEditorProcessCommandEvent read FOnCommandProcessed write FOnCommandProcessed;
     property OnCompletionProposalCanceled: TNotifyEvent read FOnCompletionProposalCanceled write FOnCompletionProposalCanceled;
-    property OnCompletionProposalSelected: TBCEditorCompletionProposalSelectedEvent read FOnCompletionProposalSelected write FOnCompletionProposalSelected;
+    property OnCompletionProposalSelected: TBCEditorCompletionProposal.TSelectedEvent read FOnCompletionProposalSelected write FOnCompletionProposalSelected;
     property OnContextHelp: TBCEditorContextHelpEvent read FOnContextHelp write FOnContextHelp;
     property OnCreateFileStream: TBCEditorCreateFileStreamEvent read FOnCreateFileStream write FOnCreateFileStream;
     property OnCustomLineColors: TBCEditorCustomLineColorsEvent read FOnCustomLineColors write FOnCustomLineColors;
@@ -733,7 +733,7 @@ type
     property OnRightMarginMouseUp: TNotifyEvent read FOnRightMarginMouseUp write FOnRightMarginMouseUp;
     property OnSelectionChanged: TNotifyEvent read FOnSelectionChanged write FOnSelectionChanged;
     property OnScroll: TBCEditorScroll.TEvent read FOnScroll write FOnScroll;
-    property Options: TBCEditorOptions read FOptions write SetOptions default OptionsDefault;
+    property Options: TBCEditorOptions read FOptions write SetOptions default DefaultOptions;
     property PaintLock: Integer read FPaintLock;
     property ParentColor default False;
     property ParentFont default False;
@@ -786,7 +786,6 @@ uses
   Winapi.ShellAPI, Winapi.Imm, System.Math, System.Types, Vcl.Clipbrd, System.Character, Vcl.Menus,
   BCEditor.Language,
   BCEditor.Export.HTML, Vcl.Themes, BCEditor.StyleHooks,
-  BCEditor.Editor.CompletionProposal.Columns.Items,
   System.RegularExpressions{$if defined(USE_ALPHASKINS)}, Winapi.CommCtrl, sVCLUtils, sMessages, sConst, sSkinProps{$endif};
 
 type
@@ -850,7 +849,7 @@ begin
   FLineBreakLength := Length(Lines.LineBreak);
 
   { Code folding }
-  FAllCodeFoldingRanges := TBCEditorAllCodeFoldingRanges.Create;
+  FAllCodeFoldingRanges := TBCEditorCodeFolding.TAllRanges.Create;
   FCodeFolding := TBCEditorCodeFolding.Create;
   FCodeFolding.OnChange := CodeFoldingOnChange;
   FCodeFoldingDelayTimer := TTimer.Create(Self);
@@ -934,7 +933,7 @@ begin
   FSelectionBeginPosition.Char := 1;
   FSelectionBeginPosition.Line := 1;
   FSelectionEndPosition := FSelectionBeginPosition;
-  FOptions := OptionsDefault;
+  FOptions := DefaultOptions;
   { Scroll }
   FScrollTimer := TTimer.Create(Self);
   FScrollTimer.Enabled := False;
@@ -1114,9 +1113,9 @@ begin
   Result := (ATextPosition1.Line = ATextPosition2.Line) and (ATextPosition1.Char = ATextPosition2.Char);
 end;
 
-function TBCBaseEditor.CodeFoldingCollapsableFoldRangeForLine(const ALine: Integer): TBCEditorCodeFoldingRange;
+function TBCBaseEditor.CodeFoldingCollapsableFoldRangeForLine(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
 var
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   Result := nil;
 
@@ -1125,9 +1124,9 @@ begin
     Result := LCodeFoldingRange;
 end;
 
-function TBCBaseEditor.CodeFoldingFoldRangeForLineTo(const ALine: Integer): TBCEditorCodeFoldingRange;
+function TBCBaseEditor.CodeFoldingFoldRangeForLineTo(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
 var
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   Result := nil;
 
@@ -1140,7 +1139,7 @@ begin
   end;
 end;
 
-function TBCBaseEditor.CodeFoldingLineInsideRange(const ALine: Integer): TBCEditorCodeFoldingRange;
+function TBCBaseEditor.CodeFoldingLineInsideRange(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
 var
   LLength: Integer;
   LLine: Integer;
@@ -1157,7 +1156,7 @@ begin
     Result := FCodeFoldingRangeFromLine[LLine]
 end;
 
-function TBCBaseEditor.CodeFoldingRangeForLine(const ALine: Integer): TBCEditorCodeFoldingRange;
+function TBCBaseEditor.CodeFoldingRangeForLine(const ALine: Integer): TBCEditorCodeFolding.TRanges.TRange;
 begin
   Result := nil;
   if (ALine > 0) and (ALine < Length(FCodeFoldingRangeFromLine)) then
@@ -1180,7 +1179,7 @@ end;
 
 function TBCBaseEditor.DoOnCodeFoldingHintClick(const APoint: TPoint): Boolean;
 var
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LCollapseMarkRect: TRect;
 begin
   Result := True;
@@ -2115,7 +2114,7 @@ end;
 procedure TBCBaseEditor.CreateLineNumbersCache(const AResetCache: Boolean = False);
 var
   LIndex, LCurrentLine, LCacheLength: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LCollapsedCodeFolding: array of Boolean;
   LLineNumbersCacheLength: Integer;
 
@@ -2595,8 +2594,8 @@ function TBCBaseEditor.IsKeywordAtCaretPosition(const APOpenKeyWord: PBoolean = 
 var
   LIndex1, LIndex2: Integer;
   //LWordAtCursor, LWordAtOneBeforeCursor: string;
-  LFoldRegion: TBCEditorCodeFoldingRegion;
-  LFoldRegionItem: TBCEditorCodeFoldingRegionItem;
+  LFoldRegion: TBCEditorCodeFolding.TRegion;
+  LFoldRegionItem: TBCEditorCodeFolding.TRegion.TItem;
   LCaretPosition: TBCEditorTextPosition;
   LLineText: string;
   LPLine: PChar;
@@ -2686,8 +2685,8 @@ function TBCBaseEditor.IsKeywordAtCaretPositionOrAfter(const ACaretPosition: TBC
 var
   LIndex1, LIndex2: Integer;
   LLineText: string;
-  LFoldRegion: TBCEditorCodeFoldingRegion;
-  LFoldRegionItem: TBCEditorCodeFoldingRegionItem;
+  LFoldRegion: TBCEditorCodeFolding.TRegion;
+  LFoldRegionItem: TBCEditorCodeFolding.TRegion.TItem;
   LPKeyWord, LPBookmarkText, LPText, LPLine: PChar;
   LCaretPosition: TBCEditorTextPosition;
 
@@ -3233,7 +3232,7 @@ end;
 
 procedure TBCBaseEditor.CheckIfAtMatchingKeywords;
 var
-  LNewFoldRange: TBCEditorCodeFoldingRange;
+  LNewFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LIsKeyWord, LOpenKeyWord: Boolean;
   LLine: Integer;
 begin
@@ -3256,7 +3255,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.CodeFoldingCollapse(AFoldRange: TBCEditorCodeFoldingRange);
+procedure TBCBaseEditor.CodeFoldingCollapse(AFoldRange: TBCEditorCodeFolding.TRanges.TRange);
 begin
   ClearMatchingPair;
   FResetLineNumbersCache := True;
@@ -3275,7 +3274,7 @@ end;
 procedure TBCBaseEditor.CodeFoldingLinesDeleted(const AFirstLine: Integer; const ACount: Integer);
 var
   LIndex: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   if ACount > 0 then
   begin
@@ -3293,7 +3292,7 @@ end;
 procedure TBCBaseEditor.CodeFoldingResetCaches;
 var
   LIndex, LIndexRange, LLength: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   if not Assigned(Parent) or not FCodeFolding.Visible then
     Exit;
@@ -3327,7 +3326,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.CodeFoldingOnChange(AEvent: TBCEditorCodeFoldingChanges);
+procedure TBCBaseEditor.CodeFoldingOnChange(AEvent: TBCEditorCodeFolding.TChanges);
 begin
   if AEvent = fcEnabled then
   begin
@@ -3349,7 +3348,7 @@ begin
   Invalidate;
 end;
 
-procedure TBCBaseEditor.CodeFoldingExpand(AFoldRange: TBCEditorCodeFoldingRange);
+procedure TBCBaseEditor.CodeFoldingExpand(AFoldRange: TBCEditorCodeFolding.TRanges.TRange);
 begin
   ClearMatchingPair;
   FResetLineNumbersCache := True;
@@ -3607,7 +3606,7 @@ var
   LVisualSpaceCount1, LVisualSpaceCount2: Integer;
   LBackCounterLine: Integer;
   LCaretNewPosition: TBCEditorTextPosition;
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LCharPosition: Integer;
   LSpaceBuffer: string;
   LChar: Char;
@@ -3817,7 +3816,7 @@ var
   LSpaces: string;
   LLineText: string;
   LTextCaretPosition, LSelectionBeginPosition, LSelectionEndPosition: TBCEditorTextPosition;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LDeleteComment: Boolean;
   LPosition: Integer;
 begin
@@ -4571,7 +4570,7 @@ var
   CommentsCount: Integer;
   EndLine: Integer;
   I: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LSelectionBeginPosition: TBCEditorTextPosition;
   LSelectionEndPosition: TBCEditorTextPosition;
   LTextCaretPosition: TBCEditorTextPosition;
@@ -6047,12 +6046,12 @@ var
   LPText: PChar;
   LBeginningOfLine: Boolean;
   LPKeyWord, LPBookmarkText, LPBookmarkText2: PChar;
-  LLastFoldRange: TBCEditorCodeFoldingRange;
+  LLastFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LOpenTokenSkipFoldRangeList: TList;
   LOpenTokenFoldRangeList: TList;
   LCodeFoldingRangeIndexList: TList;
-  LFoldRanges: TBCEditorCodeFoldingRanges;
-  LCurrentCodeFoldingRegion: TBCEditorCodeFoldingRegion;
+  LFoldRanges: TBCEditorCodeFolding.TRanges;
+  LCurrentCodeFoldingRegion: TBCEditorCodeFolding.TRegion;
 
   function IsValidChar(Character: PChar): Boolean;
   begin
@@ -6099,7 +6098,7 @@ var
       Result := APText^ = LCurrentCodeFoldingRegion.EscapeChar;
   end;
 
-  function IsNextSkipChar(APText: PChar; ASkipRegionItem: TBCEditorSkipRegionItem): Boolean;
+  function IsNextSkipChar(APText: PChar; ASkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem): Boolean;
   begin
     Result := False;
     if ASkipRegionItem.SkipIfNextCharIsNot <> BCEDITOR_NONE_CHAR then
@@ -6108,7 +6107,7 @@ var
 
   function SkipRegionsClose: Boolean;
   var
-    LSkipRegionItem: TBCEditorSkipRegionItem;
+    LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
   begin
     Result := False;
     { Note! Check Close before Open because close and open keys might be same. }
@@ -6139,7 +6138,7 @@ var
   function SkipRegionsOpen: Boolean;
   var
     LIndex, LCount: Integer;
-    LSkipRegionItem: TBCEditorSkipRegionItem;
+    LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
   begin
     Result := False;
 
@@ -6194,9 +6193,9 @@ var
   procedure RegionItemsClose;
   var
     LIndex, LItemIndex, LIndexDecrease: Integer;
-    LCodeFoldingRange, LCodeFoldingRangeLast: TBCEditorCodeFoldingRange;
+    LCodeFoldingRange, LCodeFoldingRangeLast: TBCEditorCodeFolding.TRanges.TRange;
 
-    procedure SetCodeFoldingRangeToLine(ACodeFoldingRange: TBCEditorCodeFoldingRange);
+    procedure SetCodeFoldingRangeToLine(ACodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange);
     var
       LIndex: Integer;
     begin
@@ -6296,8 +6295,8 @@ var
   var
     LIndex, LArrayIndex: Integer;
     LSkipIfFoundAfterOpenToken: Boolean;
-    LRegionItem: TBCEditorCodeFoldingRegionItem;
-    LCodeFoldingRange: TBCEditorCodeFoldingRange;
+    LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
+    LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
     LPTempText, LPTempKeyWord: PChar;
   begin
     Result := False;
@@ -6423,7 +6422,7 @@ var
                 end;
 
                 if LOpenTokenFoldRangeList.Count > 0 then
-                  LFoldRanges := TBCEditorCodeFoldingRange(LOpenTokenFoldRangeList.Last).SubCodeFoldingRanges
+                  LFoldRanges := TBCEditorCodeFolding.TRanges.TRange(LOpenTokenFoldRangeList.Last).SubCodeFoldingRanges
                 else
                   LFoldRanges := FAllCodeFoldingRanges;
 
@@ -6450,7 +6449,7 @@ var
   function MultiHighlighterOpen: Boolean;
   var
     LIndex: Integer;
-    LCodeFoldingRegion: TBCEditorCodeFoldingRegion;
+    LCodeFoldingRegion: TBCEditorCodeFolding.TRegion;
     LChar: Char;
   begin
     Result := False;
@@ -6486,7 +6485,7 @@ var
   procedure MultiHighlighterClose;
   var
     LIndex: Integer;
-    LCodeFoldingRegion: TBCEditorCodeFoldingRegion;
+    LCodeFoldingRegion: TBCEditorCodeFolding.TRegion;
     LChar: Char;
   begin
     if LOpenTokenSkipFoldRangeList.Count <> 0 then
@@ -6525,7 +6524,7 @@ var
   function TagFolds: Boolean;
   var
     LIndex: Integer;
-    LCodeFoldingRegion: TBCEditorCodeFoldingRegion;
+    LCodeFoldingRegion: TBCEditorCodeFolding.TRegion;
   begin
     Result := False;
     for LIndex := 0 to Highlighter.CodeFoldingRangeCount - 1 do
@@ -6542,7 +6541,7 @@ var
     LTokenName, LTokenAttributes: string;
     LAdded: Boolean;
     LOpenToken, LCloseToken: string;
-    LRegionItem: TBCEditorCodeFoldingRegionItem;
+    LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
   begin
     LPText := PChar(FLines.Text);
     LAdded := False;
@@ -6600,7 +6599,7 @@ var
 
 var
   LIndex, LPreviousLine: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   if not Assigned(FLineNumbersCache) then
     Exit;
@@ -7437,7 +7436,7 @@ end;
 procedure TBCBaseEditor.UpdateFoldRanges(const ACurrentLine: Integer; const ALineCount: Integer);
 var
   LIndex: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   for LIndex := 0 to FAllCodeFoldingRanges.AllCount - 1 do
   begin
@@ -7467,10 +7466,10 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.UpdateFoldRanges(AFoldRanges: TBCEditorCodeFoldingRanges; const ALineCount: Integer);
+procedure TBCBaseEditor.UpdateFoldRanges(AFoldRanges: TBCEditorCodeFolding.TRanges; const ALineCount: Integer);
 var
   LIndex: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   if Assigned(AFoldRanges) then
   for LIndex := 0 to AFoldRanges.Count - 1 do
@@ -8478,7 +8477,7 @@ var
   LPoint: TPoint;
   LCurrentInput: string;
   LItems: TStrings;
-  LItem: TBCEditorCompletionProposalColumnItem;
+  LItem: TBCEditorCompletionProposal.TItems.TItem;
   LCanExecute: Boolean;
 begin
   Assert(FCompletionProposal.CompletionColumnIndex < FCompletionProposal.Columns.Count);
@@ -8630,7 +8629,7 @@ var
   LIndex: Integer;
   LLine: Integer;
   LMark: TBCEditorMark;
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LCodeFoldingRegion: Boolean;
   LTextCaretPosition: TBCEditorTextPosition;
   LSelectedRow: Integer;
@@ -9459,7 +9458,7 @@ procedure TBCBaseEditor.MouseMove(AShift: TShiftState; X, Y: Integer);
 var
   LIndex: Integer;
   LDisplayPosition: TBCEditorDisplayPosition;
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LPoint: TPoint;
   LRect: TRect;
   LHintWindow: THintWindow;
@@ -9884,7 +9883,7 @@ end;
 procedure TBCBaseEditor.PaintCodeFolding(AClipRect: TRect; AFirstRow, ALastRow: Integer);
 var
   LIndex, LLine: Integer;
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LOldBrushColor, LOldPenColor, LBackground: TColor;
 begin
   LOldBrushColor := Canvas.Brush.Color;
@@ -9939,7 +9938,7 @@ end;
 procedure TBCBaseEditor.PaintCodeFoldingLine(AClipRect: TRect; ALine: Integer);
 var
   X, Y, LHeight, LTemp: Integer;
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LPoints: array [0..2] of TPoint;
 begin
   if CodeFolding.Padding > 0 then
@@ -10019,7 +10018,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.PaintCodeFoldingCollapsedLine(AFoldRange: TBCEditorCodeFoldingRange; const ALineRect: TRect);
+procedure TBCBaseEditor.PaintCodeFoldingCollapsedLine(AFoldRange: TBCEditorCodeFolding.TRanges.TRange; const ALineRect: TRect);
 var
   LOldPenColor: TColor;
 begin
@@ -10034,7 +10033,7 @@ begin
   end;
 end;
 
-procedure TBCBaseEditor.PaintCodeFoldingCollapseMark(AFoldRange: TBCEditorCodeFoldingRange;
+procedure TBCBaseEditor.PaintCodeFoldingCollapseMark(AFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   const ACurrentLineText: string; const ATokenPosition, ATokenLength, ALine: Integer; ALineRect: TRect);
 var
   LOldPenColor, LOldBrushColor: TColor;
@@ -10127,10 +10126,10 @@ var
   LLine, LCurrentLine: Integer;
   LOldColor: TColor;
   LDeepestLevel: Integer;
-  LCodeFoldingRange, LCodeFoldingRangeTo: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange, LCodeFoldingRangeTo: TBCEditorCodeFolding.TRanges.TRange;
   LIncY: Boolean;
   LTopLine, LBottomLine: Integer;
-  LCodeFoldingRanges: array of TBCEditorCodeFoldingRange;
+  LCodeFoldingRanges: array of TBCEditorCodeFolding.TRanges.TRange;
 
   function GetDeepestLevel: Integer;
   var
@@ -11708,7 +11707,7 @@ var
     LLine, LFirstColumn, LLastColumn: Integer;
     LFromLineText, LToLineText: string;
     LCurrentRow: Integer;
-    LFoldRange: TBCEditorCodeFoldingRange;
+    LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
     LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
     LTokenText, LNextTokenText: string;
     LTokenPosition, LWordWrapTokenPosition, LTokenLength: Integer;
@@ -12385,7 +12384,7 @@ var
   LOpenLineText: string;
   LLine, LTempPosition: Integer;
   LDisplayPosition: TBCEditorDisplayPosition;
-  LFoldRange: TBCEditorCodeFoldingRange;
+  LFoldRange: TBCEditorCodeFolding.TRanges.TRange;
   LLineText: string;
 begin
   if not FHighlighter.MatchingPairHighlight then
@@ -13557,7 +13556,7 @@ var
   LPText, LPKeyWord, LPBookmarkText: PChar;
   LOpenTokenSkipFoldRangeList: TList;
   LSkipOpenKeyChars, LSkipCloseKeyChars: TBCEditorCharSet;
-  LSkipRegionItem: TBCEditorSkipRegionItem;
+  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
 
   procedure AddKeyChars;
   var
@@ -13601,7 +13600,7 @@ begin
         { Skip regions - Close }
         if (LOpenTokenSkipFoldRangeList.Count > 0) and CharInSet(LPText^, LSkipCloseKeyChars) then
         begin
-          LPKeyWord := PChar(TBCEditorSkipRegionItem(LOpenTokenSkipFoldRangeList.Last).CloseToken);
+          LPKeyWord := PChar(TBCEditorCodeFolding.TSkipRegions.TItem(LOpenTokenSkipFoldRangeList.Last).CloseToken);
           LPBookmarkText := LPText;
           { Check if the close keyword found }
           while (LPText^ <> BCEDITOR_NONE_CHAR) and (LPKeyWord^ <> BCEDITOR_NONE_CHAR) and
@@ -14142,7 +14141,7 @@ procedure TBCBaseEditor.FoldAll(const AFromLineNumber: Integer = -1; const AToLi
 var
   LIndex: Integer;
   LFromLine, LToLine: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
   if AFromLineNumber <> -1 then
@@ -14180,7 +14179,7 @@ procedure TBCBaseEditor.FoldAllByLevel(const AFromLevel: Integer; const AToLevel
 var
   LIndex: Integer;
   LLevel, LRangeLevel, LFromLine, LToLine: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
   if SelectionAvailable then
@@ -14227,7 +14226,7 @@ procedure TBCBaseEditor.UnfoldAll(const AFromLineNumber: Integer = -1; const ATo
 var
   LIndex: Integer;
   LFromLine, LToLine: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
   if AFromLineNumber <> -1 then
     LFromLine := AFromLineNumber
@@ -14259,7 +14258,7 @@ var
   LIndex: Integer;
   LLevel, LRangeLevel: Integer;
   LFromLine, LToLine: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
 begin
     if SelectionAvailable then
   begin
@@ -14304,7 +14303,7 @@ var
 
   function CodeFoldingUncollapseLine(ALine: Integer): Integer;
   var
-    LCodeFoldingRange: TBCEditorCodeFoldingRange;
+    LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   begin
     Result := 0;
     if ALine < Length(FCodeFoldingRangeFromLine) then
@@ -14423,7 +14422,7 @@ var
   LChangeTrim: Boolean;
   LOldSelectionEndPosition: TBCEditorTextPosition;
 
-  procedure SetEndPosition(ACodeFoldingRange: TBCEditorCodeFoldingRange);
+  procedure SetEndPosition(ACodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange);
   begin
     if Assigned(ACodeFoldingRange) then
       if ACodeFoldingRange.Collapsed then
@@ -14876,7 +14875,7 @@ end;
 procedure TBCBaseEditor.GotoLineAndCenter(const ALine: Integer; const AChar: Integer = 1);
 var
   LIndex: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
   if FCodeFolding.Visible then
@@ -15174,7 +15173,7 @@ end;
 procedure TBCBaseEditor.RescanCodeFoldingRanges;
 var
   LIndex: Integer;
-  LCodeFoldingRange: TBCEditorCodeFoldingRange;
+  LCodeFoldingRange: TBCEditorCodeFolding.TRanges.TRange;
   LLengthCodeFoldingRangeFromLine, LLengthCodeFoldingRangeToLine: Integer;
 begin
   FRescanCodeFolding := False;

@@ -31,20 +31,22 @@ type
       property Unmatched: TColor read FUnmatched write FUnmatched default clYellow;
     end;
 
+  strict private const
+    DefaultOptions = [mpoUseMatchedColor];
   strict private
-    FColors: TBCEditorMatchingPair.TColors;
+    FColors: TColors;
     FEnabled: Boolean;
     FOptions: TOptions;
-    procedure SetColors(const AValue: TBCEditorMatchingPair.TColors);
+    procedure SetColors(const AValue: TColors);
   public
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
     procedure SetOption(const AOption: TOption; const AEnabled: Boolean);
   published
-    property Colors: TBCEditorMatchingPair.TColors read FColors write SetColors;
+    property Colors: TColors read FColors write SetColors;
     property Enabled: Boolean read FEnabled write FEnabled;
-    property Options: TOptions read FOptions write FOptions default [mpoUseMatchedColor];
+    property Options: TOptions read FOptions write FOptions default DefaultOptions;
   end;
 
 implementation {***************************************************************}
@@ -80,7 +82,7 @@ begin
 
   FColors := TBCEditorMatchingPair.TColors.Create;
   FEnabled := True;
-  FOptions := [mpoUseMatchedColor];
+  FOptions := DefaultOptions;
 end;
 
 destructor TBCEditorMatchingPair.Destroy;

@@ -5,8 +5,8 @@ interface {********************************************************************}
 uses
   System.Classes, System.SysUtils, Vcl.Controls, Vcl.Graphics,
   JsonDataObjects,
-  BCEditor.Consts, BCEditor.Editor.SkipRegions,
-  BCEditor.Editor.CodeFolding.Regions, BCEditor.Types;
+  BCEditor.Consts,
+  BCEditor.Editor.CodeFolding, BCEditor.Types;
 
 type
   TBCEditorHighlighter = class(TObject)
@@ -408,9 +408,9 @@ type
       procedure ImportAttributes(AHighlighterAttribute: TAttribute; AAttributesObject: TJsonObject;
         const AElementPrefix: string);
       procedure ImportCodeFolding(ACodeFoldingObject: TJsonObject);
-      procedure ImportCodeFoldingFoldRegion(ACodeFoldingRegion: TBCEditorCodeFoldingRegion; ACodeFoldingObject: TJsonObject);
-      procedure ImportCodeFoldingOptions(ACodeFoldingRegion: TBCEditorCodeFoldingRegion; ACodeFoldingObject: TJsonObject);
-      procedure ImportCodeFoldingSkipRegion(ACodeFoldingRegion: TBCEditorCodeFoldingRegion; ACodeFoldingObject: TJsonObject);
+      procedure ImportCodeFoldingFoldRegion(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion; ACodeFoldingObject: TJsonObject);
+      procedure ImportCodeFoldingOptions(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion; ACodeFoldingObject: TJsonObject);
+      procedure ImportCodeFoldingSkipRegion(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion; ACodeFoldingObject: TJsonObject);
       procedure ImportColors(AJSONObject: TJsonObject);
       procedure ImportColorsEditorProperties(AEditorObject: TJsonObject);
       procedure ImportColorsInfo(AInfoObject: TJsonObject);
@@ -435,10 +435,10 @@ type
     FAttributes: TStringList;
     FBeginningOfLine: Boolean;
     FCodeFoldingRangeCount: Integer;
-    FCodeFoldingRegions: TBCEditorCodeFoldingRegions;
+    FCodeFoldingRegions: TBCEditorCodeFolding.TRegions;
     FColors: TColors;
     FComments: TComments;
-    FCompletionProposalSkipRegions: TBCEditorSkipRegions;
+    FCompletionProposalSkipRegions: TBCEditorCodeFolding.TSkipRegions;
     FCurrentLine: PChar;
     FCurrentRange: TRange;
     FCurrentToken: TToken;
@@ -498,10 +498,10 @@ type
     property Attribute[AIndex: Integer]: TAttribute read GetAttribute;
     property Attributes: TStringList read FAttributes;
     property CodeFoldingRangeCount: Integer read FCodeFoldingRangeCount write SetCodeFoldingRangeCount;
-    property CodeFoldingRegions: TBCEditorCodeFoldingRegions read FCodeFoldingRegions write FCodeFoldingRegions;
+    property CodeFoldingRegions: TBCEditorCodeFolding.TRegions read FCodeFoldingRegions write FCodeFoldingRegions;
     property Colors: TColors read FColors write FColors;
     property Comments: TComments read FComments write FComments;
-    property CompletionProposalSkipRegions: TBCEditorSkipRegions read FCompletionProposalSkipRegions write FCompletionProposalSkipRegions;
+    property CompletionProposalSkipRegions: TBCEditorCodeFolding.TSkipRegions read FCompletionProposalSkipRegions write FCompletionProposalSkipRegions;
     property Editor: TWinControl read FEditor;
     property FileName: string read FFileName write FFileName;
     property FoldCloseKeyChars: TBCEditorCharSet read FFoldCloseKeyChars write FFoldCloseKeyChars;
@@ -522,7 +522,8 @@ implementation {***************************************************************}
 
 uses
   Vcl.GraphUtil, System.Types, System.IOUtils, System.TypInfo,
-  BCEditor.Editor.Base, BCEditor.Language, BCEditor.Utils;
+  BCEditor.Editor.Base, BCEditor.Language, BCEditor.Utils,
+  BCEditor.Editor.CompletionProposal;
 
 { TBCEditorHighlighter.TInfo **************************************************}
 
@@ -1708,7 +1709,7 @@ begin
     Result := btUnspecified;
 end;
 
-function StrToRegionType(const AString: string): TBCEditorSkipRegionItemType;
+function StrToRegionType(const AString: string): TBCEditorCodeFolding.TSkipRegions.TItem.TItemType;
 begin
   if AString = 'SingleLine' then
     Result := ritSingleLineComment
@@ -1767,7 +1768,7 @@ begin
     FHighlighter.CodeFoldingRangeCount := LCount;
     for i := 0 to LCount - 1 do
     begin
-      FHighlighter.CodeFoldingRegions[i] := TBCEditorCodeFoldingRegion.Create(TBCEditorCodeFoldingRegionItem);
+      FHighlighter.CodeFoldingRegions[i] := TBCEditorCodeFolding.TRegion.Create(TBCEditorCodeFolding.TRegion.TItem);
       LCodeFoldingObject := LArray.Items[i].ObjectValue;
 
       ImportCodeFoldingOptions(FHighlighter.CodeFoldingRegions[i], LCodeFoldingObject);
@@ -1777,12 +1778,12 @@ begin
   end;
 end;
 
-procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingFoldRegion(ACodeFoldingRegion: TBCEditorCodeFoldingRegion;
+procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingFoldRegion(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion;
   ACodeFoldingObject: TJsonObject);
 var
   LIndex, LIndex2: Integer;
   LJsonDataValue: PJsonDataValue;
-  LRegionItem: TBCEditorCodeFoldingRegionItem;
+  LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
   LMemberObject: TJsonObject;
   LFileName: string;
   LEditor: TBCBaseEditor;
@@ -1864,7 +1865,7 @@ begin
   end;
 end;
 
-procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingOptions(ACodeFoldingRegion: TBCEditorCodeFoldingRegion;
+procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingOptions(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion;
   ACodeFoldingObject: TJsonObject);
 var
   LCodeFoldingObject: TJsonObject;
@@ -1895,14 +1896,14 @@ begin
   end;
 end;
 
-procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingSkipRegion(ACodeFoldingRegion: TBCEditorCodeFoldingRegion;
+procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingSkipRegion(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion;
   ACodeFoldingObject: TJsonObject);
 var
   LIndex: Integer;
   LJsonDataValue: PJsonDataValue;
-  LSkipRegionType: TBCEditorSkipRegionItemType;
-  LRegionItem: TBCEditorCodeFoldingRegionItem;
-  LSkipRegionItem: TBCEditorSkipRegionItem;
+  LSkipRegionType: TBCEditorCodeFolding.TSkipRegions.TItem.TItemType;
+  LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
+  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
   LFileName: string;
   LEditor: TBCBaseEditor;
   LFileStream: TStream;
@@ -2110,7 +2111,7 @@ end;
 procedure TBCEditorHighlighter.TImportJSON.ImportCompletionProposal(ACompletionProposalObject: TJsonObject);
 var
   LIndex: Integer;
-  LSkipRegionItem: TBCEditorSkipRegionItem;
+  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
   LJsonDataValue: PJsonDataValue;
   LFileName: string;
   LEditor: TBCBaseEditor;
@@ -2489,7 +2490,7 @@ begin
 
   FComments := TComments.Create;
 
-  FCompletionProposalSkipRegions := TBCEditorSkipRegions.Create(TBCEditorSkipRegionItem);
+  FCompletionProposalSkipRegions := TBCEditorCodeFolding.TSkipRegions.Create(TBCEditorCodeFolding.TSkipRegions.TItem);
 
   Info := TInfo.Create;
   FMainRules := TRange.Create;
