@@ -20,8 +20,6 @@ type
     procedure ListBoxHighlightersClick(Sender: TObject);
     procedure ListBoxColorsClick(Sender: TObject);
   private
-    ColorsPath: string;
-    HighlightersPath: string;
     procedure SetSelectedColor;
     procedure SetSelectedHighlighter;
   end;
@@ -49,11 +47,11 @@ end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
-  HighlightersPath := ExpandFileName('Highlighters\');
-  ColorsPath := ExpandFileName('Colors\');
+  Editor.Directories.Highlighters := ExpandFileName('..\..\..\Highlighters\');
+  Editor.Directories.Colors := ExpandFileName('..\..\..\Colors\');
 
-  AddFileNamesFromPathIntoListBox(HighlightersPath, ListBoxHighlighters);
-  AddFileNamesFromPathIntoListBox(ColorsPath, ListBoxColors);
+  AddFileNamesFromPathIntoListBox(Editor.Directories.Highlighters, ListBoxHighlighters);
+  AddFileNamesFromPathIntoListBox(Editor.Directories.Colors, ListBoxColors);
 
   with ListBoxHighlighters do
     if (Items.IndexOf('Object Pascal.json') >= 0) then
@@ -72,7 +70,7 @@ begin
   with ListBoxColors do
     if (ItemIndex >= 0) then
       with Editor.Directories do
-        Editor.Highlighter.Colors.LoadFromFile(ColorsPath + Items[ItemIndex]);
+        Editor.Highlighter.Colors.LoadFromFile(Editor.Directories.Colors + Items[ItemIndex]);
 end;
 
 procedure TMainForm.SetSelectedHighlighter;
@@ -80,7 +78,7 @@ begin
   with ListBoxHighlighters do
     if (ItemIndex >= 0) then
       with Editor.Directories do
-        Editor.Highlighter.LoadFromFile(HighlightersPath + Items[ItemIndex]);
+        Editor.Highlighter.LoadFromFile(Editor.Directories.Highlighters + Items[ItemIndex]);
   Editor.Lines.Text := Editor.Highlighter.Info.General.Sample;
 end;
 
