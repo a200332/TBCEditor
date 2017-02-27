@@ -9596,7 +9596,7 @@ var
             begin
               LLeftMarginWidth := LLineRect.Left + FLeftMargin.GetWidth - FLeftMargin.LineState.Width - 1;
               LOldColor := Canvas.Pen.Color;
-              Canvas.Pen.Color := LeftMargin.Colors.LineNumberLine;
+              Canvas.Pen.Color := LeftMargin.Font.Color;
               LTop := LLineRect.Top + ((LLineHeight - 1) div 2);
               if LLine mod 5 = 0 then
                 Canvas.MoveTo(LLeftMarginWidth - FLeftMarginCharWidth + ((FLeftMarginCharWidth - 9) div 2), LTop)
@@ -9613,9 +9613,10 @@ var
           LLineNumber := '';
 
         GetTextExtentPoint32(Canvas.Handle, PChar(LLineNumber), Length(LLineNumber), LTextSize);
-        ExtTextOut(Canvas.Handle, LLineRect.Left + (FLeftMargin.GetWidth - FLeftMargin.LineState.Width -
-          2) - LTextSize.cx, LLineRect.Top + ((LLineHeight - Integer(LTextSize.cy)) div 2), ETO_OPAQUE, @LLineRect,
-          PChar(LLineNumber), Length(LLineNumber), nil);
+        ExtTextOut(Canvas.Handle,
+          LLineRect.Left + (FLeftMargin.GetWidth - FLeftMargin.LineState.Width - 2) - LTextSize.cx,
+          LLineRect.Top + ((LLineHeight - Integer(LTextSize.cy)) div 2),
+          ETO_OPAQUE, @LLineRect, PChar(LLineNumber), Length(LLineNumber), nil);
       end;
       FPaintHelper.SetBackgroundColor(FLeftMargin.Colors.Background);
       { Erase the remaining area }
