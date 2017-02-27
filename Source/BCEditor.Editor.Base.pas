@@ -1953,7 +1953,7 @@ var
       Inc(LLineNumbersCacheLength, 256);
       SetLength(FLineNumbersCache, LLineNumbersCacheLength);
       if FWordWrap.Enabled then
-        SetLength(FWordWrapLineLengths, LLineNumbersCacheLength);
+        SetLength(FWordWrapLineLengths, LLineNumbersCacheLength + 1);
     end;
   end;
 
@@ -2083,7 +2083,7 @@ begin
     if FWordWrap.Enabled then
     begin
       Inc(LLineNumbersCacheLength, 256);
-      SetLength(FWordWrapLineLengths, LLineNumbersCacheLength);
+      SetLength(FWordWrapLineLengths, LLineNumbersCacheLength + 1);
     end;
     SetLength(FLineNumbersCache, LLineNumbersCacheLength);
     LCurrentLine := 1;
@@ -2107,7 +2107,7 @@ begin
     begin
       SetLength(FLineNumbersCache, LCacheLength);
       if FWordWrap.Enabled then
-        SetLength(FWordWrapLineLengths, LCacheLength);
+        SetLength(FWordWrapLineLengths, LCacheLength + 1);
     end;
     SetLength(LCollapsedCodeFolding, 0);
     FLineNumbersCount := Length(FLineNumbersCache) - 1;
@@ -4179,6 +4179,8 @@ begin
         if (Global <> 0) then
         begin
           SetString(Text, PChar(GlobalLock(Global)), GlobalSize(Global) div SizeOf(Text[1]));
+          if ((Length(Text) > 0) and (Text[Length(Text)] = #0)) then
+            SetLength(Text, Length(Text) - 1);
           DoInsertText(Text);
           GlobalUnlock(Global);
         end;
@@ -10166,6 +10168,7 @@ begin
 end;
 
 procedure TBCBaseEditor.PaintTextLines(AClipRect: TRect; const AFirstLine, ALastLine: Integer; const AMinimap: Boolean);
+// AFirstLine, ALastLine 1-based
 var
   LSelectionAvailable: Boolean;
   LDisplayLine, LCurrentLine: Integer;
