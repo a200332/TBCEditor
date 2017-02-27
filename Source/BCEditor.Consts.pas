@@ -49,16 +49,16 @@ const
   BCEDITOR_ATTRIBUTE_ELEMENT_COMMENT = 'Comment';
   BCEDITOR_ATTRIBUTE_ELEMENT_STRING = 'String';
   { Default colors }
-  clSelectionColor = $00A56D53;
+  clSelectionColor = clHighlight;
   clSearchHighlighter = $0078AAFF;
   clSearchInSelectionBackground = $00FCFDCD;
-  clActiveLineBackground = $00E6FAFF;
-  clLeftMarginBackground = $00FFFFFF;
+  clActiveLineBackground = $00E6FFFA;
+  clLeftMarginBackground = $00F4F4F4;
   clLeftMarginFontForeground = $00CC9999;
   clSearchMapActiveLine = $00F4F4F4;
   clIndentHighlight = $00CC9999;
   clIndent = $00CC9999;
-  clMatchingPairUnderline = $00CC9999;
+  clMatchingPairUnderline = $00FFFF00;
   clMinimapVisibleLines = $00E6FAFF;
   clMinimapBookmark = clGreen;
   clWordWrapIndicatorArrow = clNavy;

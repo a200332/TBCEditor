@@ -28,6 +28,8 @@ type
       property OnChange: TNotifyEvent read FOnChange write FOnChange;
     end;
 
+  strict private const
+    DefaultOptions = [soTermsCaseSensitive];
   strict private
     FActiveMode: TBCEditorSelectionMode;
     FColors: TBCEditorSelection.TColors;
@@ -51,7 +53,7 @@ type
   published
     property Colors: TBCEditorSelection.TColors read FColors write SetColors;
     property Mode: TBCEditorSelectionMode read FMode write SetMode default smNormal;
-    property Options: TOptions read FOptions write SetOptions default [soHighlightSimilarTerms, soTermsCaseSensitive];
+    property Options: TOptions read FOptions write SetOptions default DefaultOptions;
     property Visible: Boolean read FVisible write SetVisible default True;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
@@ -128,7 +130,7 @@ begin
   FColors := TBCEditorSelection.TColors.Create;
   FActiveMode := smNormal;
   FMode := smNormal;
-  FOptions := [soHighlightSimilarTerms, soTermsCaseSensitive];
+  FOptions := DefaultOptions;
   FVisible := True;
 end;
 

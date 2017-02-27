@@ -84,7 +84,6 @@ type
   TBCEditorSelectionOption = (
     soALTSetsColumnMode,
     soExpandRealNumbers,
-    soHighlightSimilarTerms,
     soTermsCaseSensitive,
     soToEndOfLine,
     soTripleClickRowSelect

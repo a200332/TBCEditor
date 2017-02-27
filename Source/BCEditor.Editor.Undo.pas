@@ -58,8 +58,8 @@ type
     function LastUndoType(): TUndoType;
     function LastText(): string;
     procedure Lock();
-    function PeekItem(const Item: PItem): Boolean;
-    function PopItem(const Item: PItem): Boolean;
+    function PeekItem(out Item: PItem): Boolean;
+    function PopItem(out Item: PItem): Boolean;
     procedure PushItem(AItem: TItem); overload;
     procedure PushItem(AUndoType: TUndoType;
       const ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
@@ -211,19 +211,19 @@ begin
   Inc(FLockCount);
 end;
 
-function TBCEditorUndoList.PeekItem(const Item: PItem): Boolean;
+function TBCEditorUndoList.PeekItem(out Item: PItem): Boolean;
 begin
   Result := FCount > 0;
   if (Result) then
-    Move(FItems[FCount - 1], Item^, SizeOf(Item));
+    Item := @FItems[FCount - 1];
 end;
 
-function TBCEditorUndoList.PopItem(const Item: PItem): Boolean;
+function TBCEditorUndoList.PopItem(out Item: PItem): Boolean;
 begin
   Result := FCount > 0;
   if (Result) then
   begin
-    Move(FItems[FCount - 1], Item^, SizeOf(Item));
+    Item := @FItems[FCount - 1];
     Dec(FCount);
 
     FChanged := Item.UndoType in UndoTypes;

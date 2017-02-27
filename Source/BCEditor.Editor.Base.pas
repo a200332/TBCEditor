@@ -294,7 +294,7 @@ type
     function GetHighlighterAttributeAtRowColumn(const ATextPosition: TBCEditorTextPosition; var AToken: string;
       var ATokenType: TBCEditorRangeType; var AStart: Integer; var AHighlighterAttribute: TBCEditorHighlighter.TAttribute): Boolean;
     function GetHookedCommandHandlersCount: Integer;
-    function GetHorizontalScrollMax: Integer;
+    function GetHorizontalScrollMax(): Integer;
     function GetLeadingExpandedLength(const AStr: string; const ABorder: Integer = 0): Integer;
     function GetLeftMarginWidth: Integer;
     function GetLineHeight: Integer;
@@ -314,8 +314,10 @@ type
     function GetSelText: string;
     function GetText: string;
     function GetTextBetween(const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition): string;
+    function GetTextBeginPosition(): TBCEditorTextPosition;
     function GetTextCaretPosition(): TBCEditorTextPosition;
     function GetTextCaretY: Integer;
+    function GetTextEndPosition(): TBCEditorTextPosition;
     function GetTokenCharCount(const AToken: string; const ACharsBefore: Integer): Integer;
     function GetTokenWidth(const AToken: string; const ALength: Integer; const ACharsBefore: Integer): Integer;
     function GetVisibleChars(const ARow: Integer; const ALineText: string = ''): Integer;
@@ -442,6 +444,7 @@ type
     procedure WordWrapChanged(ASender: TObject);
     function WordWrapWidth: Integer;
   protected
+    procedure BeginPaintLock;
     procedure ChainLinesChanged(ASender: TObject);
     procedure ChainLinesChanging(ASender: TObject);
     procedure ChainLinesCleared(ASender: TObject);
@@ -453,7 +456,6 @@ type
     procedure CreateParams(var AParams: TCreateParams); override;
     procedure CreateWnd; override;
     procedure DblClick; override;
-    procedure DecPaintLock;
     procedure DestroyWnd; override;
     procedure DoBlockIndent;
     procedure DoBlockUnindent;
@@ -474,12 +476,12 @@ type
     procedure DoTripleClick;
     procedure DragCanceled; override;
     procedure DragOver(ASource: TObject; X, Y: Integer; AState: TDragState; var AAccept: Boolean); override;
+    procedure EndPaintLock();
     procedure FreeHintForm(var AForm: TBCEditorCodeFoldingHintForm);
     procedure FreeTokenInfoPopupWindow;
     function GetReadOnly: Boolean; virtual;
     function GetSelLength: Integer;
     procedure HideCaret;
-    procedure IncPaintLock;
     procedure KeyDown(var AKey: Word; AShift: TShiftState); override;
     procedure KeyPressW(var AKey: Char);
     procedure KeyUp(var AKey: Word; AShift: TShiftState); override;
@@ -661,7 +663,6 @@ type
     property CanPaste: Boolean read GetCanPaste;
     property CanRedo: Boolean read GetCanRedo;
     property CanUndo: Boolean read GetCanUndo;
-    property Canvas;
     property Caret: TBCEditorCaret read FCaret write FCaret;
     property CharAtCursor: Char read GetCharAtCursor;
     property CharWidth: Integer read GetCharWidth;
@@ -673,7 +674,6 @@ type
     property DisplayCaretX: Integer read FDisplayCaretX write SetDisplayCaretX;
     property DisplayCaretY: Integer read FDisplayCaretY write SetDisplayCaretY;
     property Encoding: TEncoding read FEncoding write SetEncoding;
-    property Font;
     property ForegroundColor: TColor read FForegroundColor write SetForegroundColor default clWindowText;
     property Highlighter: TBCEditorHighlighter read FHighlighter;
     property IsScrolling: Boolean read FIsScrolling;
@@ -688,7 +688,6 @@ type
     property Minimap: TBCEditorMinimap read FMinimap write FMinimap;
     property Modified: Boolean read FModified write SetModified;
     property MouseMoveScrollCursors[const AIndex: Integer]: HCursor read GetMouseMoveScrollCursors write SetMouseMoveScrollCursors;
-    property OnKeyDown;
     property Options: TBCEditorOptions read FOptions write SetOptions default DefaultOptions;
     property PaintLock: Integer read FPaintLock;
     property ParentColor default False;
@@ -714,7 +713,9 @@ type
     property TabStop default True;
     property Text: string read GetText write SetText;
     property TextBetween[const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition]: string read GetTextBetween write SetTextBetween;
+    property TextBeginPosition: TBCEditorTextPosition read GetTextBeginPosition;
     property TextCaretPosition: TBCEditorTextPosition read GetTextCaretPosition write SetTextCaretPosition;
+    property TextEndPosition: TBCEditorTextPosition read GetTextEndPosition;
     property TextEntryMode: TBCEditorTextEntryMode read FTextEntryMode write SetTextEntryMode default temInsert;
     property TokenInfo: TBCEditorTokenInfo read FTokenInfo write SetTokenInfo;
     property TopLine: Integer read FTopLine write SetTopLine;
@@ -762,6 +763,9 @@ type
     property OnRightMarginMouseUp: TNotifyEvent read FOnRightMarginMouseUp write FOnRightMarginMouseUp;
     property OnScroll: TBCEditorScroll.TEvent read FOnScroll write FOnScroll;
     property OnSelectionChanged: TNotifyEvent read FOnSelectionChanged write FOnSelectionChanged;
+    property Canvas;
+    property Font;
+    property OnKeyDown;
   end;
 
   EBCEditorBaseException = class(Exception);
@@ -1244,8 +1248,6 @@ begin
   InitCodeFolding;
 end;
 
-{ Private declarations }
-
 function TBCBaseEditor.AllWhiteUpToTextPosition(const ATextPosition: TBCEditorTextPosition; const ALine: string;
   const ALength: Integer): Boolean;
 var
@@ -1323,6 +1325,11 @@ begin
   ClearCodeFolding;
 end;
 
+procedure TBCBaseEditor.BeginPaintLock;
+begin
+  Inc(FPaintLock);
+end;
+
 procedure TBCBaseEditor.BeginUndoBlock;
 begin
   FUndoList.BeginBlock;
@@ -1330,15 +1337,13 @@ end;
 
 procedure TBCBaseEditor.BeginUpdate;
 begin
-  IncPaintLock;
+  BeginPaintLock;
 end;
 
 procedure TBCBaseEditor.BookmarkListChange(ASender: TObject);
 begin
   Invalidate;
 end;
-
-{ Public declarations }
 
 function TBCBaseEditor.CanFocus: Boolean;
 begin
@@ -1437,8 +1442,6 @@ begin
     LNotifyEvent(ASender);
   LUndoList.OnAddedUndo(ASender);
 end;
-
-{ Protected declarations }
 
 procedure TBCBaseEditor.ChangeScale(M, D: Integer);
 begin
@@ -2203,15 +2206,6 @@ begin
   end
   else
     inherited;
-end;
-
-procedure TBCBaseEditor.DecPaintLock;
-begin
-  Assert(FPaintLock > 0);
-  Dec(FPaintLock);
-  if (FPaintLock = 0) and HandleAllocated then
-    if sfScrollbarChanged in FStateFlags then
-      UpdateScrollBars;
 end;
 
 procedure TBCBaseEditor.DeflateMinimapAndSearchMapRect(var ARect: TRect);
@@ -4597,7 +4591,7 @@ var
   end;
 
 begin
-  IncPaintLock;
+  BeginPaintLock;
   FLines.BeginUpdate;
   try
     LBeginTextPosition := SelectionBeginPosition;
@@ -4608,7 +4602,7 @@ begin
       InsertText;
   finally
     FLines.EndUpdate;
-    DecPaintLock;
+    EndPaintLock;
   end;
 end;
 
@@ -5110,7 +5104,7 @@ var
 begin
   if not ReadOnly and (ASource is TBCBaseEditor) and TBCBaseEditor(ASource).SelectionAvailable then
   begin
-    IncPaintLock;
+    BeginPaintLock;
     try
       inherited;
       LNewCaretPosition := PixelsToTextPosition(X, Y);
@@ -5176,7 +5170,7 @@ begin
         end;
       end;
     finally
-      DecPaintLock;
+      EndPaintLock;
       Exclude(FStateFlags, sfDragging);
     end;
   end
@@ -5254,6 +5248,15 @@ begin
     PaintCaretBlock(GetDisplayCaretPosition);
 end;
 
+procedure TBCBaseEditor.EndPaintLock();
+begin
+  Assert(FPaintLock > 0);
+  Dec(FPaintLock);
+  if (FPaintLock = 0) and HandleAllocated then
+    if sfScrollbarChanged in FStateFlags then
+      UpdateScrollBars;
+end;
+
 procedure TBCBaseEditor.EndUndoBlock;
 begin
   FUndoList.EndBlock;
@@ -5261,7 +5264,7 @@ end;
 
 procedure TBCBaseEditor.EndUpdate;
 begin
-  DecPaintLock;
+  EndPaintLock;
 end;
 
 procedure TBCBaseEditor.EnsureCursorPositionVisible(AForceToMiddle: Boolean = False; AEvenIfVisible: Boolean = False);
@@ -5275,7 +5278,7 @@ begin
   if FScrollPageWidth <= 0 then
     Exit;
   HandleNeeded;
-  IncPaintLock;
+  BeginPaintLock;
   try
     LDisplayCaretPosition := DisplayCaretPosition;
     LPoint := DisplayPositionToPixels(DisplayCaretPosition);
@@ -5324,7 +5327,7 @@ begin
         TopLine := LCaretRow - (VisibleLines - 1);
     end;
   finally
-    DecPaintLock;
+    EndPaintLock;
   end;
 end;
 
@@ -5358,7 +5361,7 @@ end;
 
 procedure TBCBaseEditor.ExecuteCommand(ACommand: TBCEditorCommand; AChar: Char; AData: Pointer);
 begin
-  IncPaintLock;
+  BeginPaintLock;
   try
     case ACommand of
       ecLeft, ecSelectionLeft:
@@ -5526,7 +5529,7 @@ begin
         PostMessage(Handle, UM_FREE_COMPLETIONPROPOSAL_POPUPWINDOW, 0, 0)
     end;
   finally
-    DecPaintLock;
+    EndPaintLock;
   end;
 end;
 
@@ -6128,11 +6131,9 @@ begin
     Result := 0;
 end;
 
-function TBCBaseEditor.GetHorizontalScrollMax: Integer;
+function TBCBaseEditor.GetHorizontalScrollMax(): Integer;
 begin
   Result := Max(Max(FLines.GetLengthOfLongestLine * FPaintHelper.CharWidth, FHorizontalScrollPosition), FScrollPageWidth);
-  if soPastEndOfLine in FScroll.Options then
-    Result := Result + FScrollPageWidth;
 end;
 
 function TBCBaseEditor.GetLeadingExpandedLength(const AStr: string; const ABorder: Integer = 0): Integer;
@@ -6790,6 +6791,11 @@ begin
   FSelection.Mode := LSelectionMode;
 end;
 
+function TBCBaseEditor.GetTextBeginPosition(): TBCEditorTextPosition;
+begin
+  Result := GetTextPosition(1, 0);
+end;
+
 function TBCBaseEditor.GetTextCaretPosition(): TBCEditorTextPosition;
 begin
   Result := DisplayToTextPosition(DisplayCaretPosition);
@@ -6798,6 +6804,14 @@ end;
 function TBCBaseEditor.GetTextCaretY: Integer;
 begin
   Result := GetDisplayTextLineNumber(DisplayCaretY) - 1;
+end;
+
+function TBCBaseEditor.GetTextEndPosition(): TBCEditorTextPosition;
+begin
+  if (Lines.Count = 0) then
+    Result := GetTextPosition(1, 0)
+  else
+    Result := GetTextPosition(Length(Lines[Lines.Count - 1]) + 1, Lines.Count - 1);
 end;
 
 function TBCBaseEditor.GetTextPositionOfMouse(out ATextPosition: TBCEditorTextPosition): Boolean;
@@ -7073,11 +7087,6 @@ begin
   LinesHookChanged;
 
   UpdateWordWrap(LOldWrap);
-end;
-
-procedure TBCBaseEditor.IncPaintLock;
-begin
-  Inc(FPaintLock);
 end;
 
 procedure TBCBaseEditor.InitCodeFolding;
@@ -7676,8 +7685,7 @@ end;
 
 procedure TBCBaseEditor.LeftMarginChanged(ASender: TObject);
 begin
-  if not (csLoading in ComponentState) and Assigned(FHighlighter) and not FHighlighter.Loading then
-    DoLeftMarginAutoSize
+  DoLeftMarginAutoSize();
 end;
 
 function TBCBaseEditor.LeftSpaceCount(const ALine: string; AWantTabs: Boolean = False): Integer;
@@ -8379,7 +8387,7 @@ procedure TBCBaseEditor.MouseMoveScrollTimerHandler(ASender: TObject);
 var
   LCursorPoint: TPoint;
 begin
-  IncPaintLock;
+  BeginPaintLock;
   try
     GetCursorPos(LCursorPoint);
     LCursorPoint := ScreenToClient(LCursorPoint);
@@ -8393,7 +8401,7 @@ begin
         TopLine := TopLine + FScrollDeltaY;
     end;
   finally
-    DecPaintLock;
+    EndPaintLock;
     Invalidate;
   end;
   ComputeScroll(LCursorPoint);
@@ -8480,7 +8488,7 @@ begin
     SelectionBeginPosition, SelectionEndPosition,
     '', FSelection.ActiveMode);
 
-  IncPaintLock();
+  BeginPaintLock();
 
   if (ASelectionCommand) then
   begin
@@ -8492,7 +8500,7 @@ begin
     SelectionBeginPosition := AAfterTextPosition;
   TextCaretPosition := AAfterTextPosition;
 
-  DecPaintLock();
+  EndPaintLock();
 end;
 
 procedure TBCBaseEditor.MoveCaretHorizontally(const X: Integer; const ASelectionCommand: Boolean);
@@ -9556,11 +9564,10 @@ var
 
         FPaintHelper.SetBackgroundColor(FLeftMargin.Colors.Background);
 
-        if (not Assigned(FMultiCarets) and (LLine = GetTextCaretY + 1) or
-          Assigned(FMultiCarets) and IsMultiEditCaretFound(LLine)) and (FLeftMargin.Colors.ActiveLineBackground <> clNone) then
+        if (not Assigned(FMultiCarets) and (LLine = GetTextCaretY + 1)) then
         begin
-          FPaintHelper.SetBackgroundColor(FLeftMargin.Colors.ActiveLineBackground);
-          Canvas.Brush.Color := FLeftMargin.Colors.ActiveLineBackground;
+          FPaintHelper.SetBackgroundColor(FLeftMargin.Colors.Background);
+          Canvas.Brush.Color := FLeftMargin.Colors.Background;
           if Assigned(FMultiCarets) then
             FillRect(LLineRect);
         end
@@ -9652,12 +9659,10 @@ var
       begin
         LLine := GetDisplayTextLineNumber(LIndex);
 
-        if (FLeftMargin.Colors.ActiveLineBackground <> clNone) and
-          not Assigned(FMultiCarets) and (LLine = GetTextCaretY + 1) or
-          Assigned(FMultiCarets) and IsMultiEditCaretFound(LLine) then
+        if (Assigned(FMultiCarets) and IsMultiEditCaretFound(LLine)) then
         begin
           SetPanelActiveLineRect;
-          Canvas.Brush.Color := FLeftMargin.Colors.ActiveLineBackground;
+          Canvas.Brush.Color := FLeftMargin.Colors.Background;
           FillRect(LPanelActiveLineRect);
         end
         else
@@ -9960,7 +9965,7 @@ begin
     Exit;
   if not Assigned(FSearchEngine) then
     Exit;
-  if (FSearchEngine.ResultCount = 0) and not (soHighlightSimilarTerms in FSelection.Options) then
+  if (FSearchEngine.ResultCount = 0) then
     Exit;
 
   { Background }
@@ -10161,7 +10166,7 @@ end;
 
 procedure TBCBaseEditor.PaintTextLines(AClipRect: TRect; const AFirstLine, ALastLine: Integer; const AMinimap: Boolean);
 var
-  LAnySelection: Boolean;
+  LSelectionAvailable: Boolean;
   LDisplayLine, LCurrentLine: Integer;
   LForegroundColor, LBackgroundColor, LBorderColor: TColor;
   LIsSelectionInsideLine: Boolean;
@@ -10970,8 +10975,6 @@ var
     end;
 
     procedure PrepareToken;
-    var
-      LPToken, LPWord: PChar;
     begin
       LBorderColor := clNone;
       LHighlighterAttribute := FHighlighter.GetTokenAttribute;
@@ -11037,41 +11040,6 @@ var
         if FSearch.InSelection.Active and LIsSearchInSelectionBlock then
           LBackgroundColor := FSearch.InSelection.Background;
 
-        if not FSyncEdit.Active and LAnySelection and (soHighlightSimilarTerms in FSelection.Options) and
-          not FSearch.InSelection.Active then
-        begin
-          LKeyword := '';
-
-          if soTermsCaseSensitive in FSelection.Options then
-          begin
-            if LTokenText = LWordAtSelection then
-              LKeyword := LSelectedText;
-
-            LIsCustomBackgroundColor := (LKeyword <> '') and (LKeyword = LTokenText);
-          end
-          else
-          begin
-            LPToken := PChar(LTokenText);
-            LPWord := PChar(LWordAtSelection);
-            while (LPToken^ <> BCEDITOR_NONE_CHAR) and (LPWord^ <> BCEDITOR_NONE_CHAR) and (CaseUpper(LPToken^) = CaseUpper(LPWord^)) do
-            begin
-              Inc(LPToken);
-              Inc(LPWord);
-            end;
-            LIsCustomBackgroundColor := (LPToken^ = BCEDITOR_NONE_CHAR) and (LPWord^ = BCEDITOR_NONE_CHAR);
-            if LIsCustomBackgroundColor then
-              LKeyword := LSelectedText;
-          end;
-
-          if LIsCustomBackgroundColor then
-          begin
-            if FSearch.Highlighter.Colors.Foreground <> clNone then
-              LForegroundColor := FSearch.Highlighter.Colors.Foreground;
-            LBackgroundColor := FSearch.Highlighter.Colors.Background;
-            LBorderColor := FSearch.Highlighter.Colors.Border;
-          end;
-        end;
-
         if (LMarkColor <> clNone) and not (LIsCurrentLine and FActiveLine.Visible and (FActiveLine.Color <> clNone)) then
         begin
           LIsCustomBackgroundColor := True;
@@ -11089,9 +11057,9 @@ var
     procedure SetSelectionVariables;
     begin
       LWordAtSelection := GetWordAtSelection(LSelectedText);
-      LAnySelection := GetSelectionAvailable;
+      LSelectionAvailable := GetSelectionAvailable;
 
-      if LAnySelection then
+      if LSelectionAvailable then
       begin
         LSelectionBeginPosition := GetSelectionBeginPosition;
         LSelectionEndPosition := GetSelectionEndPosition;
@@ -11108,7 +11076,7 @@ var
       LLineSelectionStart := 0;
       LLineSelectionEnd := 0;
 
-      if LAnySelection and (LCurrentLine >= LSelectionBeginPosition.Line) and
+      if LSelectionAvailable and (LCurrentLine >= LSelectionBeginPosition.Line) and
         (LCurrentLine <= LSelectionEndPosition.Line) then
       begin
         LLineSelectionStart := 1;
@@ -11644,17 +11612,17 @@ procedure TBCBaseEditor.Redo();
 
   procedure RemoveGroupBreak;
   var
-    RedoItem: TBCEditorUndoList.TItem;
+    RedoItem: TBCEditorUndoList.PItem;
   begin
     if (FRedoList.LastUndoType = utGroupBreak) then
     begin
-      FRedoList.PopItem(@RedoItem);
+      FRedoList.PopItem(RedoItem);
       FUndoList.AddGroupBreak;
     end;
   end;
 
 var
-  LRedoItem: TBCEditorUndoList.TItem;
+  LRedoItem: TBCEditorUndoList.PItem;
   LLastChangeBlockNumber: Integer;
   LLastChangeReason: TBCEditorUndoList.TUndoType;
   LLastChangeString: string;
@@ -11671,18 +11639,18 @@ begin
   LLastChangeString := FRedoList.LastText;
   LPasteAction := LLastChangeReason = utPaste;
 
-  if (FRedoList.PeekItem(@LRedoItem)) then
+  if (FRedoList.PeekItem(LRedoItem)) then
   begin
     repeat
       RedoItem();
       LKeepGoing := False;
-      if (FRedoList.PeekItem(@LRedoItem)) then
+      if (FRedoList.PeekItem(LRedoItem)) then
       begin
         if uoGroupUndo in FUndoOptions then
           LKeepGoing := LPasteAction and (FRedoList.LastText = LLastChangeString) or
-            (LLastChangeReason = LRedoItem.UndoType) and (LRedoItem.BlockNumber = LLastChangeBlockNumber) or
-            (LRedoItem.BlockNumber <> 0) and (LRedoItem.BlockNumber = LLastChangeBlockNumber);
-        LLastChangeReason := LRedoItem.UndoType;
+            (LLastChangeReason = LRedoItem^.UndoType) and (LRedoItem^.BlockNumber = LLastChangeBlockNumber) or
+            (LRedoItem^.BlockNumber <> 0) and (LRedoItem^.BlockNumber = LLastChangeBlockNumber);
+        LLastChangeReason := LRedoItem^.UndoType;
         LPasteAction := LLastChangeReason = utPaste;
       end;
     until not LKeepGoing;
@@ -11695,8 +11663,9 @@ end;
 
 procedure TBCBaseEditor.RedoItem;
 var
-  LUndoItem: TBCEditorUndoList.TItem;
-  LRun, LStrToDelete: PChar;
+  LUndoItem: TBCEditorUndoList.PItem;
+  LRun: PChar;
+  LStrToDelete: PChar;
   LLength: Integer;
   LTempString: string;
   LTextPosition: TBCEditorTextPosition;
@@ -11704,72 +11673,72 @@ var
   LBeginX: Integer;
 begin
   LChangeScrollPastEndOfLine := not (soPastEndOfLine in FScroll.Options);
-  if (FRedoList.PopItem(@LUndoItem)) then
+  if (FRedoList.PopItem(LUndoItem)) then
     try
-      FSelection.ActiveMode := LUndoItem.SelectionMode;
-      IncPaintLock;
+      FSelection.ActiveMode := LUndoItem^.SelectionMode;
+      BeginPaintLock;
 
       if LChangeScrollPastEndOfLine then
         FScroll.SetOption(soPastEndOfLine, True);
 
       FUndoList.InsideRedo := True;
-      case LUndoItem.UndoType of
+      case LUndoItem^.UndoType of
         utCaret:
           begin
-            FUndoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              '', FSelection.ActiveMode, LUndoItem.BlockNumber);
-            TextCaretPosition := LUndoItem.TextCaretPosition;
-            SelectionBeginPosition := LUndoItem.SelectionBeginPosition;
-            SelectionEndPosition := LUndoItem.SelectionEndPosition;
+            FUndoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              '', FSelection.ActiveMode, LUndoItem^.BlockNumber);
+            TextCaretPosition := LUndoItem^.TextCaretPosition;
+            SelectionBeginPosition := LUndoItem^.SelectionBeginPosition;
+            SelectionEndPosition := LUndoItem^.SelectionEndPosition;
           end;
         utSelection:
           begin
-            FUndoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              '', LUndoItem.SelectionMode, LUndoItem.BlockNumber);
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionEndPosition);
+            FUndoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              '', LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionEndPosition);
           end;
         utInsert, utPaste, utDragDropInsert, utLineBreak:
           begin
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionBeginPosition);
-            DoSelectedText(LUndoItem.SelectionMode, PChar(LUndoItem.Text), False,
-              LUndoItem.SelectionBeginPosition, LUndoItem.BlockNumber);
-            FUndoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              '', LUndoItem.SelectionMode, LUndoItem.BlockNumber);
-            if LUndoItem.UndoType = utDragDropInsert then
-              SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-                LUndoItem.SelectionEndPosition);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionBeginPosition);
+            DoSelectedText(LUndoItem^.SelectionMode, PChar(LUndoItem^.Text), False,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.BlockNumber);
+            FUndoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              '', LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
+            if LUndoItem^.UndoType = utDragDropInsert then
+              SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+                LUndoItem^.SelectionEndPosition);
           end;
         utDelete:
           begin
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionEndPosition);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionEndPosition);
             LTempString := SelectedText;
-            DoSelectedText(LUndoItem.SelectionMode, PChar(LUndoItem.Text), False,
-              LUndoItem.SelectionBeginPosition, LUndoItem.BlockNumber);
-            FUndoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LTempString, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
-            TextCaretPosition := LUndoItem.TextCaretPosition;
+            DoSelectedText(LUndoItem^.SelectionMode, PChar(LUndoItem^.Text), False,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.BlockNumber);
+            FUndoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LTempString, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
+            TextCaretPosition := LUndoItem^.TextCaretPosition;
           end;
         utIndent:
           begin
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionEndPosition);
-            FUndoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LUndoItem.Text, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionEndPosition);
+            FUndoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LUndoItem^.Text, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
           end;
         utUnindent:
           begin
-            LStrToDelete := PChar(LUndoItem.Text);
-            SetTextCaretY(LUndoItem.SelectionBeginPosition.Line);
-            if LUndoItem.SelectionMode = smColumn then
-              LBeginX := Min(LUndoItem.SelectionBeginPosition.Char, LUndoItem.SelectionEndPosition.Char)
+            LStrToDelete := PChar(LUndoItem^.Text);
+            SetTextCaretY(LUndoItem^.SelectionBeginPosition.Line);
+            if LUndoItem^.SelectionMode = smColumn then
+              LBeginX := Min(LUndoItem^.SelectionBeginPosition.Char, LUndoItem^.SelectionEndPosition.Char)
             else
               LBeginX := 1;
             repeat
@@ -11795,26 +11764,26 @@ begin
               end;
               LStrToDelete := LRun;
             until LRun^ = BCEDITOR_NONE_CHAR;
-            if LUndoItem.SelectionMode = smColumn then
-              SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-                LUndoItem.SelectionEndPosition)
+            if LUndoItem^.SelectionMode = smColumn then
+              SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+                LUndoItem^.SelectionEndPosition)
             else
             begin
-              LTextPosition.Char := LUndoItem.SelectionBeginPosition.Char - FTabs.Width;
-              LTextPosition.Line := LUndoItem.SelectionBeginPosition.Line;
+              LTextPosition.Char := LUndoItem^.SelectionBeginPosition.Char - FTabs.Width;
+              LTextPosition.Line := LUndoItem^.SelectionBeginPosition.Line;
               SetCaretAndSelection(LTextPosition, LTextPosition,
-                GetTextPosition(LUndoItem.SelectionEndPosition.Char - LLength, LUndoItem.SelectionEndPosition.Line));
+                GetTextPosition(LUndoItem^.SelectionEndPosition.Char - LLength, LUndoItem^.SelectionEndPosition.Line));
             end;
-            FUndoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LUndoItem.Text, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            FUndoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LUndoItem^.Text, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
           end;
       end;
     finally
       FUndoList.InsideRedo := False;
       if LChangeScrollPastEndOfLine then
         FScroll.SetOption(soPastEndOfLine, False);
-      DecPaintLock;
+      EndPaintLock;
     end;
 end;
 
@@ -11964,7 +11933,7 @@ var
   begin
     if not LPaintLocked and LIsReplaceAll and not LIsPrompt then
     begin
-      IncPaintLock;
+      BeginPaintLock;
       LPaintLocked := True;
     end;
   end;
@@ -12085,7 +12054,7 @@ begin
     FReplaceLock := False;
     InitCodeFolding;
     if LPaintLocked then
-      DecPaintLock;
+      EndPaintLock;
 
     if CanFocus then
       SetFocus;
@@ -12963,7 +12932,7 @@ var
   LDisplayPosition: TBCEditorDisplayPosition;
   LTextPosition, LTextCaretPosition: TBCEditorTextPosition;
 begin
-  IncPaintLock;
+  BeginPaintLock;
   try
     GetCursorPos(LCursorPoint);
     LCursorPoint := ScreenToClient(LCursorPoint);
@@ -12995,7 +12964,7 @@ begin
       end;
     end;
   finally
-    DecPaintLock;
+    EndPaintLock;
     Invalidate;
   end;
   ComputeScroll(LCursorPoint);
@@ -13251,14 +13220,14 @@ var
   LOldSelectionMode: TBCEditorSelectionMode;
 begin
   LOldSelectionMode := FSelection.ActiveMode;
-  IncPaintLock;
+  BeginPaintLock;
   try
     TextCaretPosition := ACaretPosition;
     SelectionBeginPosition := ABlockBeginPosition;
     SelectionEndPosition := ABlockEndPosition;
   finally
     FSelection.ActiveMode := LOldSelectionMode;
-    DecPaintLock;
+    EndPaintLock;
   end;
 end;
 
@@ -13301,7 +13270,7 @@ begin
     end;
   end;
 
-  IncPaintLock;
+  BeginPaintLock;
   try
     if FDisplayCaretX <> LValue.Column then
       FDisplayCaretX := LValue.Column;
@@ -13311,7 +13280,7 @@ begin
     Include(FStateFlags, sfCaretChanged);
     Include(FStateFlags, sfScrollbarChanged);
   finally
-    DecPaintLock;
+    EndPaintLock;
   end;
 end;
 
@@ -13675,18 +13644,11 @@ end;
 
 procedure TBCBaseEditor.SetText(const AValue: string);
 var
-  LTextCaretPosition: TBCEditorTextPosition;
+  Stream: TStringStream;
 begin
-  IncPaintLock;
-  BeginUndoBlock;
-  SelectAll;
-  SelectedText := AValue;
-  LTextCaretPosition := GetTextPosition(1, 0);
-  TextCaretPosition := LTextCaretPosition;
-  SelectionBeginPosition := LTextCaretPosition;
-  SelectionEndPosition := LTextCaretPosition;
-  EndUndoBlock;
-  DecPaintLock;
+  Stream := TStringStream.Create(AValue);
+  LoadFromStream(Stream);
+  Stream.Free();
 end;
 
 procedure TBCBaseEditor.SetTextBetween(const ATextBeginPosition: TBCEditorTextPosition;
@@ -13701,7 +13663,7 @@ begin
     FSelectionBeginPosition, FSelectionBeginPosition,
     '', FSelection.ActiveMode);
   FSelectionBeginPosition := ATextBeginPosition;
-  FSelectionEndPosition := ATextEndPosition;
+  FSelectionEndPosition := MinTextPosition(ATextEndPosition, TextEndPosition);
   SelectedText := AValue;
   FUndoList.EndBlock;
   FSelection.Mode := LSelectionMode;
@@ -14451,17 +14413,17 @@ procedure TBCBaseEditor.Undo();
 
   procedure RemoveGroupBreak;
   var
-    UndoItem: TBCEditorUndoList.TItem;
+    UndoItem: TBCEditorUndoList.PItem;
   begin
     if (FUndoList.LastUndoType = utGroupBreak) then
     begin
-      FUndoList.PopItem(@UndoItem);
+      FUndoList.PopItem(UndoItem);
       FRedoList.AddGroupBreak();
     end;
   end;
 
 var
-  LUndoItem: TBCEditorUndoList.TItem;
+  LUndoItem: TBCEditorUndoList.PItem;
   LLastChangeBlockNumber: Integer;
   LLastChangeReason: TBCEditorUndoList.TUndoType;
   LLastChangeString: string;
@@ -14480,17 +14442,17 @@ begin
   LLastChangeString := FUndoList.LastText;
   LIsPasteAction := LLastChangeReason = utPaste;
 
-  if (FUndoList.PeekItem(@LUndoItem)) then
+  if (FUndoList.PeekItem(LUndoItem)) then
     repeat
       UndoItem;
       LIsKeepGoing := False;
-      if (FUndoList.PeekItem(@LUndoItem)) then
+      if (FUndoList.PeekItem(LUndoItem)) then
       begin
         if uoGroupUndo in FUndoOptions then
           LIsKeepGoing := LIsPasteAction and (FUndoList.LastText = LLastChangeString) or
-            (LLastChangeReason = LUndoItem.UndoType) and (LUndoItem.BlockNumber = LLastChangeBlockNumber) or
-            (LUndoItem.BlockNumber <> 0) and (LUndoItem.BlockNumber = LLastChangeBlockNumber);
-        LLastChangeReason := LUndoItem.UndoType;
+            (LLastChangeReason = LUndoItem^.UndoType) and (LUndoItem^.BlockNumber = LLastChangeBlockNumber) or
+            (LUndoItem^.BlockNumber <> 0) and (LUndoItem^.BlockNumber = LLastChangeBlockNumber);
+        LLastChangeReason := LUndoItem^.UndoType;
         LIsPasteAction := LLastChangeReason = utPaste;
       end;
     until not LIsKeepGoing;
@@ -14500,52 +14462,52 @@ end;
 
 procedure TBCBaseEditor.UndoItem;
 var
-  LUndoItem: TBCEditorUndoList.TItem;
+  LUndoItem: TBCEditorUndoList.PItem;
   LTempPosition: TBCEditorTextPosition;
   LTempText: string;
   LChangeScrollPastEndOfLine: Boolean;
 begin
   LChangeScrollPastEndOfLine := not (soPastEndOfLine in FScroll.Options);
-  if (FUndoList.PopItem(@LUndoItem)) then
+  if (FUndoList.PopItem(LUndoItem)) then
     try
-      FSelection.ActiveMode := LUndoItem.SelectionMode;
-      IncPaintLock;
+      FSelection.ActiveMode := LUndoItem^.SelectionMode;
+      BeginPaintLock;
 
       if LChangeScrollPastEndOfLine then
         FScroll.SetOption(soPastEndOfLine, True);
 
-      case LUndoItem.UndoType of
+      case LUndoItem^.UndoType of
         utCaret:
           begin
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              '', FSelection.ActiveMode, LUndoItem.BlockNumber);
-            TextCaretPosition := LUndoItem.TextCaretPosition;
-            SelectionBeginPosition := LUndoItem.SelectionBeginPosition;
-            SelectionEndPosition := LUndoItem.SelectionEndPosition;
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              '', FSelection.ActiveMode, LUndoItem^.BlockNumber);
+            TextCaretPosition := LUndoItem^.TextCaretPosition;
+            SelectionBeginPosition := LUndoItem^.SelectionBeginPosition;
+            SelectionEndPosition := LUndoItem^.SelectionEndPosition;
           end;
         utSelection:
           begin
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              '', LUndoItem.SelectionMode, LUndoItem.BlockNumber);
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionEndPosition);
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              '', LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionEndPosition);
           end;
         utInsert, utPaste, utDragDropInsert:
           begin
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionEndPosition);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionEndPosition);
             LTempText := SelectedText;
-            DoSelectedText(LUndoItem.SelectionMode, nil, False,
-              LUndoItem.SelectionBeginPosition, LUndoItem.BlockNumber);
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LTempText, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            DoSelectedText(LUndoItem^.SelectionMode, nil, False,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.BlockNumber);
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LTempText, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
           end;
         utDelete:
           begin
-            LTempPosition := MinTextPosition(LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition);
+            LTempPosition := MinTextPosition(LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition);
 
             while LTempPosition.Line > FLines.Count do
             begin
@@ -14553,71 +14515,71 @@ begin
               FLines.Add('');
             end;
 
-            FSelectionBeginPosition := LUndoItem.SelectionBeginPosition;
+            FSelectionBeginPosition := LUndoItem^.SelectionBeginPosition;
             FSelectionEndPosition := FSelectionBeginPosition;
 
-            DoSelectedText(LUndoItem.SelectionMode, PChar(LUndoItem.Text), False,
-              MinTextPosition(LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition),
-              LUndoItem.BlockNumber);
+            DoSelectedText(LUndoItem^.SelectionMode, PChar(LUndoItem^.Text), False,
+              MinTextPosition(LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition),
+              LUndoItem^.BlockNumber);
 
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              '', LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              '', LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
 
-            TextCaretPosition := LUndoItem.TextCaretPosition;
-            SelectionBeginPosition := LUndoItem.SelectionBeginPosition;
-            SelectionEndPosition := LUndoItem.SelectionEndPosition;
+            TextCaretPosition := LUndoItem^.TextCaretPosition;
+            SelectionBeginPosition := LUndoItem^.SelectionBeginPosition;
+            SelectionEndPosition := LUndoItem^.SelectionEndPosition;
             EnsureCursorPositionVisible;
           end;
         utLineBreak:
           begin
-            TextCaretPosition := LUndoItem.TextCaretPosition;
+            TextCaretPosition := LUndoItem^.TextCaretPosition;
 
-            FLines.Strings[LUndoItem.SelectionBeginPosition.Line] :=
-              FLines.Strings[LUndoItem.SelectionBeginPosition.Line] + FLines.Strings[LUndoItem.SelectionBeginPosition.Line + 1];
-            FLines.Delete(LUndoItem.SelectionEndPosition.Line);
+            FLines.Strings[LUndoItem^.SelectionBeginPosition.Line] :=
+              FLines.Strings[LUndoItem^.SelectionBeginPosition.Line] + FLines.Strings[LUndoItem^.SelectionBeginPosition.Line + 1];
+            FLines.Delete(LUndoItem^.SelectionEndPosition.Line);
 
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              Lines.LineBreak, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              Lines.LineBreak, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
           end;
         utIndent:
           begin
-            RemoveIndent(LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LUndoItem.Text, LUndoItem.SelectionMode);
-            SetCaretAndSelection(LUndoItem.TextCaretPosition, LUndoItem.SelectionBeginPosition,
-              LUndoItem.SelectionEndPosition);
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LUndoItem.Text, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            RemoveIndent(LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LUndoItem^.Text, LUndoItem^.SelectionMode);
+            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
+              LUndoItem^.SelectionEndPosition);
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LUndoItem^.Text, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
           end;
         utUnindent:
           begin
-            AddIndent(LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LUndoItem.Text, LUndoItem.SelectionMode);
-            FRedoList.PushItem(LUndoItem.UndoType, LUndoItem.TextCaretPosition,
-              LUndoItem.SelectionBeginPosition, LUndoItem.SelectionEndPosition,
-              LUndoItem.Text, LUndoItem.SelectionMode, LUndoItem.BlockNumber);
+            AddIndent(LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LUndoItem^.Text, LUndoItem^.SelectionMode);
+            FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
+              LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
+              LUndoItem^.Text, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
           end;
       end;
     finally
       if LChangeScrollPastEndOfLine then
         FScroll.SetOption(soPastEndOfLine, False);
-      DecPaintLock;
+      EndPaintLock;
     end;
 end;
 
 procedure TBCBaseEditor.UndoRedoAdded(ASender: TObject);
 var
   Valid: Boolean;
-  UndoItem: TBCEditorUndoList.TItem;
+  UndoItem: TBCEditorUndoList.PItem;
 begin
-  Valid := (ASender <> FUndoList) and FUndoList.PeekItem(@UndoItem);
+  Valid := (ASender <> FUndoList) and FUndoList.PeekItem(UndoItem);
 
   if (UndoList.Changed or (UndoList.ItemCount = 0)) then
     SetModified(UndoList.ChangeCount > 0);
 
-  if (not FUndoList.InsideRedo and Valid and not (UndoItem.UndoType in [utCaret, utGroupBreak])) then
+  if (not FUndoList.InsideRedo and Valid and not (UndoItem^.UndoType in [utCaret, utGroupBreak])) then
     FRedoList.Clear();
 end;
 

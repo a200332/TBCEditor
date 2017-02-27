@@ -16,7 +16,6 @@ type
 
     TColors = class(TPersistent)
     strict private
-      FActiveLineBackground: TColor;
       FBackground: TColor;
       FBookmarkBackground: TColor;
       FBookmarkPanelBackground: TColor;
@@ -29,7 +28,6 @@ type
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
-      property ActiveLineBackground: TColor read FActiveLineBackground write FActiveLineBackground default clActiveLineBackground;
       property Background: TColor read FBackground write FBackground default clLeftMarginBackground;
       property BookmarkBackground: TColor read FBookmarkBackground write FBookmarkBackground default clNone;
       property BookmarkPanelBackground: TColor read FBookmarkPanelBackground write FBookmarkPanelBackground default clLeftMarginBackground;
@@ -229,7 +227,6 @@ constructor TBCEditorLeftMargin.TColors.Create;
 begin
   inherited;
 
-  FActiveLineBackground := clActiveLineBackground;
   FBackground := clLeftMarginBackground;
   FBookmarkBackground := clNone;
   FBookmarkPanelBackground := clLeftMarginBackground;
@@ -245,7 +242,6 @@ begin
   if ASource is TBCEditorLeftMargin.TColors then
   with ASource as TBCEditorLeftMargin.TColors do
   begin
-    Self.FActiveLineBackground := FActiveLineBackground;
     Self.FBackground := FBackground;
     Self.FBookmarkPanelBackground := FBookmarkPanelBackground;
     Self.FBorder := FBorder;
@@ -458,7 +454,7 @@ end;
 
 procedure TBCEditorLeftMargin.TLineNumbers.SetDigitCount(AValue: Integer);
 begin
-  AValue := MinMax(AValue, 2, 12);
+  AValue := MinMax(AValue, 1, 12);
   if FDigitCount <> AValue then
   begin
     FDigitCount := AValue;
