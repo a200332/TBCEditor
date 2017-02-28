@@ -149,12 +149,13 @@ procedure TBCEditorCodeFoldingHintForm.Execute(const ACurrentString: string; X, 
 
   procedure RecalculateFormPlacement;
   var
-    LIndex: Integer;
-    LWidth: Integer;
-    LHeight: Integer;
-    LX, LY: Integer;
     LBorderWidth: Integer;
+    LHeight: Integer;
+    LIndex: Integer;
     LNewWidth: Integer;
+    LWidth: Integer;
+    LX: Integer;
+    LY: Integer;
   begin
     LX := X;
     LY := Y;

@@ -358,14 +358,14 @@ var
   LEvent: string;
   LIndex: Integer;
 begin
-  Result := 'macro ' + MacroName + SLineBreak + 'begin' + SLineBreak;
+  Result := 'macro ' + MacroName + Editor.Lines.LineBreak + 'begin' + Editor.Lines.LineBreak;
   if Assigned(FEvents) then
   begin
     for LIndex := 0 to FEvents.Count - 1 do
     begin
       LEvent := Events[LIndex].AsString;
       if LEvent <> '' then
-        Result := Result + '  ' + LEvent + SLineBreak;
+        Result := Result + '  ' + LEvent + Editor.Lines.LineBreak;
     end;
   end;
   Result := Result + 'end';

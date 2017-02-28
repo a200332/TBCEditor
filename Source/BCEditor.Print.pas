@@ -1946,9 +1946,9 @@ var
 
   procedure SplitToken;
   var
-    LTempText: string;
-    LLast: Integer;
     LFirstPosition: Integer;
+    LLast: Integer;
+    LTempText: string;
     LTokenEnd: Integer;
   begin
     LLast := LTokenPosition;

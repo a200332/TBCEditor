@@ -9,8 +9,6 @@ uses
 
 type
   TBCEditorLines = class(TStrings)
-  const
-    LineBreak = sLineBreak;
   type
     TChangeEvent = procedure(ASender: TObject; const AIndex: Integer; const ACount: Integer) of object;
 
@@ -215,11 +213,13 @@ var
   LBeginChar: Integer;
   LCharIndex: Integer;
   LIndex: Integer;
+  LLineBreakLength: Integer;
   LLineLength: Integer;
 begin
   Result.Line := ATextBeginPosition.Line;
   LBeginChar := ATextBeginPosition.Char - 1;
   LCharIndex := ACharIndex;
+  LLineBreakLength := Length(LineBreak);
   for LIndex := ATextBeginPosition.Line to Count do
   begin
     LLineLength := Length(Self.Strings[LIndex]) - LBeginChar;
@@ -232,7 +232,7 @@ begin
     begin
       Inc(Result.Line);
       Dec(LCharIndex, LLineLength);
-      Dec(LCharIndex, Length(LineBreak));
+      Dec(LCharIndex, LLineBreakLength);
     end;
     LBeginChar := 0;
   end;
@@ -252,7 +252,6 @@ begin
     if Assigned(FOnCleared) then
       FOnCleared(Self);
   end;
-  { Clear information about longest line }
   FIndexOfLongestLine := -1;
   FLengthOfLongestLine := 0;
 end;
@@ -502,7 +501,7 @@ begin
       end;
     end;
   end;
-  if (fIndexOfLongestLine >= 0) and (FIndexOfLongestLine < FCount) then
+  if (FIndexOfLongestLine >= 0) and (FIndexOfLongestLine < FCount) then
     Result := FList^[FIndexOfLongestLine].ExpandedLength
   else
     Result := 0;
@@ -541,8 +540,8 @@ end;
 
 function TBCEditorLines.GetTextStr: string;
 var
-  i: Integer;
-  j: Integer;
+  I: Integer;
+  J: Integer;
   LLength: Integer;
   LLineBreak: string;
   LLineBreakLength: Integer;
@@ -554,22 +553,20 @@ begin
   LLineBreakLength := Length(LLineBreak);
   SetString(Result, nil, LSize);
   LPValue := Pointer(Result);
-  for i := 0 to FCount - 1 do
+  for I := 0 to FCount - 1 do
   begin
-    LLength := Length(FList^[i].Value);
-    if LLength <> 0 then
+    LLength := Length(FList^[I].Value);
+    if (LLength <> 0) then
     begin
-      System.Move(Pointer(FList^[i].Value)^, LPValue^, LLength * SizeOf(Char));
-      for j := 0 to LLength - 1 do
+      System.Move(Pointer(FList^[I].Value)^, LPValue^, LLength * SizeOf(Char));
+      for J := 0 to LLength - 1 do
       begin
-        if LPValue^ = BCEDITOR_SUBSTITUTE_CHAR then
+        if (LPValue^ = BCEDITOR_SUBSTITUTE_CHAR) then
           LPValue^ := BCEDITOR_NONE_CHAR;
         Inc(LPValue);
       end;
     end;
-    if i = FCount - 1 then
-      Exit;
-    if LLineBreakLength <> 0 then
+    if (I < FCount - 1) then
     begin
       System.Move(Pointer(LLineBreak)^, LPValue^, LLineBreakLength * SizeOf(Char));
       Inc(LPValue, LLineBreakLength);
@@ -949,6 +946,7 @@ begin
   if Assigned(FOnBeforeSetText) then
     FOnBeforeSetText(Self);
   Clear();
+  LineBreak := BCEDITOR_CARRIAGE_RETURN + BCEDITOR_LINEFEED;
   FIndexOfLongestLine := -1;
   if (AValue <> '') then
   begin
@@ -958,16 +956,22 @@ begin
     while LPValue <= LPLastChar do
       if (LPValue^ = BCEDITOR_CARRIAGE_RETURN) then
       begin
+        if (FCount = 1) then
+          LineBreak := BCEDITOR_CARRIAGE_RETURN;
         Inc(LPValue);
         if (LPValue^ = BCEDITOR_LINEFEED) then
+        begin
+          if (FCount = 1) then
+            LineBreak := BCEDITOR_CARRIAGE_RETURN + BCEDITOR_LINEFEED;
           Inc(LPValue);
+        end;
         InsertItem(FCount, '');
       end
       else if (LPValue^ = BCEDITOR_LINEFEED) then
       begin
+        if (FCount = 1) then
+          LineBreak := BCEDITOR_LINEFEED;
         Inc(LPValue);
-        if (LPValue^ = BCEDITOR_CARRIAGE_RETURN) then
-          Inc(LPValue);
         InsertItem(FCount, '');
       end
       else
@@ -1021,13 +1025,15 @@ end;
 function TBCEditorLines.TextPositionToCharIndex(const ATextPosition: TBCEditorTextPosition): Integer;
 var
   LIndex: Integer;
+  LLineBreakLength: Integer;
   LTextPosition: TBCEditorTextPosition;
 begin
   Result := 0;
+  LLineBreakLength := Length(LineBreak);
   LTextPosition.Char := ATextPosition.Char;
   LTextPosition.Line := Min(Count, ATextPosition.Line) - 1;
   for LIndex := 0 to LTextPosition.Line do
-    Inc(Result, Length(Strings[LIndex]) + Length(LineBreak));
+    Inc(Result, Length(Strings[LIndex]) + LLineBreakLength);
   Inc(Result, LTextPosition.Char - 1);
   // Result is 0-based
 end;

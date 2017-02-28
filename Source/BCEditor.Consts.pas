@@ -45,6 +45,7 @@ const
     BCEDITOR_CARRIAGE_RETURN, BCEDITOR_SPACE_CHAR, BCEDITOR_SUBSTITUTE_CHAR];
   { Encoding }
   BCEDITOR_UTF8BOM: array [0 .. 2] of Byte = ($EF, $BB, $BF);
+  BCEDITOR_BOM_UNICODE_LE: array [0 .. 1] of Byte = ($FF, $FE);
   { Highlighter attribute elements }
   BCEDITOR_ATTRIBUTE_ELEMENT_COMMENT = 'Comment';
   BCEDITOR_ATTRIBUTE_ELEMENT_STRING = 'String';

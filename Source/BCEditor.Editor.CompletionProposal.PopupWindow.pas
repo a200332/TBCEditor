@@ -99,7 +99,7 @@ begin
   FCompletionProposal.Width := Width;
 
   if not FValueSet and Assigned(FOnCanceled) then
-    FOnCanceled(Self);
+    FOnCanceled(FCompletionProposal);
 
   FBitmapBuffer.Free;
   SetLength(FItemIndexArray, 0);
@@ -161,11 +161,15 @@ var
 
   procedure CalculateColumnWidths;
   var
-    LColumnIndex, LIndex: Integer;
-    LMaxWidth, LTempWidth, LAutoWidthCount, LWidthSum: Integer;
+    LAutoWidthCount: Integer;
+    LColumnIndex: Integer;
+    LIndex: Integer;
     LItems: TBCEditorCompletionProposal.TItems;
+    LMaxWidth: Integer;
     LProposalColumn: TBCEditorCompletionProposal.TColumns.TColumn;
+    LTempWidth: Integer;
     LVisibleColumnCount: Integer;
+    LWidthSum: Integer;
   begin
     LVisibleColumnCount := 0;
     for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
@@ -216,8 +220,8 @@ var
 
   function GetTitleVisible: Boolean;
   var
-    LColumnIndex: Integer;
     LColumn: TBCEditorCompletionProposal.TColumns.TColumn;
+    LColumnIndex: Integer;
   begin
     Result := False;
     for LColumnIndex := 0 to FCompletionProposal.Columns.Count - 1 do
@@ -383,7 +387,7 @@ begin
         LValue := SelectedText;
 
       if Assigned(FOnSelected) then
-        FOnSelected(Self, LValue);
+        FOnSelected(FCompletionProposal, LValue);
 
       FValueSet := SelectedText <> LValue;
       if FValueSet then
@@ -693,7 +697,9 @@ procedure TBCEditorCompletionProposalPopupWindow.SetCurrentString(const AValue: 
 
   procedure RecalcList;
   var
-    LIndex, LIndex2, LItemsCount: Integer;
+    LIndex: Integer;
+    LIndex2: Integer;
+    LItemsCount: Integer;
   begin
     LIndex2 := 0;
     LItemsCount := GetItems.Count;

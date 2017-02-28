@@ -7,7 +7,7 @@ uses
   BCEditor.Lines;
 
 type
-  TBCEditorSearchBase = class
+  TBCEditorCustomSearch = class
   strict private
     FCaseSensitive: Boolean;
     FStatus: string;
@@ -33,7 +33,7 @@ type
     property WholeWordsOnly: Boolean read FWholeWordsOnly write FWholeWordsOnly default False;
   end;
 
-  TBCEditorNormalSearch = class(TBCEditorSearchBase)
+  TBCEditorNormalSearch = class(TBCEditorCustomSearch)
   strict private
     FCount: Integer;
     FLookAt: Integer;
@@ -69,7 +69,7 @@ type
     property Pattern read FCasedPattern;
   end;
 
-  TBCEditorRegexSearch = class(TBCEditorSearchBase)
+  TBCEditorRegexSearch = class(TBCEditorCustomSearch)
   strict private
     FLengths: TList;
     FOptions: TRegexOptions;
@@ -110,7 +110,7 @@ uses
 
 { TBCEditorSearchBase *********************************************************}
 
-constructor TBCEditorSearchBase.Create;
+constructor TBCEditorCustomSearch.Create;
 begin
   inherited;
 
@@ -118,7 +118,7 @@ begin
   FWholeWordsOnly := False;
 end;
 
-procedure TBCEditorSearchBase.SetCaseSensitive(const AValue: Boolean);
+procedure TBCEditorCustomSearch.SetCaseSensitive(const AValue: Boolean);
 begin
   FCaseSensitive := AValue;
   CaseSensitiveChanged;

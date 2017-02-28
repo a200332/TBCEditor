@@ -14,7 +14,7 @@ type
     constructor Create;
     procedure Assign(ASource: TPersistent); override;
   published
-    property Enabled: Boolean read FEnabled write FEnabled default True;
+    property Enabled: Boolean read FEnabled write FEnabled default False;
     property ReplaceChar: AnsiChar read FReplaceChar write FReplaceChar default '?';
   end;
 
@@ -24,7 +24,7 @@ constructor TBCEditorUnknownChars.Create;
 begin
   inherited;
 
-  FEnabled := True;
+  FEnabled := False;
   FReplaceChar := '?';
 end;
 
