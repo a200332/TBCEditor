@@ -3,8 +3,8 @@ unit BCEditor.Editor.CodeFolding.Hint.Form;
 interface
 
 uses
-  Classes, Types,
   Windows, Messages,
+  Classes, Types,
   Forms, Controls, Graphics;
 
 type
@@ -242,8 +242,8 @@ procedure TBCEditorCodeFoldingHintForm.Paint;
   end;
 
 var
-  LRect: TRect;
   LIndex: Integer;
+  LRect: TRect;
 begin
   ResetCanvas;
   LRect := ClientRect;

@@ -104,8 +104,8 @@ type
 implementation {***************************************************************}
 
 uses
-  Character, SysUtils,
   Windows,
+  Character, SysUtils,
   BCEditor.Language, BCEditor.Consts;
 
 { TBCEditorSearchBase *********************************************************}

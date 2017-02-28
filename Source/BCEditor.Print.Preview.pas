@@ -5,8 +5,8 @@ unit BCEditor.Print.Preview;
 interface
 
 uses
-  Classes, SysUtils,
   Windows, Messages,
+  Classes, SysUtils,
   Controls, Graphics, Forms,
   BCEditor.Print;
 
@@ -267,7 +267,8 @@ end;
 
 procedure TBCEditorPrintPreview.PaintPaper;
 var
-  LClipRect, PaperRect: TRect;
+  LClipRect: TRect;
+  PaperRect: TRect;
   PaperRGN: HRGN;
 begin
   with Canvas do
@@ -331,7 +332,8 @@ end;
 
 procedure TBCEditorPrintPreview.ScrollHorizontallyTo(AValue: Integer);
 var
-  LWidth, LPosition: Integer;
+  LPosition: Integer;
+  LWidth: Integer;
 begin
   LWidth := ClientWidth;
   LPosition := LWidth - FVirtualSize.X;
@@ -361,7 +363,8 @@ end;
 
 procedure TBCEditorPrintPreview.ScrollVerticallyTo(AValue: Integer);
 var
-  LHeight, LPosition: Integer;
+  LHeight: Integer;
+  LPosition: Integer;
 begin
   LHeight := ClientHeight;
   LPosition := LHeight - FVirtualSize.Y;
@@ -486,8 +489,8 @@ end;
 
 procedure TBCEditorPrintPreview.UpdatePreview;
 var
-  LOldScale: Integer;
   LOldMode: TBCEditorPreviewScale;
+  LOldScale: Integer;
 begin
   LOldScale := ScalePercent;
   LOldMode := ScaleMode;
@@ -642,9 +645,9 @@ procedure TBCEditorPrintPreview.WMVScroll(var AMessage: TWMVScroll);
 var
   LHeight: Integer;
   LHintText: string;
-  LScrollHintRect: TRect;
   LPoint: TPoint;
   LScrollHint: THintWindow;
+  LScrollHintRect: TRect;
 begin
   if (FScaleMode = pscWholePage) then
   begin

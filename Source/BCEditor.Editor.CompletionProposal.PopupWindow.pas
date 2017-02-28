@@ -3,8 +3,8 @@ unit BCEditor.Editor.CompletionProposal.PopupWindow;
 interface
 
 uses
-  Classes, Types,
   Messages,
+  Classes, Types,
   Forms, Controls, Graphics,
   BCEditor.Utils, BCEditor.Types, BCEditor.Editor.PopupWindow,
   BCEditor.Editor.CompletionProposal;
@@ -67,8 +67,8 @@ type
 implementation
 
 uses
-  SysUtils, UITypes, Math,
   Windows,
+  SysUtils, UITypes, Math,
   Themes, Dialogs,
   BCEditor.Consts, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Lines;
 

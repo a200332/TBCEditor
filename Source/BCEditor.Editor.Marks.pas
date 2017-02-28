@@ -121,7 +121,8 @@ end;
 
 procedure TBCEditorMarkList.GetMarksForLine(ALine: Integer; var AMarks: TBCEditorMarks);
 var
-  LIndex, LIndex2: Integer;
+  LIndex: Integer;
+  LIndex2: Integer;
   LMark: TBCEditorMark;
 begin
   SetLength(AMarks, Count);

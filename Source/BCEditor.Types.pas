@@ -3,8 +3,8 @@ unit BCEditor.Types;
 interface
 
 uses
-  Classes, SysUtils,
   Windows,
+  Classes, SysUtils,
   Forms, Graphics, Controls,
   BCEditor.Consts;
 

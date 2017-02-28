@@ -603,8 +603,8 @@ end;
 
 procedure TBCEditorCodeFolding.TRanges.TRange.MoveChildren(By: Integer);
 var
-  LIndex: Integer;
   LCodeFoldingRange: TRange;
+  LIndex: Integer;
 begin
   for LIndex := 0 to FSubCodeFoldingRanges.Count - 1 do
   begin
@@ -622,8 +622,8 @@ end;
 
 procedure TBCEditorCodeFolding.TRanges.TRange.SetParentCollapsedOfSubCodeFoldingRanges(AParentCollapsed: Boolean; ACollapsedBy: Integer);
 var
-  LIndex: Integer;
   LCodeFoldingRange: TRange;
+  LIndex: Integer;
 begin
   if Assigned(FSubCodeFoldingRanges) then
   for LIndex := 0 to FSubCodeFoldingRanges.Count - 1 do
@@ -759,8 +759,8 @@ end;
 
 procedure TBCEditorCodeFolding.TAllRanges.SetParentCollapsedOfSubCodeFoldingRanges(AFoldRange: TRanges.TRange);
 var
-  LIndex: Integer;
   LFoldRange: TRanges.TRange;
+  LIndex: Integer;
 begin
   for LIndex := 0 to AllCount - 1 do
   begin
@@ -776,8 +776,8 @@ end;
 
 procedure TBCEditorCodeFolding.TAllRanges.UpdateFoldRanges;
 var
-  LIndex: Integer;
   LFoldRange: TRanges.TRange;
+  LIndex: Integer;
 begin
   for LIndex := 0 to AllCount - 1 do
   begin

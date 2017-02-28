@@ -3,8 +3,8 @@ unit BCEditor.PaintHelper;
 interface
 
 uses
-  SysUtils, Classes, Math, Types, UITypes,
   Windows,
+  SysUtils, Classes, Math, Types, UITypes,
   Graphics,
   BCEditor.Types;
 
@@ -188,8 +188,8 @@ end;
 
 procedure TBCEditorFontsInfoManager.DestroyFontHandles(ASharedFontsInfo: PBCEditorSharedFontsInfo);
 var
-  LIndex: Integer;
   LFontData: TBCEditorFontData;
+  LIndex: Integer;
 begin
   with ASharedFontsInfo^ do
   for LIndex := Low(TBCEditorStockFontPatterns) to High(TBCEditorStockFontPatterns) do
@@ -303,9 +303,9 @@ end;
 
 procedure TBCEditorFontStock.CalculateFontMetrics(AHandle: HDC; ACharHeight: PInteger; ACharWidth: PInteger);
 var
-  LTextMetric: TTextMetric;
   LCharInfo: TABC;
   LHasABC: Boolean;
+  LTextMetric: TTextMetric;
 begin
   GetTextMetrics(AHandle, LTextMetric);
 
@@ -436,11 +436,12 @@ end;
 
 procedure TBCEditorFontStock.SetStyle(const AValue: TFontStyles);
 var
-  LIndex: Integer;
-  LHandle: HDC;
-  LOldFont: HFont;
   LFontDataPointer: PBCEditorFontData;
-  LSize1, LSize2: TSize;
+  LHandle: HDC;
+  LIndex: Integer;
+  LOldFont: HFont;
+  LSize1: TSize;
+  LSize2: TSize;
 begin
   Assert(SizeOf(TFontStyles) = 1);
 

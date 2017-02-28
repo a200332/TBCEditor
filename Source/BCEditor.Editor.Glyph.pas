@@ -41,8 +41,8 @@ type
 implementation
 
 uses
-  SysUtils,
-  Windows;
+  Windows,
+  SysUtils;
 
 constructor TBCEditorGlyph.Create(AModule: THandle = 0; const AName: string = ''; AMaskColor: TColor = clFuchsia);
 begin

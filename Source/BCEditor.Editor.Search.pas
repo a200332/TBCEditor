@@ -537,7 +537,9 @@ end;
 
 function TBCEditorSearch.GetNextSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
 var
-  LLow, LHigh, LMiddle: Integer;
+  LHigh: Integer;
+  LLow: Integer;
+  LMiddle: Integer;
   LSearchItem: PItem;
 
   function IsTextPositionBetweenSearchItems: Boolean;
@@ -603,7 +605,9 @@ end;
 
 function TBCEditorSearch.GetPreviousSearchItemIndex(const ATextPosition: TBCEditorTextPosition): Integer;
 var
-  LLow, LHigh, LMiddle: Integer;
+  LHigh: Integer;
+  LLow: Integer;
+  LMiddle: Integer;
   LSearchItem: PItem;
 
   function IsTextPositionBetweenSearchItems: Boolean;

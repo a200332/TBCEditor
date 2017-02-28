@@ -1725,9 +1725,10 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportCodeFolding(ACodeFoldingObject: TJsonObject);
 var
-  i, LCount: Integer;
-  LCodeFoldingObject: TJsonObject;
+  i: Integer;
   LArray: TJsonArray;
+  LCodeFoldingObject: TJsonObject;
+  LCount: Integer;
 begin
   if not Assigned(ACodeFoldingObject) then
     Exit;
@@ -1751,17 +1752,19 @@ end;
 procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingFoldRegion(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion;
   ACodeFoldingObject: TJsonObject);
 var
-  LIndex, LIndex2: Integer;
-  LJsonDataValue: PJsonDataValue;
-  LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
-  LMemberObject: TJsonObject;
-  LFileName: string;
+  LCloseToken: string;
   LEditor: TBCBaseEditor;
+  LFileName: string;
   LFileStream: TStream;
-  LJSONObject: TJsonObject;
-  LOpenToken, LCloseToken: string;
-  LSkipIfFoundAfterOpenTokenArray: TJsonArray;
   LFoldRegionArray: TJsonArray;
+  LIndex: Integer;
+  LIndex2: Integer;
+  LJsonDataValue: PJsonDataValue;
+  LJSONObject: TJsonObject;
+  LMemberObject: TJsonObject;
+  LOpenToken: string;
+  LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
+  LSkipIfFoundAfterOpenTokenArray: TJsonArray;
 begin
   if ACodeFoldingObject.Contains('FoldRegion') then
   begin
@@ -1869,17 +1872,18 @@ end;
 procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingSkipRegion(ACodeFoldingRegion: TBCEditorCodeFolding.TRegion;
   ACodeFoldingObject: TJsonObject);
 var
+  LCloseToken: string;
+  LEditor: TBCBaseEditor;
+  LFileName: string;
+  LFileStream: TStream;
   LIndex: Integer;
   LJsonDataValue: PJsonDataValue;
-  LSkipRegionType: TBCEditorCodeFolding.TSkipRegions.TItem.TItemType;
-  LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
-  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
-  LFileName: string;
-  LEditor: TBCBaseEditor;
-  LFileStream: TStream;
   LJSONObject: TJsonObject;
-  LOpenToken, LCloseToken: string;
+  LOpenToken: string;
+  LRegionItem: TBCEditorCodeFolding.TRegion.TItem;
   LSkipRegionArray: TJsonArray;
+  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
+  LSkipRegionType: TBCEditorCodeFolding.TSkipRegions.TItem.TItemType;
 begin
   if ACodeFoldingObject.Contains('SkipRegion') then
   begin
@@ -1953,9 +1957,11 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportColorsEditorProperties(AEditorObject: TJsonObject);
 var
-  LIndex: Integer;
-  LColorsObject, LFontsObject, LFontSizesObject: TJsonObject;
+  LColorsObject: TJsonObject;
   LEditor: TBCBaseEditor;
+  LFontSizesObject: TJsonObject;
+  LFontsObject: TJsonObject;
+  LIndex: Integer;
 begin
   if Assigned(AEditorObject) then
   begin
@@ -2078,14 +2084,14 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportCompletionProposal(ACompletionProposalObject: TJsonObject);
 var
-  LIndex: Integer;
-  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
-  LJsonDataValue: PJsonDataValue;
-  LFileName: string;
   LEditor: TBCBaseEditor;
+  LFileName: string;
   LFileStream: TStream;
+  LIndex: Integer;
+  LJsonDataValue: PJsonDataValue;
   LJSONObject: TJsonObject;
   LSkipRegionArray: TJsonArray;
+  LSkipRegionItem: TBCEditorCodeFolding.TSkipRegions.TItem;
 begin
   if not Assigned(ACompletionProposalObject) then
     Exit;
@@ -2133,10 +2139,10 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportElements(AColorsObject: TJsonObject);
 var
-  LIndex: Integer;
   LElement: PElement;
-  LJsonDataValue: PJsonDataValue;
   LElementsArray: TJsonArray;
+  LIndex: Integer;
+  LJsonDataValue: PJsonDataValue;
 begin
   if not Assigned(AColorsObject) then
     Exit;
@@ -2194,10 +2200,10 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportInfo(AInfoObject: TJsonObject);
 var
-  LIndex: Integer;
-  LSampleArray: TJsonArray;
   LHighlighterInfo: TInfo;
+  LIndex: Integer;
   LObject: TJsonObject;
+  LSampleArray: TJsonArray;
 begin
   if Assigned(AInfoObject) then
   begin
@@ -2236,14 +2242,14 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportMatchingPair(AMatchingPairObject: TJsonObject);
 var
-  LIndex: Integer;
-  LTokenMatch: PMatchingPairToken;
-  LJsonDataValue: PJsonDataValue;
-  LFileName: string;
-  LEditor: TBCBaseEditor;
-  LFileStream: TStream;
-  LJSONObject: TJsonObject;
   LArray: TJsonArray;
+  LEditor: TBCBaseEditor;
+  LFileName: string;
+  LFileStream: TStream;
+  LIndex: Integer;
+  LJsonDataValue: PJsonDataValue;
+  LJSONObject: TJsonObject;
+  LTokenMatch: PMatchingPairToken;
 begin
   if not Assigned(AMatchingPairObject) then
     Exit;
@@ -2284,17 +2290,23 @@ procedure TBCEditorHighlighter.TImportJSON.ImportRange(ARange: TRange; RangeObje
   AParentRange: TRange = nil; ASkipBeforeSubRules: Boolean = False;
   const AElementPrefix: string = ''); { Recursive method }
 var
-  LIndex, LIndex2: Integer;
-  LFileName, LOpenToken, LCloseToken: string;
-  LNewRange: TRange;
-  LNewKeyList: TKeyList;
-  LNewSet: TSet;
-  LSubRulesObject, LPropertiesObject, LTokenRangeObject: TJsonObject;
-  LJSONObject, LJSONSubRulesObject: TJsonObject;
   LAlternativeCloseArray: TJsonArray;
-  LFileStream: TStream;
+  LCloseToken: string;
   LEditor: TBCBaseEditor;
   LElementPrefix: string;
+  LFileName: string;
+  LFileStream: TStream;
+  LIndex: Integer;
+  LIndex2: Integer;
+  LJSONObject: TJsonObject;
+  LJSONSubRulesObject: TJsonObject;
+  LNewKeyList: TKeyList;
+  LNewRange: TRange;
+  LNewSet: TSet;
+  LOpenToken: string;
+  LPropertiesObject: TJsonObject;
+  LSubRulesObject: TJsonObject;
+  LTokenRangeObject: TJsonObject;
 begin
   if Assigned(RangeObject) then
   begin
@@ -2534,11 +2546,12 @@ end;
 
 procedure TBCEditorHighlighter.Next;
 var
-  LIndex, LPosition: Integer;
-  LParser: TAbstractParser;
-  LKeyword: PChar;
   LCloseParent: Boolean;
   LDelimiters: TBCEditorCharSet;
+  LIndex: Integer;
+  LKeyword: PChar;
+  LParser: TAbstractParser;
+  LPosition: Integer;
 begin
   while FTemporaryCurrentTokens.Count > 0 do
   begin
@@ -2693,7 +2706,8 @@ end;
 
 procedure TBCEditorHighlighter.AddKeywords(var AStringList: TStringList);
 var
-  LIndex, LIndex2: Integer;
+  LIndex: Integer;
+  LIndex2: Integer;
 begin
   if not Assigned(AStringList) then
     Exit;
@@ -2717,10 +2731,10 @@ end;
 
 function TBCEditorHighlighter.GetTokenKind: TBCEditorRangeType;
 var
+  LCurrentRangeKeyList: TKeyList;
   LIndex: Integer;
   LToken: string;
   LTokenType: TBCEditorRangeType;
-  LCurrentRangeKeyList: TKeyList;
 begin
   LTokenType := FCurrentRange.TokenType;
   if LTokenType <> ttUnspecified then
@@ -2830,8 +2844,8 @@ end;
 
 procedure TBCEditorHighlighter.LoadFromFile(const AFileName: string);
 var
-  LStream: TStream;
   LEditor: TBCBaseEditor;
+  LStream: TStream;
 begin
   FFileName := AFileName;
   FName := TPath.GetFileNameWithoutExtension(AFileName);
@@ -2858,10 +2872,10 @@ end;
 
 procedure TBCEditorHighlighter.LoadFromStream(AStream: TStream);
 var
+  LCaretPosition: TBCEditorTextPosition;
   LEditor: TBCBaseEditor;
   LTempLines: TStringList;
   LTopLine: Integer;
-  LCaretPosition: TBCEditorTextPosition;
 begin
   Clear;
   LEditor := FEditor as TBCBaseEditor;
@@ -2918,8 +2932,8 @@ end;
 
 procedure TBCEditorHighlighter.SetAttributesOnChange(AEvent: TNotifyEvent);
 var
-  LIndex: Integer;
   LHighlighterAttribute: TAttribute;
+  LIndex: Integer;
 begin
   for LIndex := FAttributes.Count - 1 downto 0 do
   begin

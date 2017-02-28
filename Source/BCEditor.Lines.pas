@@ -212,7 +212,7 @@ function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer;
   const ATextBeginPosition: TBCEditorTextPosition): TBCEditorTextPosition;
 // ACharIndex is 1-based
 var
-  LBeginChar: Integer; // 0-based
+  LBeginChar: Integer;
   LCharIndex: Integer;
   LIndex: Integer;
   LLineLength: Integer;

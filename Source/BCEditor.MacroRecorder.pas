@@ -3,8 +3,8 @@ unit BCEditor.MacroRecorder;
 interface
 
 uses
-  WideStrUtils, Classes, SysUtils,
   Windows, Controls, Graphics,
+  WideStrUtils, Classes, SysUtils,
   Menus,
   BCEditor.Language,
   BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Types;
@@ -355,8 +355,8 @@ end;
 
 function TBCBaseEditorMacroRecorder.GetAsString: string;
 var
-  LIndex: Integer;
   LEvent: string;
+  LIndex: Integer;
 begin
   Result := 'macro ' + MacroName + SLineBreak + 'begin' + SLineBreak;
   if Assigned(FEvents) then
@@ -484,8 +484,9 @@ end;
 procedure TBCBaseEditorMacroRecorder.LoadFromStream(ASource: TStream; AClear: Boolean = True);
 var
   LCommand: TBCEditorCommand;
+  LCount: Integer;
   LEvent: TBCEditorMacroEvent;
-  LCount, LIndex: Integer;
+  LIndex: Integer;
 begin
   Stop;
   if AClear then
@@ -652,7 +653,8 @@ end;
 
 procedure TBCBaseEditorMacroRecorder.SaveToStream(ADestination: TStream);
 var
-  i, LCount: Integer;
+  i: Integer;
+  LCount: Integer;
 begin
   LCount := EventCount;
   ADestination.Write(LCount, SizeOf(LCount));
@@ -662,10 +664,12 @@ end;
 
 procedure TBCBaseEditorMacroRecorder.SetAsString(const AValue: string);
 var
-  i, LPosition, LCommand: Integer;
-  LStringList: TStrings;
+  i: Integer;
+  LCommand: Integer;
   LCommandString: string;
   LEvent: TBCEditorMacroEvent;
+  LPosition: Integer;
+  LStringList: TStrings;
 begin
   Stop;
   Clear;
@@ -889,9 +893,12 @@ end;
 
 procedure TBCEditorPositionEvent.InitEventParameters(AString: string);
 var
-  LDotPosition, LOpenPosition, LClosePosition: Integer;
-  X, Y: Integer;
+  LClosePosition: Integer;
+  LDotPosition: Integer;
+  LOpenPosition: Integer;
   LValue: string;
+  X: Integer;
+  Y: Integer;
 begin
   inherited;
   AString := Trim(AString);
@@ -957,7 +964,8 @@ end;
 
 procedure TBCEditorStringEvent.InitEventParameters(AString: string);
 var
-  LOpenPosition, LClosePosition: Integer;
+  LClosePosition: Integer;
+  LOpenPosition: Integer;
   LValue: string;
 
   function WideLastDelimiter(const Delimiters, S: string): Integer;
@@ -1007,7 +1015,8 @@ end;
 
 procedure TBCEditorStringEvent.Playback(AEditor: TBCBaseEditor);
 var
-  LIndex, LIndex2: Integer;
+  LIndex: Integer;
+  LIndex2: Integer;
 begin
   for LIndex := 1 to RepeatCount do
     for LIndex2 := 1 to Length(Value) do

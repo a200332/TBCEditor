@@ -132,8 +132,8 @@ type
 implementation
 
 uses
-  Classes, SysUtils,
-  Windows;
+  Windows,
+  Classes, SysUtils;
 
 procedure TBCCustomEditor.DoOnProcessCommand(var Command: TBCEditorCommand; var AChar: Char; Data: Pointer);
 begin

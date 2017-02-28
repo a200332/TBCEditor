@@ -24,8 +24,8 @@ type
 implementation
 
 uses
-  Classes, Types, SysUtils,
-  Windows;
+  Windows,
+  Classes, Types, SysUtils;
 
 type
   TInternalResource = class(TObject)
@@ -88,7 +88,8 @@ end;
 procedure TBCEditorInternalImage.Draw(ACanvas: TCanvas; const ANumber: Integer; const X: Integer; const Y: Integer;
   const ALineHeight: Integer; const ATransparentColor: TColor = clNone);
 var
-  LSourceRect, LDestinationRect: TRect;
+  LDestinationRect: TRect;
+  LSourceRect: TRect;
   LY: Integer;
 begin
   if (ANumber >= 0) and (ANumber < FCount) then

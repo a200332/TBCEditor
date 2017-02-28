@@ -3,8 +3,8 @@ unit BCEditor.Print;
 interface {********************************************************************}
 
 uses
-  SysUtils, Classes,
   Windows,
+  SysUtils, Classes,
   Graphics, Printers,
   BCEditor.Editor.Base, BCEditor.Types, BCEditor.Utils, BCEditor.Highlighter,
   BCEditor.Editor.Selection, BCEditor.PaintHelper;
@@ -383,9 +383,10 @@ const
 
 function WrapTextEx(const ALine: string; ABreakChars: TSysCharSet; AMaxColumn: Integer; AList: TList): Boolean;
 var
-  LWrapPosition: TBCEditorWrapPosition;
-  LPosition, LPreviousPosition: Integer;
   LFound: Boolean;
+  LPosition: Integer;
+  LPreviousPosition: Integer;
+  LWrapPosition: TBCEditorWrapPosition;
 begin
   if Length(ALine) <= AMaxColumn then
   begin
@@ -1602,9 +1603,10 @@ end;
 
 procedure TBCEditorPrint.SetLines(const AValue: TStrings);
 var
-  LIndex, LPosition: Integer;
-  LLine: string;
   LHasTabs: Boolean;
+  LIndex: Integer;
+  LLine: string;
+  LPosition: Integer;
 begin
   with FLines do
   begin
@@ -1732,13 +1734,16 @@ end;
 
 procedure TBCEditorPrint.CalculatePages;
 var
-  LText: string;
-  LIndex, LIndex2: Integer;
+  LEndLine: Integer;
+  LIndex: Integer;
+  LIndex2: Integer;
   LList: TList;
-  LYPos: Integer;
   LPageLine: TBCEditorPageLine;
-  LStartLine, LEndLine: Integer;
-  LSelectionStart, LSelectionLength: Integer;
+  LSelectionLength: Integer;
+  LSelectionStart: Integer;
+  LStartLine: Integer;
+  LText: string;
+  LYPos: Integer;
 
   procedure CountWrapped;
   var
@@ -1913,17 +1918,18 @@ end;
 
 procedure TBCEditorPrint.TextOut(const AText: string; AList: TList);
 var
-  LIndex: Integer;
-  LToken: string;
-  LTokenPosition: Integer;
-  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
+  LClipRect: TRect;
   LColor: TColor;
-  LTokenStart: Integer;
   LCount: Integer;
   LHandled: Boolean;
-  LWrapPosition, LOldWrapPosition: Integer;
+  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
+  LIndex: Integer;
   LLines: TStringList;
-  LClipRect: TRect;
+  LOldWrapPosition: Integer;
+  LToken: string;
+  LTokenPosition: Integer;
+  LTokenStart: Integer;
+  LWrapPosition: Integer;
 
   procedure ClippedTextOut(X, Y: Integer; AText: string);
   begin
@@ -1963,8 +1969,8 @@ var
   end;
 
 var
-  LTempText: string;
   LLeft: Integer;
+  LTempText: string;
 begin
   FPaintHelper.BeginDrawing(FCanvas.Handle);
   with FMargins do
@@ -2079,9 +2085,11 @@ end;
 
 procedure TBCEditorPrint.PrintPage(APageNumber: Integer);
 var
-  i, LEndLine: Integer;
-  LSelectionStart, LSelectionLength: Integer;
+  i: Integer;
+  LEndLine: Integer;
   LRect: TRect;
+  LSelectionLength: Integer;
+  LSelectionStart: Integer;
 begin
   PrintStatus(psNewPage, APageNumber, FAbort);
   if not FAbort then
@@ -2146,8 +2154,9 @@ end;
 
 procedure TBCEditorPrint.Print(const AStartPage: Integer = 1; const AEndPage: Integer = -1);
 var
+  LEndPage: Integer;
   LIndex: Integer;
-  LPage, LEndPage: Integer;
+  LPage: Integer;
 begin
   if FSelectedOnly and not FSelectionAvailable then
     Exit;
@@ -2239,8 +2248,9 @@ end;
 
 procedure TBCEditorPrint.LoadFromStream(AStream: TStream);
 var
-  LLength, LBufferSize: Integer;
   LBuffer: PChar;
+  LBufferSize: Integer;
+  LLength: Integer;
 begin
   FHeader.LoadFromStream(AStream);
   FFooter.LoadFromStream(AStream);

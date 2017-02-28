@@ -3,8 +3,8 @@ unit BCEditor.Utils;
 interface
 
 uses
-  Math, Classes, UITypes,
   Windows,
+  Math, Classes, UITypes,
   Graphics,
   BCEditor.Consts, BCEditor.Types;
 
@@ -43,8 +43,8 @@ const
   CS_DROPSHADOW = $00020000;
 
 var
-  NewLong: Cardinal;
   B: Boolean;
+  NewLong: Cardinal;
 begin
   B := True;
   if IsXP and SystemParametersInfo(SPI_SETDROPSHADOW, 0, @B, 0) then
@@ -85,8 +85,8 @@ end;
 
 function ConvertTabs(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean; const AColumns: Boolean): string;
 var
-  LPosition: Integer;
   LCount: Integer;
+  LPosition: Integer;
 begin
   AHasTabs := False;
   Result := ALine;
@@ -123,9 +123,15 @@ end;
 
 function MiddleColor(AColor1, AColor2: TColor): TColor;
 var
-  LRed, LGreen, LBlue: Byte;
-  LRed1, LGreen1, LBlue1: Byte;
-  LRed2, LGreen2, LBlue2: Byte;
+  LBlue: Byte;
+  LBlue1: Byte;
+  LBlue2: Byte;
+  LGreen: Byte;
+  LGreen1: Byte;
+  LGreen2: Byte;
+  LRed: Byte;
+  LRed1: Byte;
+  LRed2: Byte;
 begin
   LRed1 := GetRValue(AColor1);
   LRed2 := GetRValue(AColor2);
@@ -168,7 +174,8 @@ end;
 
 function DeleteWhitespace(const AText: string): string;
 var
-  LIndex, LIndex2: Integer;
+  LIndex: Integer;
+  LIndex2: Integer;
 begin
   SetLength(Result, Length(AText));
   LIndex2 := 0;

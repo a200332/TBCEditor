@@ -29,8 +29,8 @@ type
 implementation
 
 uses
-  UITypes,
   Windows,
+  UITypes,
   BCEditor.Consts, BCEditor.Utils;
 
 constructor TBCEditorExportHTML.Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
@@ -89,9 +89,9 @@ end;
 
 procedure TBCEditorExportHTML.CreateInternalCSS;
 var
+  LElement: TBCEditorHighlighter.PElement;
   LIndex: Integer;
   LStyles: TList;
-  LElement: TBCEditorHighlighter.PElement;
 begin
   FStringList.Add('  <style>');
 
@@ -129,10 +129,11 @@ end;
 
 procedure TBCEditorExportHTML.CreateLines;
 var
-  LIndex: Integer;
-  LTextLine, LToken: string;
   LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
+  LIndex: Integer;
   LPreviousElement: string;
+  LTextLine: string;
+  LToken: string;
 begin
   LPreviousElement := '';
   for LIndex := 0 to FLines.Count - 1 do

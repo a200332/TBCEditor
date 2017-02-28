@@ -3,8 +3,8 @@ unit BCEditor.Editor.PopupWindow;
 interface
 
 uses
-  Classes, Types,
   Messages,
+  Classes, Types,
   Forms, Controls;
 
 type
@@ -34,8 +34,8 @@ type
 implementation
 
 uses
-  SysUtils,
-  Windows;
+  Windows,
+  SysUtils;
 
 constructor TBCEditorPopupWindow.Create(const AEditor: TCustomControl);
 begin

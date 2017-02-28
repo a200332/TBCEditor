@@ -1,13 +1,5 @@
 unit BCEditor.Editor.TokenInfo.PopupWindow;
 
-{
-  Supported tags in contents:
-
-  <a href="Reference">Link text</a>
-  <b>Bold text</b>
-  <i>Italic text</i>
-}
-
 interface
 
 uses
@@ -48,7 +40,9 @@ type
 implementation
 
 uses
-  Winapi.Windows, BCEditor.Consts, BCEditor.Utils, System.UITypes;
+  Windows,
+  UITypes,
+  BCEditor.Consts, BCEditor.Utils;
 
 const
   MARGIN_LEFT = 3;
@@ -145,11 +139,13 @@ end;
 procedure TBCEditorTokenInfoPopupWindow.Paint;
 var
   LIndex: Integer;
-  LPTextToken: PBCEditorTokenInfoTextToken;
+  LLeft: Integer;
   LPreviousStyles: TBCEditorTokenInfoTextStyles;
-  LLeft, LTop, LPreviousTop: Integer;
-  LText: string;
+  LPreviousTop: Integer;
+  LPTextToken: PBCEditorTokenInfoTextToken;
   LRect: TRect;
+  LText: string;
+  LTop: Integer;
 
   procedure PaintToken;
   begin
@@ -180,7 +176,7 @@ begin
       LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[FTitleContentTextTokensList.Count - 1]);
       LRect.Height := LPTextToken^.Rect.Bottom;
 
-      Winapi.Windows.ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+      ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
 
       LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[0]);
       LPreviousStyles := LPTextToken^.Styles;
@@ -247,16 +243,18 @@ const
   CTOKEN_BOLD = 1;
   CTOKEN_ITALIC = 2;
 var
-  LIndex: Integer;
-  LPText, LPToken, LPBookmark: PChar;
-  LPTextToken: PBCEditorTokenInfoTextToken;
-  LCurrentValue: string;
-  LCurrentStyles: TBCEditorTokenInfoTextStyles;
+  LCloseTokens: array [0..2] of string;
   LCurrentRect: TRect;
   LCurrentReference: string;
-  LTextHeight: Integer;
+  LCurrentStyles: TBCEditorTokenInfoTextStyles;
+  LCurrentValue: string;
+  LIndex: Integer;
   LOpenTokens: array [0..2] of string;
-  LCloseTokens: array [0..2] of string;
+  LPBookmark: PChar;
+  LPText: PChar;
+  LPTextToken: PBCEditorTokenInfoTextToken;
+  LPToken: PChar;
+  LTextHeight: Integer;
 
   procedure AddTokens;
   begin
