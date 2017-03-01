@@ -310,11 +310,11 @@ type
     function GetSelStart: Integer;
     function GetSelText: string;
     function GetText: string;
-    function GetTextBeginPosition(): TBCEditorTextPosition;
+    function GetTextBOFPosition(): TBCEditorTextPosition;
     function GetTextBetween(const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition): string;
     function GetTextCaretPosition(): TBCEditorTextPosition;
     function GetTextCaretY: Integer;
-    function GetTextEndPosition(): TBCEditorTextPosition;
+    function GetTextEOFPosition(): TBCEditorTextPosition;
     function GetTokenCharCount(const AToken: string; const ACharsBefore: Integer): Integer;
     function GetTokenWidth(const AToken: string; const ALength: Integer; const ACharsBefore: Integer): Integer;
     function GetVisibleChars(const ARow: Integer; const ALineText: string = ''): Integer;
@@ -706,10 +706,10 @@ type
     property Tabs: TBCEditorTabs read FTabs write SetTabs;
     property TabStop default True;
     property Text: string read GetText write SetText;
-    property TextBeginPosition: TBCEditorTextPosition read GetTextBeginPosition;
+    property TextBOFPosition: TBCEditorTextPosition read GetTextBOFPosition;
     property TextBetween[const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition]: string read GetTextBetween write SetTextBetween;
     property TextCaretPosition: TBCEditorTextPosition read GetTextCaretPosition write SetTextCaretPosition;
-    property TextEndPosition: TBCEditorTextPosition read GetTextEndPosition;
+    property TextEOFPosition: TBCEditorTextPosition read GetTextEOFPosition;
     property TextEntryMode: TBCEditorTextEntryMode read FTextEntryMode write SetTextEntryMode default temInsert;
     property TokenInfo: TBCEditorTokenInfo read FTokenInfo write SetTokenInfo;
     property TopLine: Integer read FTopLine write SetTopLine;
@@ -3160,7 +3160,6 @@ end;
 
 procedure TBCBaseEditor.DoChar(const AChar: Char);
 var
-  LBlockStartPosition: TBCEditorTextPosition;
   LDisplayLine: Integer;
   LHelper: string;
   LLength: Integer;
@@ -3206,8 +3205,6 @@ begin
     else
       LSpaceCount1 := 0;
 
-    LBlockStartPosition := LTextCaretPosition;
-
     if FTextEntryMode = temInsert then
     begin
       if LSpaceCount1 > 0 then
@@ -3219,19 +3216,19 @@ begin
 
       if LSpaceCount1 > 0 then
       begin
-        LTextCaretPosition.Char := LLength + LSpaceCount1 + 2;
         FUndoList.PushItem(utInsert, LTextCaretPosition,
-          GetTextPosition(LLength + 1, LTextCaretPosition.Line), GetTextPosition(LLength + LSpaceCount1 + 2, LTextCaretPosition.Line),
+          GetTextPosition(LLength + 1, LTextCaretPosition.Line), GetTextPosition(LTextCaretPosition.Char + 1, LTextCaretPosition.Line),
           '', smNormal);
         FLines.Attributes[LTextCaretPosition.Line].LineState := lsModified;
+        LTextCaretPosition.Char := LLength + LSpaceCount1 + 2;
       end
       else
       begin
-        LTextCaretPosition.Char := LTextCaretPosition.Char + 1;
         FUndoList.PushItem(utInsert, LTextCaretPosition,
-          LBlockStartPosition, LTextCaretPosition,
+          LTextCaretPosition, GetTextPosition(LTextCaretPosition.Char + 1, LTextCaretPosition.Line),
           '', smNormal);
         FLines.Attributes[LTextCaretPosition.Line].LineState := lsModified;
+        LTextCaretPosition.Char := LTextCaretPosition.Char + 1;
       end;
     end
     else
@@ -3252,19 +3249,19 @@ begin
 
       if LSpaceCount1 > 0 then
       begin
-        LTextCaretPosition.Char := LLength + LSpaceCount1 + 1;
         FUndoList.PushItem(utInsert, LTextCaretPosition,
-          GetTextPosition(LLength + 1, LTextCaretPosition.Line), GetTextPosition(LLength + LSpaceCount1 + 1, LTextCaretPosition.Line),
-          '', smNormal);
+          GetTextPosition(1 + LLength, LTextCaretPosition.Line), GetTextPosition(LTextCaretPosition.Char + 1, LTextCaretPosition.Line),
+          LHelper, smNormal);
         FLines.Attributes[LTextCaretPosition.Line].LineState := lsModified;
+        LTextCaretPosition.Char := LLength + LSpaceCount1 + 2;
       end
       else
       begin
-        LTextCaretPosition.Char := LTextCaretPosition.Char + 1;
         FUndoList.PushItem(utInsert, LTextCaretPosition,
-          LBlockStartPosition, LTextCaretPosition,
+          LTextCaretPosition, GetTextPosition(LTextCaretPosition.Char + 1, LTextCaretPosition.Line),
           LHelper, smNormal);
         FLines.Attributes[LTextCaretPosition.Line].LineState := lsModified;
+        LTextCaretPosition.Char := LTextCaretPosition.Char + 1;
       end;
     end;
 
@@ -3570,7 +3567,7 @@ begin
         LSpaces := StringOfChar(BCEDITOR_TAB_CHAR, LCharCount div FTabs.Width);
         LSpaces := LSpaces + StringOfChar(BCEDITOR_TAB_CHAR, LCharCount mod FTabs.Width);
       end;
-      FUndoList.PushItem(utInsert, GetTextPosition(LLength + 1, LTextCaretPosition.Line),
+      FUndoList.PushItem(utInsert, LTextCaretPosition,
         GetTextPosition(LLength + 1, LTextCaretPosition.Line), GetTextPosition(LLength + Length(LSpaces) + 1, LTextCaretPosition.Line),
         '', FSelection.ActiveMode);
       LTextCaretPosition.Char := LLength + Length(LSpaces) + 1;
@@ -3735,7 +3732,7 @@ begin
             LTextCaretPosition, GetTextPosition(1, LTextCaretPosition.Line + 1),
             '', smNormal);
           if (IndentText <> '') then
-            FUndoList.PushItem(utInsert, GetTextPosition(1 + Length(IndentText), LTextCaretPosition.Line + 1),
+            FUndoList.PushItem(utInsert, LTextCaretPosition,
               GetTextPosition(1, LTextCaretPosition.Line + 1), GetTextPosition(1 + Length(IndentText), LTextCaretPosition.Line + 1),
               IndentText, smNormal);
 
@@ -3751,13 +3748,12 @@ begin
         else
         begin
           { A line break at the first char. }
-          FLines.Insert(LTextCaretPosition.Line, '');
           FUndoList.PushItem(utLineBreak, LTextCaretPosition,
             LTextCaretPosition, LTextCaretPosition,
             Lines.LineBreak, smNormal);
-
-          with FLines do
-            Attributes[LTextCaretPosition.Line + 1].LineState := lsModified;
+          FLines.Insert(LTextCaretPosition.Line, '');
+          FLines.Attributes[LTextCaretPosition.Line].LineState := lsModified;
+          FLines.Attributes[LTextCaretPosition.Line + 1].LineState := lsModified;
 
           DisplayCaretY := DisplayCaretY + 1;
         end;
@@ -4342,7 +4338,8 @@ begin
   DoSelectedText(FSelection.ActiveMode, PChar(AValue), True, TextCaretPosition);
 end;
 
-procedure TBCBaseEditor.DoSelectedText(const APasteMode: TBCEditorSelectionMode; const AValue: PChar; const AAddToUndoList: Boolean;
+procedure TBCBaseEditor.DoSelectedText(const APasteMode: TBCEditorSelectionMode;
+  const AValue: PChar; const AAddToUndoList: Boolean;
   const ATextCaretPosition: TBCEditorTextPosition; const AChangeBlockNumber: Integer = 0);
 var
   LBeginTextPosition: TBCEditorTextPosition;
@@ -6882,7 +6879,7 @@ begin
   Result := FLines.Text;
 end;
 
-function TBCBaseEditor.GetTextBeginPosition(): TBCEditorTextPosition;
+function TBCBaseEditor.GetTextBOFPosition(): TBCEditorTextPosition;
 begin
   Result := GetTextPosition(1, 0);
 end;
@@ -6909,7 +6906,7 @@ begin
   Result := GetDisplayTextLineNumber(DisplayCaretY) - 1;
 end;
 
-function TBCBaseEditor.GetTextEndPosition(): TBCEditorTextPosition;
+function TBCBaseEditor.GetTextEOFPosition(): TBCEditorTextPosition;
 begin
   if (Lines.Count = 0) then
     Result := GetTextPosition(1, 0)
@@ -13874,7 +13871,7 @@ begin
     FSelectionBeginPosition, FSelectionBeginPosition,
     '', FSelection.ActiveMode);
   FSelectionBeginPosition := ATextBeginPosition;
-  FSelectionEndPosition := MinTextPosition(ATextEndPosition, TextEndPosition);
+  FSelectionEndPosition := MinTextPosition(ATextEndPosition, TextEOFPosition);
   SelectedText := AValue;
   FUndoList.EndBlock;
   FSelection.Mode := LSelectionMode;
@@ -14697,11 +14694,14 @@ begin
           end;
         utInsert, utPaste, utDragDropInsert:
           begin
-            SetCaretAndSelection(LUndoItem^.TextCaretPosition, LUndoItem^.SelectionBeginPosition,
-              LUndoItem^.SelectionEndPosition);
+            BeginPaintLock();
+            SelectionBeginPosition := LUndoItem^.SelectionBeginPosition;
+            SelectionEndPosition := LUndoItem^.SelectionEndPosition;
             LTempText := SelectedText;
-            DoSelectedText(LUndoItem^.SelectionMode, nil, False,
-              LUndoItem^.SelectionBeginPosition, LUndoItem^.BlockNumber);
+            DoSelectedText(LUndoItem^.SelectionMode, PChar(LUndoItem^.Text), False,
+              LUndoItem^.TextCaretPosition, LUndoItem^.BlockNumber);
+            TextCaretPosition := LUndoItem^.TextCaretPosition;
+            EndPaintLock();
             FRedoList.PushItem(LUndoItem^.UndoType, LUndoItem^.TextCaretPosition,
               LUndoItem^.SelectionBeginPosition, LUndoItem^.SelectionEndPosition,
               LTempText, LUndoItem^.SelectionMode, LUndoItem^.BlockNumber);
