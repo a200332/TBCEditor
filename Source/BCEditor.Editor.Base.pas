@@ -3365,23 +3365,22 @@ begin
     until (Opened or (Retry = 10));
 
     if (not Opened) then
-      raise EClipboardException.CreateResFmt({$IFNDEF CLR}@{$ENDIF}SCannotOpenClipboard,
-        [SysErrorMessage(GetLastError)])
+      raise EClipboardException.CreateFmt(SCannotOpenClipboard, [SysErrorMessage(GetLastError)])
     else
       try
         EmptyClipboard();
         Global := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, (Length(AText) + 1) * SizeOf(Char));
         if (Global <> 0) then
-          try
-            ClipboardData := GlobalLock(Global);
-            if (Assigned(ClipboardData)) then
-            begin
-              StrPCopy(ClipboardData, AText);
-              SetClipboardData(CF_UNICODETEXT, Global);
-            end;
-          finally
-            GlobalFree(Global);
+        try
+          ClipboardData := GlobalLock(Global);
+          if (Assigned(ClipboardData)) then
+          begin
+            StrPCopy(ClipboardData, AText);
+            SetClipboardData(CF_UNICODETEXT, Global);
           end;
+        finally
+          GlobalUnlock(Global);
+        end;
       finally
         CloseClipboard();
       end;
@@ -4205,9 +4204,9 @@ begin
     until (Opened or (Retry = 10));
 
     if (not Opened) then
-      raise EClipboardException.CreateResFmt({$IFNDEF CLR}@{$ENDIF}SCannotOpenClipboard,
-        [SysErrorMessage(GetLastError)])
+      raise EClipboardException.CreateFmt(SCannotOpenClipboard, [SysErrorMessage(GetLastError)])
     else
+    begin
       try
         Global := GetClipboardData(CF_UNICODETEXT);
         if (Global <> 0) then
@@ -4218,13 +4217,14 @@ begin
             SetString(Text, PChar(ClipboardData), GlobalSize(Global) div SizeOf(Text[1]));
             if ((Length(Text) > 0) and (Text[Length(Text)] = #0)) then
               SetLength(Text, Length(Text) - 1);
-            DoInsertText(Text);
           end;
           GlobalUnlock(Global);
         end;
       finally
         CloseClipboard();
       end;
+      DoInsertText(Text);
+    end;
   end;
 end;
 
