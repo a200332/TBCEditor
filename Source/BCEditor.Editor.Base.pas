@@ -3681,26 +3681,26 @@ begin
 end;
 
 procedure TBCBaseEditor.DoLineBreak;
-var
-  LLength: Integer;
-  LLineText: string;
-  LSpaceBuffer: string;
-  LSpaceCount1: Integer;
-  LTextCaretPosition: TBCEditorTextPosition;
 
-  function GetSpaceBuffer(const ASpaceCount: Integer): string;
+  function CalcIndentText(const IndentCount: Integer): string;
   begin
     Result := '';
     if eoAutoIndent in FOptions then
       if toTabsToSpaces in FTabs.Options then
-        Result := StringOfChar(BCEDITOR_SPACE_CHAR, ASpaceCount)
+        Result := StringOfChar(BCEDITOR_SPACE_CHAR, IndentCount)
       else
       begin
-        Result := StringOfChar(BCEDITOR_TAB_CHAR, ASpaceCount div FTabs.Width);
-        Result := Result + StringOfChar(BCEDITOR_SPACE_CHAR, ASpaceCount mod FTabs.Width);
+        Result := StringOfChar(BCEDITOR_TAB_CHAR, IndentCount div FTabs.Width);
+        Result := Result + StringOfChar(BCEDITOR_SPACE_CHAR, IndentCount mod FTabs.Width);
       end;
   end;
 
+var
+  IndentText: string;
+  LLength: Integer;
+  LLineText: string;
+  LTextCaretPosition: TBCEditorTextPosition;
+  SpaceCount: Integer;
 begin
   LTextCaretPosition := TextCaretPosition;
 
@@ -3722,22 +3722,22 @@ begin
         if LTextCaretPosition.Char > 1 then
         begin
           { A line break after the first char and before the end of the line. }
-          LSpaceCount1 := LeftSpaceCount(LLineText, True);
-          LSpaceBuffer := GetSpaceBuffer(LSpaceCount1);
+          SpaceCount := LeftSpaceCount(LLineText, True);
+          if ((eoAutoIndent in FOptions) and (SpaceCount > 0)) then
+            IndentText := CalcIndentText(SpaceCount)
+          else
+            IndentText := '';
 
           FLines[LTextCaretPosition.Line] := Copy(LLineText, 1, LTextCaretPosition.Char - 1);
-          LLineText := Copy(LLineText, LTextCaretPosition.Char, MaxInt);
-          if (eoAutoIndent in FOptions) and (LSpaceCount1 > 0) then
-            LLineText := LSpaceBuffer + LLineText;
-          FLines.Insert(LTextCaretPosition.Line + 1, LLineText);
+          FLines.Insert(LTextCaretPosition.Line + 1, IndentText + Copy(LLineText, LTextCaretPosition.Char, MaxInt));
 
-          FUndoList.PushItem(utLineBreak, GetTextPosition(1, LTextCaretPosition.Line + 1),
+          FUndoList.PushItem(utLineBreak, LTextCaretPosition,
             LTextCaretPosition, GetTextPosition(1, LTextCaretPosition.Line + 1),
-            Lines.LineBreak, smNormal);
-          if (LSpaceBuffer <> '') then
-            FUndoList.PushItem(utInsert, GetTextPosition(1 + Length(LSpaceBuffer), LTextCaretPosition.Line + 1),
-              GetTextPosition(1, LTextCaretPosition.Line + 1), GetTextPosition(1 + Length(LSpaceBuffer), LTextCaretPosition.Line + 1),
-              LSpaceBuffer, smNormal);
+            '', smNormal);
+          if (IndentText <> '') then
+            FUndoList.PushItem(utInsert, GetTextPosition(1 + Length(IndentText), LTextCaretPosition.Line + 1),
+              GetTextPosition(1, LTextCaretPosition.Line + 1), GetTextPosition(1 + Length(IndentText), LTextCaretPosition.Line + 1),
+              IndentText, smNormal);
 
           with FLines do
           begin
@@ -3745,7 +3745,7 @@ begin
             Attributes[LTextCaretPosition.Line + 1].LineState := lsModified;
           end;
 
-          DisplayCaretX := LSpaceCount1 + 1;
+          DisplayCaretX := SpaceCount + 1;
           DisplayCaretY := FDisplayCaretY + 1;
         end
         else
@@ -3765,13 +3765,13 @@ begin
       else
       begin
         { A line break after the end of the line. }
-        LSpaceCount1 := 0;
+        SpaceCount := 0;
         if eoAutoIndent in FOptions then
-          LSpaceCount1 := LeftSpaceCount(LLineText, True);
+          SpaceCount := LeftSpaceCount(LLineText, True);
 
-        LSpaceBuffer := GetSpaceBuffer(LSpaceCount1);
+        IndentText := CalcIndentText(SpaceCount);
 
-        FLines.Insert(LTextCaretPosition.Line + 1, LSpaceBuffer);
+        FLines.Insert(LTextCaretPosition.Line + 1, IndentText);
 
         if LTextCaretPosition.Char > LLength + 1 then
           LTextCaretPosition.Char := LLength + 1;
@@ -3779,15 +3779,15 @@ begin
         FUndoList.PushItem(utLineBreak, LTextCaretPosition,
           LTextCaretPosition, GetTextPosition(1, LTextCaretPosition.Line + 1),
           Lines.LineBreak, smNormal);
-        if (LSpaceBuffer <> '') then
-          FUndoList.PushItem(utInsert, GetTextPosition(Length(LSpaceBuffer) + 1, LTextCaretPosition.Line + 1),
+        if (IndentText <> '') then
+          FUndoList.PushItem(utInsert, GetTextPosition(Length(IndentText) + 1, LTextCaretPosition.Line + 1),
             GetTextPosition(1, LTextCaretPosition.Line + 1), GetTextPosition(Length(LLineText) + 1, LTextCaretPosition.Line + 1),
-            LSpaceBuffer, smNormal);
+            IndentText, smNormal);
 
         FLines.Attributes[LTextCaretPosition.Line + 1].LineState := lsModified;
 
         DisplayCaretY := FDisplayCaretY + 1;
-        DisplayCaretX := LSpaceCount1 + 1
+        DisplayCaretX := SpaceCount + 1
       end;
     end
     else
