@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages,
   Classes, SysUtils, Contnrs, UITypes,
-  Forms, StdActns, Controls, Graphics, StdCtrls, ExtCtrls, Dialogs,
+  Forms, StdActns, Controls, Graphics, StdCtrls, ExtCtrls, Dialogs, Consts,
   BCEditor.Consts, BCEditor.Editor.ActiveLine,
   BCEditor.Editor.Marks, BCEditor.Editor.Caret, BCEditor.Editor.CodeFolding,
   BCEditor.Types, BCEditor.Editor.CompletionProposal,
@@ -3364,7 +3364,10 @@ begin
       end;
     until (Opened or (Retry = 10));
 
-    if (Opened) then
+    if (not Opened) then
+      raise EClipboardException.CreateResFmt({$IFNDEF CLR}@{$ENDIF}SCannotOpenClipboard,
+        [SysErrorMessage(GetLastError)])
+    else
       try
         EmptyClipboard();
         Global := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, (Length(AText) + 1) * SizeOf(Char));
@@ -4201,7 +4204,10 @@ begin
       end;
     until (Opened or (Retry = 10));
 
-    if (Opened) then
+    if (not Opened) then
+      raise EClipboardException.CreateResFmt({$IFNDEF CLR}@{$ENDIF}SCannotOpenClipboard,
+        [SysErrorMessage(GetLastError)])
+    else
       try
         Global := GetClipboardData(CF_UNICODETEXT);
         if (Global <> 0) then
