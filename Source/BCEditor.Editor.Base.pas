@@ -16,7 +16,7 @@ uses
   BCEditor.Editor.Tabs, BCEditor.Editor.Undo, BCEditor.Editor.WordWrap,
   BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter,
   BCEditor.KeyboardHandler, BCEditor.Lines, BCEditor.Search, BCEditor.PaintHelper, BCEditor.Editor.SyncEdit,
-  BCEditor.Editor.TokenInfo, BCEditor.Utils, BCEditor.Editor.UnknownChars, BCEditor.Editor.TokenInfo.PopupWindow;
+  BCEditor.Editor.TokenInfo, BCEditor.Utils, BCEditor.Editor.TokenInfo.PopupWindow;
 
 type
   TBCBaseEditor = class(TCustomControl)
@@ -194,8 +194,6 @@ type
     FUndoList: TBCEditorUndoList;
     FUndoOptions: TBCEditorUndoList.TOptions;
     FUndoRedo: Boolean;
-    FUnknownCharHigh: Byte;
-    FUnknownChars: TBCEditorUnknownChars;
     FURIOpener: Boolean;
     FVisibleLines: Integer;
     FWantReturns: Boolean;
@@ -368,7 +366,6 @@ type
     procedure SetDefaultKeyCommands;
     procedure SetDisplayCaretX(const AValue: Integer);
     procedure SetDisplayCaretY(const AValue: Integer);
-    procedure SetEncoding(const AValue: TEncoding);
     procedure SetForegroundColor(const AValue: TColor);
     procedure SetHorizontalScrollPosition(const AValue: Integer);
     procedure SetKeyCommands(const AValue: TBCEditorKeyCommands);
@@ -399,8 +396,6 @@ type
     procedure SetTextEntryMode(const AValue: TBCEditorTextEntryMode);
     procedure SetTokenInfo(const AValue: TBCEditorTokenInfo);
     procedure SetTopLine(const AValue: Integer);
-    procedure SetUnknownCharHigh;
-    procedure SetUnknownChars(const AValue: TBCEditorUnknownChars);
     procedure SetWordBlock(const ATextPosition: TBCEditorTextPosition);
     procedure SetWordWrap(const AValue: TBCEditorWordWrap);
     function ShortCutPressed: Boolean;
@@ -672,7 +667,7 @@ type
     property DisplayCaretPosition: TBCEditorDisplayPosition read GetDisplayCaretPosition write SetDisplayCaretPosition;
     property DisplayCaretX: Integer read FDisplayCaretX write SetDisplayCaretX;
     property DisplayCaretY: Integer read FDisplayCaretY write SetDisplayCaretY;
-    property Encoding: TEncoding read FEncoding write SetEncoding;
+    property Encoding: TEncoding read FEncoding write FEncoding;
     property ForegroundColor: TColor read FForegroundColor write SetForegroundColor default clWindowText;
     property Highlighter: TBCEditorHighlighter read FHighlighter;
     property IsScrolling: Boolean read FIsScrolling;
@@ -720,7 +715,6 @@ type
     property TopLine: Integer read FTopLine write SetTopLine;
     property UndoList: TBCEditorUndoList read FUndoList;
     property UndoOptions: TBCEditorUndoList.TOptions read FUndoOptions write FUndoOptions;
-    property UnknownChars: TBCEditorUnknownChars read FUnknownChars write SetUnknownChars;
     property URIOpener: Boolean read FURIOpener write FURIOpener;
     property VisibleLines: Integer read FVisibleLines;
     property WantReturns: Boolean read FWantReturns write SetWantReturns default True;
@@ -847,8 +841,6 @@ begin
   { Special chars }
   FSpecialChars := TBCEditorSpecialChars.Create;
   FSpecialChars.OnChange := SpecialCharsChanged;
-  { Unknown chars }
-  FUnknownChars := TBCEditorUnknownChars.Create;
   { Caret }
   FCaret := TBCEditorCaret.Create;
   FCaret.OnChange := CaretChanged;
@@ -1030,7 +1022,6 @@ begin
   FReplace.Free;
   FTabs.Free;
   FSpecialChars.Free;
-  FUnknownChars.Free;
   FCaret.Free;
   FreeMultiCarets;
   FMatchingPair.Free;
@@ -3364,36 +3355,37 @@ var
   Opened: Boolean;
   Retry: Integer;
 begin
-  Retry := 0;
-  repeat
-    Opened := OpenClipboard(Handle);
-    if (Opened) then
-      CloseClipboard()
-    else
-    begin
-      Sleep(50);
-      Inc(Retry);
-    end;
-  until (Opened or (Retry = 10));
+  if (AText <> '') then
+  begin
+    Retry := 0;
+    repeat
+      Opened := OpenClipboard(Handle);
+      if (not Opened) then
+      begin
+        Sleep(50);
+        Inc(Retry);
+      end;
+    until (Opened or (Retry = 10));
 
-  if ((AText <> '') and OpenClipboard(Handle)) then
-    try
-      EmptyClipboard();
-      Global := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, (Length(AText) + 1) * SizeOf(Char));
-      if (Global <> 0) then
-        try
-          ClipboardData := GlobalLock(Global);
-          if (Assigned(ClipboardData)) then
-          begin
-            StrPCopy(ClipboardData, AText);
-            SetClipboardData(CF_UNICODETEXT, Global);
+    if (Opened) then
+      try
+        EmptyClipboard();
+        Global := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, (Length(AText) + 1) * SizeOf(Char));
+        if (Global <> 0) then
+          try
+            ClipboardData := GlobalLock(Global);
+            if (Assigned(ClipboardData)) then
+            begin
+              StrPCopy(ClipboardData, AText);
+              SetClipboardData(CF_UNICODETEXT, Global);
+            end;
+          finally
+            GlobalFree(Global);
           end;
-        finally
-          GlobalFree(Global);
-        end;
-    finally
-      CloseClipboard();
-    end;
+      finally
+        CloseClipboard();
+      end;
+  end;
 end;
 
 procedure TBCBaseEditor.DoCutToClipboard;
@@ -4195,36 +4187,37 @@ end;
 
 procedure TBCBaseEditor.DoPasteFromClipboard;
 var
+  ClipboardData: Pointer;
   Global: HGLOBAL;
   Opened: Boolean;
   Retry: Integer;
   Text: string;
 begin
-  if (not IsClipboardFormatAvailable(CF_UNICODETEXT)) then
-    MessageBeep(MB_ICONERROR)
-  else
+  if (IsClipboardFormatAvailable(CF_UNICODETEXT)) then
   begin
     Retry := 0;
     repeat
       Opened := OpenClipboard(Handle);
-      if (Opened) then
-        CloseClipboard()
-      else
+      if (not Opened) then
       begin
         Sleep(50);
         Inc(Retry);
       end;
     until (Opened or (Retry = 10));
 
-    if (OpenClipboard(Handle)) then
+    if (Opened) then
       try
         Global := GetClipboardData(CF_UNICODETEXT);
         if (Global <> 0) then
         begin
-          SetString(Text, PChar(GlobalLock(Global)), GlobalSize(Global) div SizeOf(Text[1]));
-          if ((Length(Text) > 0) and (Text[Length(Text)] = #0)) then
-            SetLength(Text, Length(Text) - 1);
-          DoInsertText(Text);
+          ClipboardData := GlobalLock(Global);
+          if (Assigned(ClipboardData)) then
+          begin
+            SetString(Text, PChar(ClipboardData), GlobalSize(Global) div SizeOf(Text[1]));
+            if ((Length(Text) > 0) and (Text[Length(Text)] = #0)) then
+              SetLength(Text, Length(Text) - 1);
+            DoInsertText(Text);
+          end;
           GlobalUnlock(Global);
         end;
       finally
@@ -8041,10 +8034,7 @@ begin
   else if ((Length(LBuffer) >= Length(BCEDITOR_BOM_UNICODE_LE)) and CompareMem(@LBuffer[0], @BCEDITOR_BOM_UNICODE_LE[0], Length(BCEDITOR_BOM_UNICODE_LE))) then
     Encoding := TEncoding.Unicode
   else
-  begin
     TEncoding.GetBufferEncoding(LBuffer, FEncoding);
-    SetUnknownCharHigh;
-  end;
 
   FLines.LoadFromBuffer(LBuffer, Encoding);
 
@@ -11081,14 +11071,6 @@ var
 
     LTokenHelper.EmptySpace := LEmptySpace;
 
-    if FUnknownChars.Enabled and (FUnknownCharHigh > 0) then
-    while LPToken^ <> BCEDITOR_NONE_CHAR do
-    begin
-      if Ord(LPToken^) > FUnknownCharHigh then
-        LPToken^ := Char(FUnknownChars.ReplaceChar);
-      Inc(LPToken);
-    end;
-
     if LCanAppend then
     begin
       Insert(AToken, LTokenHelper.Text, LTokenHelper.Length + 1);
@@ -13538,15 +13520,6 @@ begin
   SetDisplayCaretPosition(LDisplayPosition);
 end;
 
-procedure TBCBaseEditor.SetEncoding(const AValue: System.SysUtils.TEncoding);
-begin
-  if AValue <> FEncoding then
-  begin
-    FEncoding := AValue;
-    SetUnknownCharHigh;
-  end;
-end;
-
 procedure TBCBaseEditor.SetFocus;
 begin
   Windows.SetFocus(Handle);
@@ -13981,24 +13954,6 @@ begin
     Include(FUndoOptions, AOption)
   else
     Exclude(FUndoOptions, AOption);
-end;
-
-procedure TBCBaseEditor.SetUnknownCharHigh;
-begin
-  FUnknownCharHigh := 0;
-  if FUnknownChars.Enabled then
-  begin
-    if FEncoding = System.SysUtils.TEncoding.ANSI then
-      FUnknownCharHigh := 255
-    else
-    if FEncoding = System.SysUtils.TEncoding.ASCII then
-      FUnknownCharHigh := 127
-  end;
-end;
-
-procedure TBCBaseEditor.SetUnknownChars(const AValue: TBCEditorUnknownChars);
-begin
-  FUnknownChars.Assign(AValue);
 end;
 
 procedure TBCBaseEditor.SetWantReturns(const AValue: Boolean);

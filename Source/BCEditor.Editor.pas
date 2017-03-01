@@ -122,7 +122,6 @@ type
     property TextEntryMode;
     property TokenInfo;
     property UndoOptions;
-    property UnknownChars;
     property Visible;
     property WantReturns;
     property Width;
