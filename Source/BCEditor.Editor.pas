@@ -68,6 +68,7 @@ type
     property OnCompletionProposalCanceled;
     property OnCompletionProposalSelected;
     property OnContextHelp;
+    property OnContextPopup;
     property OnCreateFileStream;
     property OnCustomLineColors;
     property OnCustomTokenAttribute;
