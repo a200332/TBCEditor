@@ -13857,8 +13857,8 @@ procedure TBCBaseEditor.SetText(const AValue: string);
 var
   Stream: TStringStream;
 begin
-  Stream := TStringStream.Create(AValue);
-  LoadFromStream(Stream);
+  Stream := TStringStream.Create(AValue, TEncoding.Unicode);
+  LoadFromStream(Stream, TEncoding.Unicode);
   Stream.Free();
 end;
 
