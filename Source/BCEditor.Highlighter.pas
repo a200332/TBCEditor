@@ -101,16 +101,17 @@ type
       FFileName: string;
       FInfo: TInfo;
       FName: string;
-      FOwner: TObject;
+      FHighlighter: TBCEditorHighlighter;
     public
       procedure Clear;
-      constructor Create(AOwner: TObject);
+      constructor Create(const AHighlighter: TBCEditorHighlighter);
       destructor Destroy; override;
       function GetElement(const Name: string): PElement;
       procedure LoadFromFile(const AFileName: string);
       procedure LoadFromResource(const ResName: string; const ResType: PChar);
       procedure LoadFromStream(AStream: TStream);
       property FileName: string read FFileName write FFileName;
+      property Highlighter: TBCEditorHighlighter read FHighlighter;
       property Info: TInfo read FInfo write FInfo;
       property Name: string read FName write FName;
       property Styles: TList read FElements write FElements;
@@ -411,7 +412,7 @@ type
     FCurrentLine: PChar;
     FCurrentRange: TRange;
     FCurrentToken: TToken;
-    FEditor: TWinControl;
+    FEditor: TCustomControl;
     FEndOfLine: Boolean;
     FFileName: string;
     FFoldCloseKeyChars: TBCEditorCharSet;
@@ -441,7 +442,7 @@ type
     procedure SetCodeFoldingRangeCount(AValue: Integer);
     procedure SetWordBreakChars(AChars: TBCEditorCharSet);
   public
-    constructor Create(AOwner: TWinControl);
+    constructor Create(AEditor: TCustomControl);
     destructor Destroy; override;
 
     function GetCurrentRange: TRange;
@@ -471,12 +472,12 @@ type
     property Colors: TColors read FColors write FColors;
     property Comments: TComments read FComments write FComments;
     property CompletionProposalSkipRegions: TBCEditorCodeFolding.TSkipRegions read FCompletionProposalSkipRegions write FCompletionProposalSkipRegions;
-    property Editor: TWinControl read FEditor;
+    property Editor: TCustomControl read FEditor;
     property FileName: string read FFileName write FFileName;
     property FoldCloseKeyChars: TBCEditorCharSet read FFoldCloseKeyChars write FFoldCloseKeyChars;
     property FoldOpenKeyChars: TBCEditorCharSet read FFoldOpenKeyChars write FFoldOpenKeyChars;
     property Info: TInfo read FInfo write FInfo;
-    property Loading: Boolean read FLoading write FLoading;
+    property xLoading: Boolean read FLoading write FLoading;
     property MainRules: TRange read FMainRules;
     property MatchingPairHighlight: Boolean read FMatchingPairHighlight write FMatchingPairHighlight default True;
     property MatchingPairs: TList read FMatchingPairs write FMatchingPairs;
@@ -614,11 +615,12 @@ end;
 
 { TBCEditorHighlighter.TColors ************************************************}
 
-constructor TBCEditorHighlighter.TColors.Create(AOwner: TObject);
+constructor TBCEditorHighlighter.TColors.Create(const AHighlighter: TBCEditorHighlighter);
 begin
   inherited Create;
 
-  FOwner := AOwner;
+  FHighlighter := AHighlighter;
+
   FElements := TList.Create;
   FInfo := TInfo.Create;
 end;
@@ -658,14 +660,12 @@ end;
 procedure TBCEditorHighlighter.TColors.LoadFromFile(const AFileName: string);
 var
   LEditor: TBCBaseEditor;
-  LHighlighter: TBCEditorHighlighter;
   LStream: TStream;
 begin
   FFileName := AFileName;
   FName := TPath.GetFileNameWithoutExtension(AFileName);
 
-  LHighlighter := TBCEditorHighlighter(FOwner);
-  LEditor := LHighlighter.Editor as TBCBaseEditor;
+  LEditor := Highlighter.Editor as TBCBaseEditor;
   LStream := LEditor.CreateFileStream(LEditor.GetColorsFileName(AFileName));
   try
     LoadFromStream(LStream);
@@ -684,19 +684,16 @@ begin
 end;
 
 procedure TBCEditorHighlighter.TColors.LoadFromStream(AStream: TStream);
-var
-  LHighlighter: TBCEditorHighlighter;
 begin
-  TBCEditorHighlighter(FOwner).Loading := True;
-  LHighlighter := TBCEditorHighlighter(FOwner);
-  with TImportJSON.Create(LHighlighter) do
-  try
-    ImportColorsFromStream(AStream);
-  finally
-    Free;
-  end;
-  LHighlighter.UpdateColors;
-  TBCEditorHighlighter(FOwner).Loading := False;
+  TBCBaseEditor(Highlighter.Editor).BeginUpdate();
+  with TImportJSON.Create(Highlighter) do
+    try
+      ImportColorsFromStream(AStream);
+    finally
+      Free;
+    end;
+  Highlighter.UpdateColors();
+  TBCBaseEditor(Highlighter.Editor).EndUpdate();
 end;
 
 { TBCEditorHighlighter.TAbstractToken *****************************************}
@@ -2455,11 +2452,13 @@ begin
   end;
 end;
 
-constructor TBCEditorHighlighter.Create(AOwner: TWinControl);
+constructor TBCEditorHighlighter.Create(AEditor: TCustomControl);
 begin
+  Assert(AEditor is TBCBaseEditor);
+
   inherited Create;
 
-  FEditor := AOwner;
+  FEditor := AEditor;
   FWordBreakChars := BCEDITOR_WORD_BREAK_CHARACTERS;
 
   FAttributes := TStringList.Create;

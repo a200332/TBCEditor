@@ -4,7 +4,7 @@ interface {********************************************************************}
 
 uses
   SysUtils, Classes,
-  Graphics,
+  Graphics, Controls,
   BCEditor.Utils, BCEditor.Consts, BCEditor.Types;
 
 type
@@ -45,6 +45,7 @@ type
     FCaseSensitive: Boolean;
     FColumns: Boolean;
     FCount: Integer;
+    FEditor: TCustomControl;
     FIndexOfLongestLine: Integer;
     FLengthOfLongestLine: Integer;
     FList: PStringRecordList;
@@ -58,7 +59,6 @@ type
     FOnDeleted: TChangeEvent;
     FOnInserted: TChangeEvent;
     FOnPutted: TChangeEvent;
-    FOwner: TObject;
     FSortOrder: TBCEditorSortOrder;
     FStreaming: Boolean;
     FTabWidth: Integer;
@@ -88,15 +88,17 @@ type
     procedure SetUpdateState(AUpdating: Boolean); override;
   public
     function Add(const AValue: string): Integer; override;
+    procedure BeginUpdate();
     function CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition; overload;
     function CharIndexToTextPosition(const ACharIndex: Integer;
       const ATextBeginPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
     procedure Clear; override;
-    constructor Create(AOwner: TObject);
+    constructor Create(const AEditor: TCustomControl);
     procedure CustomSort(const ABeginLine: Integer; const AEndLine: Integer; ACompare: TCompare); virtual;
     procedure Delete(AIndex: Integer); override;
     procedure DeleteLines(const AIndex: Integer; ACount: Integer);
     destructor Destroy; override;
+    procedure EndUpdate();
     function GetLengthOfLongestLine: Integer;
     function GetLineText(ALine: Integer): string;
     function GetTextLength: Integer;
@@ -116,10 +118,10 @@ type
     property CaseSensitive: Boolean read FCaseSensitive write FCaseSensitive default False;
     property Columns: Boolean read FColumns write SetColumns;
     property Count: Integer read FCount;
+    property Editor: TCustomControl read FEditor write FEditor;
     property ExpandedStringLengths[AIndex: Integer]: Integer read GetExpandedStringLength;
     property ExpandedStrings[AIndex: Integer]: string read GetExpandedString;
     property List: PStringRecordList read FList;
-    property Owner: TObject read FOwner write FOwner;
     property Ranges[AIndex: Integer]: TRange read GetRange write PutRange;
     property SortOrder: TBCEditorSortOrder read FSortOrder write FSortOrder;
     property Streaming: Boolean read FStreaming;
@@ -147,7 +149,7 @@ implementation {***************************************************************}
 
 uses
   Math,
-  BCEditor.Language;
+  BCEditor.Editor.Base, BCEditor.Language;
 
 function GetTextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
 // AChar is 1-based
@@ -198,6 +200,13 @@ begin
   InsertItem(Result, AValue);
   if Assigned(OnInserted) and (FUpdateCount = 0) then
     OnInserted(Self, Result, 1);
+end;
+
+procedure TBCEditorLines.BeginUpdate();
+begin
+  TBCBaseEditor(Editor).BeginUpdate();
+
+  inherited;
 end;
 
 function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition;
@@ -270,13 +279,16 @@ begin
     Result := -1 * Result;
 end;
 
-constructor TBCEditorLines.Create;
+constructor TBCEditorLines.Create(const AEditor: TCustomControl);
 begin
-  inherited Create;
+  Assert(AEditor is TBCBaseEditor);
+
+  inherited Create();
+
+  FEditor := AEditor;
 
   FCaseSensitive := False;
   FCount := 0;
-  FOwner := AOwner;
   FUpdateCount := 0;
   FIndexOfLongestLine := -1;
   FLengthOfLongestLine := 0;
@@ -359,6 +371,13 @@ begin
   SetCapacity(0);
 
   inherited;
+end;
+
+procedure TBCEditorLines.EndUpdate();
+begin
+  inherited;
+
+  TBCBaseEditor(Editor).EndUpdate();
 end;
 
 procedure TBCEditorLines.ExchangeItems(AIndex1, AIndex2: Integer);
