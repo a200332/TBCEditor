@@ -3154,7 +3154,7 @@ procedure TBCBaseEditor.DoChange;
 begin
   FUndoList.Changed := False;
   FRedoList.Changed := False;
-  if Assigned(FOnChange) then
+  if (Assigned(FOnChange) and not (csDestroying in ComponentState)) then
     FOnChange(Self);
 end;
 

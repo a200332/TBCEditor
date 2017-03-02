@@ -2602,6 +2602,11 @@ begin
           FCurrentRange := FCurrentRange.Parent;
     end;
 
+    // Debug 2017-03-02
+    Assert(FRunPosition <= Length(FCurrentLine),
+      'FRunPosition: ' + IntToStr(FRunPosition) + #13#10
+      + 'FCurrentLine: ' + BoolToStr(Assigned(FCurrentLine), True));
+
     if Ord(FCurrentLine[FRunPosition]) < 256 then
       LParser := FCurrentRange.SymbolList[AnsiChar(FCurrentRange.CaseFunct(FCurrentLine[FRunPosition]))]
     else
