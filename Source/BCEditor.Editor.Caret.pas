@@ -25,8 +25,8 @@ type
       constructor Create;
       procedure Assign(ASource: TPersistent); override;
     published
-      property Insert: TBCEditorCaretStyle read FInsert write SetInsert default csThinVerticalLine;
-      property Overwrite: TBCEditorCaretStyle read FOverwrite write SetOverwrite default csThinVerticalLine;
+      property Insert: TBCEditorCaretStyle read FInsert write SetInsert default csVerticalLine;
+      property Overwrite: TBCEditorCaretStyle read FOverwrite write SetOverwrite default csVerticalLine;
       property OnChange: TNotifyEvent read FOnChange write FOnChange;
     end;
 
@@ -160,8 +160,8 @@ constructor TBCEditorCaret.TStyles.Create;
 begin
   inherited;
 
-  FInsert := csThinVerticalLine;
-  FOverwrite := csThinVerticalLine;
+  FInsert := csVerticalLine;
+  FOverwrite := csVerticalLine;
 end;
 
 procedure TBCEditorCaret.TStyles.Assign(ASource: TPersistent);

@@ -2899,7 +2899,7 @@ begin
       finally
         Free;
       end;
-      LEditor.Lines.LoadFromStrings(LTempLines);
+      LEditor.Lines.Text := LTempLines.Text;
       LEditor.TopLine := LTopLine;
       if LEditor.Visible then
         LEditor.TextCaretPosition := LCaretPosition;

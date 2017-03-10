@@ -385,6 +385,7 @@ begin
     end;
   end;
 
+  AIdent := IntToStr(ACommand);
   Result := False;
 end;
 

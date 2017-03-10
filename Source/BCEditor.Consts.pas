@@ -35,7 +35,6 @@ const
   BCEDITOR_LOW_LINE = #95;
   BCEDITOR_CTRL_BACKSPACE = #127;
   BCEDITOR_PILCROW_CHAR = Char($00B6);
-  BCEDITOR_LINE_SEPARATOR = Char($2028);
   BCEDITOR_WORD_BREAK_CHARACTERS = ['.', ',', ';', ':', '"', '''', '!', '?', '[', ']', '(', ')', '{', '}', '^',
     '=', '+', '-', '*', '/', '\', '|', ' '];
   BCEDITOR_EXTRA_WORD_BREAK_CHARACTERS = ['´', '`', '°', '&', '$', '@', '§', '%', '#', '~', '<', '>'];
@@ -65,8 +64,6 @@ const
   clWordWrapIndicatorArrow = clNavy;
   clWordWrapIndicatorLines = clBlack;
   clSyncEditBackground = $00FCFDCD;
-  { Undo }
-  BCEDITOR_UNDO_BLOCK_NUMBER_START = 10;
   { Resource file bitmaps }
   BCEDITOR_ACTIVE_LINE = 'BCEDITORACTIVELINE';
   BCEDITOR_BOOKMARK_IMAGES = 'BCEDITORBOOKMARKIMAGES';

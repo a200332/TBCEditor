@@ -24,10 +24,6 @@ resourcestring
   { BCEditor.Print.Preview }
   SBCEditorPreviewScrollHint = 'Page: %d';
 
-  { BCEditor.TextBuffer }
-  SBCEditorListIndexOutOfBounds = 'Invalid stringlist index %d';
-  SBCEditorInvalidCapacity = 'Stringlist capacity cannot be smaller than count';
-
   { BCEditor.Highlighter }
   SBCEditorErrorInHighlighterParse = 'JSON parse error on line %d column %d: %s';
   SBCEditorErrorInHighlighterImport = 'Error in highlighter import: %s';

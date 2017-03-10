@@ -1,6 +1,6 @@
 unit BCEditor.Utils;
 
-interface
+interface {********************************************************************}
 
 uses
   Windows,
@@ -12,19 +12,19 @@ function ActivateDropShadow(const AHandle: THandle): Boolean;
 function CaseNone(const AChar: Char): Char;
 function CaseStringNone(const AString: string): string;
 function CaseUpper(const AChar: Char): Char;
+procedure ClearList(var AList: TList);
 function ColorToHex(const AColor: TColor): string;
 function ConvertTabs(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean; const AColumns: Boolean): string;
-function IsCombiningDiacriticalMark(const AChar: Char): Boolean;
 function DeleteWhitespace(const AText: string): string;
+procedure FreeList(var AList: TList);
+function IsCombiningDiacriticalMark(const AChar: Char): Boolean;
 function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
 function MiddleColor(AColor1, AColor2: TColor): TColor;
 function MinMax(const AValue, AMinValue, AMaxValue: Integer): Integer;
-function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
 function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
-procedure ClearList(var AList: TList);
-procedure FreeList(var AList: TList);
+function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
 
-implementation
+implementation {***************************************************************}
 
 uses
   SysUtils, Character,
@@ -78,6 +78,21 @@ begin
   end;
 end;
 
+procedure ClearList(var AList: TList);
+var
+  LIndex: Integer;
+begin
+  if not Assigned(AList) then
+    Exit;
+  for LIndex := 0 to AList.Count - 1 do
+    if Assigned(AList[LIndex]) then
+    begin
+      TObject(AList[LIndex]).Free;
+      AList[LIndex] := nil;
+    end;
+  AList.Clear;
+end;
+
 function ColorToHex(const AColor: TColor): string;
 begin
   Result := IntToHex(GetRValue(AColor), 2) + IntToHex(GetGValue(AColor), 2) + IntToHex(GetBValue(AColor), 2);
@@ -111,6 +126,32 @@ begin
   end;
 end;
 
+function DeleteWhitespace(const AText: string): string;
+var
+  LIndex: Integer;
+  LIndex2: Integer;
+begin
+  SetLength(Result, Length(AText));
+  LIndex2 := 0;
+  for LIndex := 1 to Length(AText) do
+    if not AText[LIndex].IsWhiteSpace then
+    begin
+      Inc(LIndex2);
+      Result[LIndex2] := AText[LIndex];
+    end;
+  SetLength(Result, LIndex2);
+end;
+
+procedure FreeList(var AList: TList);
+begin
+  ClearList(AList);
+  if Assigned(AList) then
+  begin
+    AList.Free;
+    AList := nil;
+  end;
+end;
+
 function IsCombiningDiacriticalMark(const AChar: Char): Boolean;
 begin
   case Word(AChar) of
@@ -118,6 +159,19 @@ begin
       Result := True
   else
     Result := False;
+  end;
+end;
+
+function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
+begin
+  with CreateMessageDialog(AMessage, ADlgType, AButtons) do
+  try
+    HelpContext := 0;
+    HelpFile := '';
+    Position := poMainFormCenter;
+    Result := ShowModal;
+  finally
+    Free;
   end;
 end;
 
@@ -147,60 +201,6 @@ begin
   Result := RGB(LRed, LGreen, LBlue);
 end;
 
-procedure FreeList(var AList: TList);
-begin
-  ClearList(AList);
-  if Assigned(AList) then
-  begin
-    AList.Free;
-    AList := nil;
-  end;
-end;
-
-procedure ClearList(var AList: TList);
-var
-  LIndex: Integer;
-begin
-  if not Assigned(AList) then
-    Exit;
-  for LIndex := 0 to AList.Count - 1 do
-    if Assigned(AList[LIndex]) then
-    begin
-      TObject(AList[LIndex]).Free;
-      AList[LIndex] := nil;
-    end;
-  AList.Clear;
-end;
-
-function DeleteWhitespace(const AText: string): string;
-var
-  LIndex: Integer;
-  LIndex2: Integer;
-begin
-  SetLength(Result, Length(AText));
-  LIndex2 := 0;
-  for LIndex := 1 to Length(AText) do
-    if not AText[LIndex].IsWhiteSpace then
-    begin
-      Inc(LIndex2);
-      Result[LIndex2] := AText[LIndex];
-    end;
-  SetLength(Result, LIndex2);
-end;
-
-function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
-begin
-  with CreateMessageDialog(AMessage, ADlgType, AButtons) do
-  try
-    HelpContext := 0;
-    HelpFile := '';
-    Position := poMainFormCenter;
-    Result := ShowModal;
-  finally
-    Free;
-  end;
-end;
-
 function MinMax(const AValue, AMinValue, AMaxValue: Integer): Integer;
 var
   LValue: Integer;
@@ -209,20 +209,12 @@ begin
   Result := Max(LValue, AMinValue);
 end;
 
-function GetHasTabs(ALine: PChar; var ACharsBefore: Integer): Boolean;
+function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
+var
+  LSize: TSize;
 begin
-  Result := False;
-  ACharsBefore := 0;
-  if Assigned(ALine) then
-  begin
-    while ALine^ <> BCEDITOR_NONE_CHAR do
-    begin
-      if ALine^ = BCEDITOR_TAB_CHAR then
-        Exit(True);
-      Inc(ACharsBefore);
-      Inc(ALine);
-    end;
-  end
+  GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
+  Result := LSize.cy;
 end;
 
 function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
@@ -231,14 +223,6 @@ var
 begin
   GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
   Result := LSize.cx;
-end;
-
-function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
-var
-  LSize: TSize;
-begin
-  GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
-  Result := LSize.cy;
 end;
 
 end.

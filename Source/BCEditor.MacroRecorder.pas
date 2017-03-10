@@ -915,7 +915,7 @@ begin
     LClosePosition := Pos(')', AString);
     LValue := Copy(AString, 1, LClosePosition - 1);
     Y := StrToIntDef(LValue, 1);
-    Position := GetTextPosition(X, Y);
+    Position := TextPosition(X, Y);
     Delete(AString, 1, LClosePosition);
     AString := Trim(AString);
     RepeatCount := StrToIntDef(AString, 1);
@@ -928,7 +928,7 @@ begin
   if Assigned(AData) then
     Position := TBCEditorTextPosition(AData^)
   else
-    Position := GetTextPosition(0, 0);
+    Position := TextPosition(0, 0);
 end;
 
 procedure TBCEditorPositionEvent.LoadFromStream(AStream: TStream);

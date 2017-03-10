@@ -9,6 +9,8 @@ uses
 
 type
   TBCEditorExportHTML = class(TObject)
+  strict private type
+    TBCEditorLines = class(BCEditor.Lines.TBCEditorLines);
   private
     FCharSet: string;
     FFont: TFont;
@@ -21,7 +23,8 @@ type
     procedure CreateInternalCSS;
     procedure CreateLines;
   public
-    constructor Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string); overload;
+    constructor Create(ALines: BCEditor.Lines.TBCEditorLines;
+      AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string); overload;
     destructor Destroy; override;
     procedure SaveToStream(AStream: TStream; AEncoding: System.SysUtils.TEncoding);
   end;
@@ -33,7 +36,8 @@ uses
   UITypes,
   BCEditor.Consts, BCEditor.Utils;
 
-constructor TBCEditorExportHTML.Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
+constructor TBCEditorExportHTML.Create(ALines: BCEditor.Lines.TBCEditorLines;
+  AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
 begin
   inherited Create;
 
@@ -42,7 +46,7 @@ begin
   FCharSet := ACharSet;
   if FCharSet = '' then
     FCharSet := 'utf-8';
-  FLines := ALines;
+  FLines := TBCEditorLines(ALines);
   FHighlighter := AHighlighter;
   FFont := AFont;
 end;

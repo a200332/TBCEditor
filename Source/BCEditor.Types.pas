@@ -1,6 +1,6 @@
 unit BCEditor.Types;
 
-interface
+interface {********************************************************************}
 
 uses
   Windows,
@@ -164,11 +164,17 @@ type
     rmoShowMovingHint
   );
 
+  PBCEditorTextPosition = ^TBCEditorTextPosition;
   TBCEditorTextPosition = record
     Char: Integer;
     Line: Integer;
+    class operator Equal(a, b: TBCEditorTextPosition): Boolean;
+    class operator GreaterThan(a, b: TBCEditorTextPosition): Boolean;
+    class operator GreaterThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+    class operator LessThan(a, b: TBCEditorTextPosition): Boolean;
+    class operator LessThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+    class operator NotEqual(a, b: TBCEditorTextPosition): Boolean;
   end;
-  PBCEditorTextPosition = ^TBCEditorTextPosition;
 
   TBCEditorDisplayPosition = record
     Column: Integer;
@@ -287,6 +293,7 @@ type
 
   TBCEditorUndoOption = (
     uoGroupUndo,
+    uoUndoAfterLoad,
     uoUndoAfterSave
   );
 
@@ -294,7 +301,7 @@ type
 
   TBCEditorKeyCharType = (ctFoldOpen, ctFoldClose, ctSkipOpen, ctSkipClose);
 
-  TBCEditorSortOrder = (soAsc, soDesc, soRandom);
+  TBCEditorSortOrder = (soAsc, soDesc);
 
   TBCEditorWordWrapWidth = (wwwPage, wwwRightMargin);
 
@@ -334,6 +341,38 @@ type
   end;
   PBCEditorQuadColor = ^TBCEditorQuadColor;
 
-implementation
+implementation {***************************************************************}
+
+{ TBCEditorTextPosition *******************************************************}
+
+class operator TBCEditorTextPosition.Equal(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Char = b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.GreaterThan(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line > b.Line) or (a.Char > b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.GreaterThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line > b.Line) or (a.Char >= b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.LessThan(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line < b.Line) or (a.Char < b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.LessThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line < b.Line) or (a.Char <= b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.NotEqual(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Char <> b.Char) or (a.Line <> b.Line);
+end;
 
 end.

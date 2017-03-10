@@ -64,13 +64,18 @@ type
     property OnSelected: TBCEditorCompletionProposal.TSelectedEvent read FOnSelected write FOnSelected;
   end;
 
-implementation
+implementation {***************************************************************}
 
 uses
   Windows,
   SysUtils, UITypes, Math,
   Themes, Dialogs,
   BCEditor.Consts, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Lines;
+
+type
+  TUnprotectedCustomBCEditor = class(TBCBaseEditor);
+
+{ TBCEditorCompletionProposalPopupWindow **************************************}
 
 constructor TBCEditorCompletionProposalPopupWindow.Create(const AEditor: TCustomControl);
 begin
@@ -357,25 +362,25 @@ var
   LTextPosition: TBCEditorTextPosition;
   LValue: string;
 begin
-  with TBCBaseEditor(Editor) do
+  with TUnprotectedCustomBCEditor(Editor) do
   begin
     BeginUpdate;
-    BeginUndoBlock;
+    Lines.BeginUpdate();
     try
       LTextPosition := TextCaretPosition;
       if FAdjustCompletionStart then
-        FCompletionStart := GetTextPosition(FCompletionStart, LTextPosition.Line).Char;
+        FCompletionStart := TextPosition(FCompletionStart, LTextPosition.Line).Char;
 
       if not SelectionAvailable then
       begin
-        SelectionBeginPosition := GetTextPosition(FCompletionStart, LTextPosition.Line);
+        SelectionBeginPosition := TextPosition(FCompletionStart, LTextPosition.Line);
         if AEndToken = BCEDITOR_NONE_CHAR then
         begin
           LLine := Lines[LTextPosition.Line];
           if (Length(LLine) >= LTextPosition.Char) and IsWordBreakChar(LLine[LTextPosition.Char]) then
             SelectionEndPosition := LTextPosition
           else
-            SelectionEndPosition := GetTextPosition(WordEnd.Char, LTextPosition.Line)
+            SelectionEndPosition := TextPosition(WordEnd.Char, LTextPosition.Line)
         end
         else
           SelectionEndPosition := LTextPosition;
@@ -400,7 +405,7 @@ begin
       TextCaretPosition := SelectionEndPosition;
       SelectionBeginPosition := TextCaretPosition;
     finally
-      EndUndoBlock;
+      Lines.EndUpdate();
       EndUpdate;
     end;
   end;

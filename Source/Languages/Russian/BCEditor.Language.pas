@@ -26,10 +26,6 @@ resourcestring
   { BCEditor.Print.Preview }
   SBCEditorPreviewScrollHint = 'Страница: %d';
 
-  { BCEditor.TextBuffer }
-  SBCEditorListIndexOutOfBounds = 'Неверный индекст списка строк %d';
-  SBCEditorInvalidCapacity = 'Ёмкость списка строк не может быть меньше количества строк в нём';
-
   { BCEditor.Highlighter }
   SBCEditorErrorInHighlighterParse = 'Ошибка разбора JSON строка %d столбец %d: %s';
   SBCEditorErrorInHighlighterImport = 'Ошибка импорта схемы подсветки: %s';
