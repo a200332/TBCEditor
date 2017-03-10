@@ -428,6 +428,7 @@ type
     procedure ChainLinesInserted(ASender: TObject; const AIndex: Integer; const ACount: Integer);
     procedure ChainLinesPutted(ASender: TObject; const AIndex: Integer; const ACount: Integer);
     procedure ChangeScale(M, D: Integer); override;
+    function CreateLines(): BCEditor.Lines.TBCEditorLines;
     procedure CreateParams(var AParams: TCreateParams); override;
     procedure CreateWnd; override;
     procedure DblClick; override;
@@ -804,7 +805,7 @@ begin
   FCaret := TBCEditorCaret.Create;
   FCaret.OnChange := CaretChanged;
   { Text buffer }
-  FLines := TBCEditorLines.Create(Self);
+  FLines := TBCEditorLines(CreateLines());
   FOriginalLines := FLines;
   with Lines do
   begin
@@ -2030,6 +2031,11 @@ begin
     SetLength(LCollapsedCodeFolding, 0);
     FLineNumbersCount := Length(FLineNumbersCache) - 1;
   end;
+end;
+
+function TBCBaseEditor.CreateLines(): BCEditor.Lines.TBCEditorLines;
+begin
+  Result := BCEditor.Lines.TBCEditorLines.Create(Self);
 end;
 
 procedure TBCBaseEditor.CreateParams(var AParams: TCreateParams);

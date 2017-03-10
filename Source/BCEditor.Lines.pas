@@ -1174,9 +1174,6 @@ begin
           end
           else
           begin
-            if not ((BOFTextPosition <= LUndoItem^.BeginPosition) and (LUndoItem^.BeginPosition <= EOFTextPosition)) then
-              Write; {$MESSAGE 'Nils'}
-
             LEndPosition := DoInsertText(LUndoItem^.BeginPosition, LUndoItem^.Text);
             LDestinationList.PushItem(LUndoItem^.UndoType, LCaretPosition,
               LSelectionBeginPosition, LSelectionEndPosition, LSelectionMode,
