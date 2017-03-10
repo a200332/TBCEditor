@@ -1002,7 +1002,7 @@ begin
     if (Count = 0) then
       DoPut(0, AText)
     else
-      DoPut(APosition.Line, Copy(FLines^[APosition.Line].Text, 1, APosition.Char - 1)
+      DoPut(APosition.Line, LeftStr(FLines^[APosition.Line].Text, APosition.Char - 1)
         + AText
         + Copy(FLines^[APosition.Line].Text, APosition.Char, MaxInt));
     Result := TextPosition(APosition.Char + Length(AText), APosition.Line);

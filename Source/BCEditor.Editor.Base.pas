@@ -2830,6 +2830,7 @@ var
   LDisplayLine: Integer;
   LInsertText: string;
   LLineText: string;
+  LNewCaretPosition: TBCEditorTextPosition;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
   LTextCaretPosition := TextCaretPosition;
@@ -2858,11 +2859,11 @@ begin
     begin
       Lines.BeginUpdate();
       Lines.DeleteText(LTextCaretPosition, TextPosition(LTextCaretPosition.Char + 1, LTextCaretPosition.Line));
-      InsertText(LTextCaretPosition, AChar);
+      LNewCaretPosition := InsertText(LTextCaretPosition, AChar);
       Lines.EndUpdate();
     end
     else if (LTextCaretPosition.Char - 1 <= Length(LLineText)) then
-      InsertText(LTextCaretPosition, AChar)
+      LNewCaretPosition := InsertText(LTextCaretPosition, AChar)
     else
     begin
       if ((toTabsToSpaces in FTabs.Options)
@@ -2873,8 +2874,9 @@ begin
         LInsertText := StringOfChar(BCEDITOR_TAB_CHAR, (LTextCaretPosition.Char - Length(LLineText) - 1) div FTabs.Width)
           + StringOfChar(BCEDITOR_SPACE_CHAR, (LTextCaretPosition.Char - Length(LLineText) - 1) mod FTabs.Width)
           + AChar;
-      InsertText(TextPosition(1 + Length(Lines[LTextCaretPosition.Line]), LTextCaretPosition.Line), LInsertText);
+      LNewCaretPosition := InsertText(TextPosition(1 + Length(Lines[LTextCaretPosition.Line]), LTextCaretPosition.Line), LInsertText);
     end;
+    SetCaretAndSelection(LNewCaretPosition, LNewCaretPosition, LNewCaretPosition);
 
     if FWordWrap.Enabled then
     begin
@@ -6632,9 +6634,9 @@ begin
   else
   begin
     LPos := @AText[1];
-    LEndPos := @AText[Length(AText) + 1];
+    LEndPos := @AText[Length(AText)];
     Result := 0;
-    while ((LPos < LEndPos) and (LPos^ <= BCEDITOR_SPACE_CHAR)) do
+    while ((LPos <= LEndPos) and (LPos^ <= BCEDITOR_SPACE_CHAR)) do
     begin
       if ((LPos^ = BCEDITOR_TAB_CHAR) and AWantTabs) then
         if toColumns in FTabs.Options then
