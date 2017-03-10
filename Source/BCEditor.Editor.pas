@@ -32,6 +32,7 @@ type
     property Align;
     property Anchors;
     property BorderStyle;
+    property Canvas;
     property Caret;
     property CodeFolding;
     property CompletionProposal;

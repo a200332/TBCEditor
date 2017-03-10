@@ -282,7 +282,7 @@ type
     function GetMarkBackgroundColor(const ALine: Integer): TColor;
     function GetMatchingToken(const ADisplayPosition: TBCEditorDisplayPosition; var AMatch: TBCEditorHighlighter.TMatchingPairMatch): TBCEditorMatchingTokenResult;
     procedure GetMinimapLeftRight(var ALeft: Integer; var ARight: Integer);
-    function GetModified(): Boolean; inline;
+    function GetModified(): Boolean;
     function GetMouseMoveScrollCursorIndex: Integer;
     function GetMouseMoveScrollCursors(const AIndex: Integer): HCursor;
     function GetScrollPageWidth: Integer;
@@ -299,7 +299,7 @@ type
     function GetTextCaretY: Integer;
     function GetTokenCharCount(const AToken: string; const ACharsBefore: Integer): Integer;
     function GetTokenWidth(const AToken: string; const ALength: Integer; const ACharsBefore: Integer): Integer;
-    function GetUndoOptions(): TBCEditorLines.TUndoOptions; inline;
+    function GetUndoOptions(): TBCEditorLines.TUndoOptions;
     function GetVisibleChars(const ARow: Integer; const ALineText: string = ''): Integer;
     function GetWordAtCursor: string;
     function GetWordAtMouse: string;
@@ -379,7 +379,7 @@ type
     procedure SetTextEntryMode(const AValue: TBCEditorTextEntryMode);
     procedure SetTokenInfo(const AValue: TBCEditorTokenInfo);
     procedure SetTopLine(const AValue: Integer);
-    procedure SetUndoOptions(AOptions: TBCEditorLines.TUndoOptions); inline;
+    procedure SetUndoOptions(AOptions: TBCEditorLines.TUndoOptions);
     procedure SetWordBlock(const ATextPosition: TBCEditorTextPosition);
     procedure SetWordWrap(const AValue: TBCEditorWordWrap);
     function ShortCutPressed: Boolean;
@@ -7379,12 +7379,8 @@ begin
   Lines.AddUndoSelection(TextCaretPosition,
     SelectionBeginPosition, SelectionEndPosition, Selection.ActiveMode);
 
-  if (ASelectionCommand) then
-    SetCaretAndSelection(AAfterTextPosition,
-      MinTextPosition(ABeforeTextPosition, AAfterTextPosition), MaxTextPosition(ABeforeTextPosition, AAfterTextPosition))
-  else
-    SetCaretAndSelection(AAfterTextPosition,
-      AAfterTextPosition, AAfterTextPosition);
+  SetCaretAndSelection(AAfterTextPosition,
+    MinTextPosition(ABeforeTextPosition, AAfterTextPosition), MaxTextPosition(ABeforeTextPosition, AAfterTextPosition));
 end;
 
 procedure TBCBaseEditor.MoveCaretHorizontally(const Cols: Integer; const SelectionCommand: Boolean);

@@ -1012,7 +1012,7 @@ begin
     BeginUpdate();
 
     try
-      LPos := PChar(AText); LEndPos := @AText[Length(AText) + 1];
+      LPos := PChar(AText); LEndPos := @AText[Length(AText)];
       LLine := APosition.Line;
       if ((LLine < Count)
         and (APosition.Char - 1 < Length(FLines^[LLine].Text))) then
@@ -1024,7 +1024,7 @@ begin
         LLineEnd := '';
 
       LLineBeginPos := LPos;
-      while ((LPos < LEndPos) and not CharInSet(LPos^, [BCEDITOR_LINEFEED, BCEDITOR_CARRIAGE_RETURN])) do
+      while ((LPos <= LEndPos) and not CharInSet(LPos^, [BCEDITOR_LINEFEED, BCEDITOR_CARRIAGE_RETURN])) do
         Inc(LPos);
       if (LPos > LLineBeginPos) then
       begin
@@ -1042,7 +1042,7 @@ begin
           Attributes[LLine].LineState := lsNone;
       end;
 
-      while (LPos < LEndPos) do
+      while (LPos <= LEndPos) do
         if (LPos^ = BCEDITOR_LINEFEED) then
         begin
           Inc(LPos);
@@ -1060,7 +1060,7 @@ begin
         else
         begin
           LLineBeginPos := LPos;
-          while ((LPos < LEndPos) and not CharInSet(LPos^, [BCEDITOR_LINEFEED, BCEDITOR_CARRIAGE_RETURN])) do
+          while ((LPos <= LEndPos) and not CharInSet(LPos^, [BCEDITOR_LINEFEED, BCEDITOR_CARRIAGE_RETURN])) do
             Inc(LPos);
           if (LPos > LLineBeginPos) then
           begin
@@ -1387,7 +1387,7 @@ var
 begin
   Assert((BOFTextPosition <= ABeginPosition) and (AEndPosition <= EOFTextPosition));
   Assert(ABeginPosition <= AEndPosition);
-  Assert(AEndPosition.Char - 1 <= Length(FLines^[AEndPosition.Line].Text));
+  Assert((AEndPosition = BOFTextPosition) or (AEndPosition.Char - 1 <= Length(FLines^[AEndPosition.Line].Text)));
 
   if (ABeginPosition = AEndPosition) then
     Result := ''
@@ -1470,8 +1470,8 @@ begin
   if (Result <> '') then
   begin
     LPos := @Result[1];
-    LEndPos := @Result[1 + Length(Result)];
-    while (LPos < LEndPos) do
+    LEndPos := @Result[Length(Result)];
+    while (LPos <= LEndPos) do
     begin
       if (LPos^ = BCEDITOR_SUBSTITUTE_CHAR) then
         LPos^ := BCEDITOR_NONE_CHAR;
@@ -1571,10 +1571,10 @@ begin
     LEndPos := @LPos[Length(AText)];
     LLine := ABeginPosition.Line;
 
-    while ((LPos < LEndPos) or (LLine <= AEndPosition.Line)) do
+    while ((LPos <= LEndPos) or (LLine <= AEndPosition.Line)) do
     begin
       LLineBeginPos := LPos;
-      while ((LPos < LEndPos) and not CharInSet(LPos^, [BCEDITOR_LINEFEED, BCEDITOR_CARRIAGE_RETURN])) do
+      while ((LPos <= LEndPos) and not CharInSet(LPos^, [BCEDITOR_LINEFEED, BCEDITOR_CARRIAGE_RETURN])) do
         Inc(LPos);
 
       LLineLength := Length(FLines^[LLine].Text);
@@ -1632,12 +1632,12 @@ begin
         end;
       end;
 
-      if ((LPos < LEndPos) and (LPos^ = BCEDITOR_LINEFEED)) then
+      if ((LPos <= LEndPos) and (LPos^ = BCEDITOR_LINEFEED)) then
         Inc(LPos)
-      else if ((LPos < LEndPos) and (LPos^ = BCEDITOR_CARRIAGE_RETURN)) then
+      else if ((LPos <= LEndPos) and (LPos^ = BCEDITOR_CARRIAGE_RETURN)) then
       begin
         Inc(LPos);
-        if ((LPos < LEndPos) and (LPos^ = BCEDITOR_LINEFEED)) then
+        if ((LPos <= LEndPos) and (LPos^ = BCEDITOR_LINEFEED)) then
           Inc(LPos);
       end;
 
@@ -1890,8 +1890,8 @@ begin
   if (LText <> '') then
   begin
     LPos := @LText[1];
-    LEndPos := @LText[1 + Length(LText)];
-    while (LPos < LEndPos) do
+    LEndPos := @LText[Length(LText)];
+    while (LPos <= LEndPos) do
     begin
       if (LPos^ = BCEDITOR_NONE_CHAR) then
         LPos^ := BCEDITOR_SUBSTITUTE_CHAR;
@@ -1965,4 +1965,6 @@ begin
 end;
 
 end.
+
+
 
