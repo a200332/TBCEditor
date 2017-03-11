@@ -131,7 +131,7 @@ end;
 
 procedure TBCEditorCodeFoldingHintForm.DoKeyPressW(AKey: Char);
 begin
-  if AKey <> BCEDITOR_NONE_CHAR then
+  if AKey <> #0 then
     KeyPressW(AKey);
 end;
 
@@ -216,7 +216,7 @@ begin
   with Owner as TCustomBCEditor do
   begin
     LData := nil;
-    LChar := BCEDITOR_NONE_CHAR;
+    LChar := #0;
     LEditorCommand := TranslateKeyCode(AKey, AShift, LData);
     CommandProcessor(LEditorCommand, LChar, LData);
   end;

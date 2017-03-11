@@ -62,7 +62,6 @@ type
     FHookedCommandHandlers: TObjectList;
     FHorizontalScrollPosition: Integer;
     FInternalBookmarkImage: TBCEditorInternalImage;
-    FInternalNullImage: TBCEditorInternalImage;
     FIsScrolling: Boolean;
     FItalicOffset: Byte;
     FItalicOffsetCache: array [AnsiChar] of Byte;
@@ -306,7 +305,7 @@ type
     procedure InitCodeFolding;
     procedure InsertLine();
     function InsertText(const ATextCaretPosition: TBCEditorTextPosition;
-      const AText: string; const NewText: Boolean = False): TBCEditorTextPosition;
+      const AText: string): TBCEditorTextPosition;
     function IsCommentAtCaretPosition: Boolean;
     function IsKeywordAtCaretPosition(const APOpenKeyWord: PBoolean = nil; const AHighlightAfterToken: Boolean = True): Boolean;
     function IsKeywordAtCaretPositionOrAfter(const ACaretPosition: TBCEditorTextPosition): Boolean;
@@ -1060,7 +1059,6 @@ begin
   FWordWrap.Free;
   FPaintHelper.Free;
   FInternalBookmarkImage.Free;
-  FInternalNullImage.Free;
   FFontDummy.Free;
   FOriginalLines.Free;
   FreeMinimapBitmaps;
@@ -3208,10 +3206,7 @@ begin
       LSpaces := StringOfChar(BCEDITOR_TAB_CHAR, LCharCount div FTabs.Width);
       LSpaces := LSpaces + StringOfChar(BCEDITOR_TAB_CHAR, LCharCount mod FTabs.Width);
     end;
-
-    Lines.BeginUpdate();
     InsertText(LTextCaretPosition, AText);
-    Lines.EndUpdate();
 
     if FSyncEdit.Active then
       FSyncEdit.MoveEndPositionChar(Length(AText));
@@ -3727,7 +3722,7 @@ begin
         CloseClipboard();
       end;
       Lines.UndoGroupBreak();
-      DoInsertText(Text);
+        DoInsertText(Text);
     end;
   end;
 end;
@@ -5911,7 +5906,7 @@ begin
   LPToken := PChar(AToken);
 
   if LPToken^ = BCEDITOR_SUBSTITUTE_CHAR then
-    Exit(BCEDITOR_NULL_IMAGE_WIDTH * ALength)
+    Exit(FPaintHelper.FontStock.CharWidth * ALength)
   else
   if LPToken^ = BCEDITOR_SPACE_CHAR then
     Exit(FPaintHelper.FontStock.CharWidth * ALength)
@@ -6152,9 +6147,9 @@ begin
 end;
 
 function TCustomBCEditor.InsertText(const ATextCaretPosition: TBCEditorTextPosition;
-  const AText: string; const NewText: Boolean = False): TBCEditorTextPosition;
+  const AText: string): TBCEditorTextPosition;
 begin
-  Result := Lines.InsertText(ATextCaretPosition, AText, NewText);
+  Result := Lines.InsertText(ATextCaretPosition, AText);
 
   SetCaretAndSelection(Result, Result, Result);
   EnsureCursorPositionVisible();
@@ -9413,25 +9408,6 @@ var
     LTokenLength: Integer;
     LTop: Integer;
 
-    procedure PaintSubstituteChars;
-    var
-      LCharWidth: Integer;
-      LIndex: Integer;
-      LRect: TRect;
-    begin
-      LCharWidth := LTextRect.Width div LTokenLength;
-      LRect := LTokenRect;
-      Inc(LRect.Left, 1);
-      if not Assigned(FInternalNullImage) then
-        FInternalNullImage := TBCEditorInternalImage.Create(HInstance, BCEDITOR_NULL_IMAGE);
-      for LIndex := 0 to LTokenLength - 1 do
-      begin
-        LRect.Right := LRect.Left + LCharWidth;
-        FInternalNullImage.Draw(Canvas, 0, LRect.Left, LRect.Top, LRect.Height);
-        Inc(LRect.Left, LCharWidth);
-      end;
-    end;
-
     procedure PaintSpecialCharSpace;
     var
       LIndex: Integer;
@@ -9542,12 +9518,6 @@ var
         end;
       end;
 
-      if LTokenHelper.EmptySpace = esSubstitute then
-      begin
-        FillRect(LTextRect);
-        PaintSubstituteChars;
-      end
-      else
       if FSpecialChars.Visible and (LTokenHelper.EmptySpace <> esNone) and
         (not (scoShowOnlyInSelection in FSpecialChars.Options) or
         (scoShowOnlyInSelection in FSpecialChars.Options) and (Canvas.Brush.Color = FSelection.Colors.Background)) and
@@ -9854,9 +9824,6 @@ var
     else
     if LPToken^ = BCEDITOR_TAB_CHAR then
       LEmptySpace := esTab
-    else
-    if LPToken^ = BCEDITOR_SUBSTITUTE_CHAR then
-      LEmptySpace := esSubstitute
     else
       LEmptySpace := esNone;
 

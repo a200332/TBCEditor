@@ -519,7 +519,10 @@ begin
     Assert(FHandle <> 0)
   else
   begin
-    Assert((FHandle = 0) and (AHandle <> 0) and (FDrawingCount = 0));
+    Assert((FHandle = 0) and (AHandle <> 0) and (FDrawingCount = 0),
+      'FHandle: ' + IntToStr(FHandle) + #13#10
+      + 'AHandle: ' + IntToStr(AHandle) + #13#10
+      + 'FDrawingCount: ' + IntToStr(FDrawingCount));
     FHandle := AHandle;
     FSaveHandle := SaveDC(AHandle);
     SelectObject(AHandle, FCurrentFont);
