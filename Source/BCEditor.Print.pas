@@ -6,7 +6,7 @@ uses
   Windows,
   SysUtils, Classes,
   Graphics, Printers,
-  BCEditor.Editor.Base, BCEditor.Types, BCEditor.Utils, BCEditor.Highlighter,
+  BCEditor.Editor, BCEditor.Types, BCEditor.Utils, BCEditor.Highlighter,
   BCEditor.Editor.Selection, BCEditor.PaintHelper;
 
 type
@@ -256,7 +256,7 @@ type
     FCopies: Integer;
     FDefaultBackground: TColor;
     FDocumentTitle: string;
-    FEditor: TBCBaseEditor;
+    FEditor: TCustomBCEditor;
     FFont: TFont;
     FFontDummy: TFont;
     FFontColor: TColor;
@@ -302,7 +302,7 @@ type
     procedure RestoreCurrentFont;
     procedure SaveCurrentFont;
     procedure SetCharWidth(const AValue: Integer);
-    procedure SetEditor(const AValue: TBCBaseEditor);
+    procedure SetEditor(const AValue: TCustomBCEditor);
     procedure SetFont(const AValue: TFont);
     procedure SetFooter(const AValue: TFooter);
     procedure SetHeader(const AValue: THeader);
@@ -327,7 +327,7 @@ type
     procedure PrintToCanvas(ACanvas: TCanvas; PageNumber: Integer);
     procedure SaveToStream(AStream: TStream);
     procedure UpdatePages(ACanvas: TCanvas);
-    property Editor: TBCBaseEditor read FEditor write SetEditor;
+    property Editor: TCustomBCEditor read FEditor write SetEditor;
     property PageCount: Integer read GetPageCount;
     property PrinterInfo: TBCEditorPrinterInfo read FPrinterInfo;
   published
@@ -2231,7 +2231,7 @@ begin
   end;
 end;
 
-procedure TBCEditorPrint.SetEditor(const AValue: TBCBaseEditor);
+procedure TBCEditorPrint.SetEditor(const AValue: TCustomBCEditor);
 begin
   FEditor := AValue;
   Highlighter := AValue.Highlighter;

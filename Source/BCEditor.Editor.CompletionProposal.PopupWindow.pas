@@ -70,10 +70,10 @@ uses
   Windows,
   SysUtils, UITypes, Math,
   Themes, Dialogs,
-  BCEditor.Consts, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Lines;
+  BCEditor.Consts, BCEditor.Editor, BCEditor.Editor.KeyCommands, BCEditor.Lines;
 
 type
-  TUnprotectedCustomBCEditor = class(TBCBaseEditor);
+  TUnprotectedCustomBCEditor = class(TCustomBCEditor);
 
 { TBCEditorCompletionProposalPopupWindow **************************************}
 
@@ -158,7 +158,7 @@ var
 
     if LPoint.Y + ClientHeight > Screen.DesktopHeight then
     begin
-      LPoint.Y := LPoint.Y - ClientHeight - TBCBaseEditor(Editor).LineHeight - 2;
+      LPoint.Y := LPoint.Y - ClientHeight - TCustomBCEditor(Editor).LineHeight - 2;
       if LPoint.Y < 0 then
         LPoint.Y := 0;
     end;
@@ -282,14 +282,14 @@ var
 begin
   Result := '';
 
-  LTextCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
+  LTextCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
 
-  LLineText := TBCBaseEditor(Editor).Lines[LTextCaretPosition.Line];
+  LLineText := TCustomBCEditor(Editor).Lines[LTextCaretPosition.Line];
   LIndex := LTextCaretPosition.Char - 1;
   if LIndex <= Length(LLineText) then
   begin
     FAdjustCompletionStart := False;
-    while (LIndex > 0) and (LLineText[LIndex] > BCEDITOR_SPACE_CHAR) and not TBCBaseEditor(Editor).IsWordBreakChar(LLineText[LIndex]) do
+    while (LIndex > 0) and (LLineText[LIndex] > BCEDITOR_SPACE_CHAR) and not TCustomBCEditor(Editor).IsWordBreakChar(LLineText[LIndex]) do
       Dec(LIndex);
 
     FCompletionStart := LIndex + 1;
@@ -434,17 +434,17 @@ begin
         if Length(FCurrentString) > 0 then
         begin
           CurrentString := Copy(FCurrentString, 1, Length(FCurrentString) - 1);
-          TBCBaseEditor(Editor).CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
+          TCustomBCEditor(Editor).CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
         end
         else
         begin
-          TBCBaseEditor(Editor).CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
+          TCustomBCEditor(Editor).CommandProcessor(ecLeft, BCEDITOR_NONE_CHAR, nil);
           Editor.SetFocus;
         end;
         FSendToEditor := False;
       end;
     VK_RIGHT:
-      with TBCBaseEditor(Editor) do
+      with TCustomBCEditor(Editor) do
       begin
         LTextCaretPosition := TextCaretPosition;
         if LTextCaretPosition.Char <= Length(Lines[LTextCaretPosition.Line]) then
@@ -503,18 +503,18 @@ begin
         begin
           CurrentString := Copy(FCurrentString, 1, Length(FCurrentString) - 1);
 
-          TBCBaseEditor(Editor).CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
+          TCustomBCEditor(Editor).CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
         end
         else
         begin
-          TBCBaseEditor(Editor).CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
+          TCustomBCEditor(Editor).CommandProcessor(ecBackspace, BCEDITOR_NONE_CHAR, nil);
           Editor.SetFocus;
         end;
         FSendToEditor := False;
       end;
     VK_DELETE:
       begin
-        TBCBaseEditor(Editor).CommandProcessor(ecDeleteChar, BCEDITOR_NONE_CHAR, nil);
+        TCustomBCEditor(Editor).CommandProcessor(ecDeleteChar, BCEDITOR_NONE_CHAR, nil);
         FSendToEditor := False;
       end;
   end;
@@ -530,7 +530,7 @@ begin
     BCEDITOR_SPACE_CHAR .. High(Char):
       begin
         if not (cpoAutoInvoke in FCompletionProposal.Options) then
-          if TBCBaseEditor(Editor).IsWordBreakChar(Key) and Assigned(FOnValidate) then
+          if TCustomBCEditor(Editor).IsWordBreakChar(Key) and Assigned(FOnValidate) then
             if Key = BCEDITOR_SPACE_CHAR then
               FOnValidate(Self, [], BCEDITOR_NONE_CHAR);
         CurrentString := FCurrentString + Key;
@@ -542,10 +542,10 @@ begin
           OnKeyPress(Self, Key);
       end;
     BCEDITOR_BACKSPACE_CHAR:
-      TBCBaseEditor(Editor).CommandProcessor(ecChar, Key, nil);
+      TCustomBCEditor(Editor).CommandProcessor(ecChar, Key, nil);
   end;
   if (FSendToEditor) then
-    PostMessage(TBCBaseEditor(Editor).Handle, WM_CHAR, WParam(Key), 0);
+    PostMessage(TCustomBCEditor(Editor).Handle, WM_CHAR, WParam(Key), 0);
   Invalidate;
 end;
 

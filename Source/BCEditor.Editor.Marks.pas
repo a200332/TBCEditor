@@ -59,7 +59,7 @@ implementation
 
 uses
   Types,
-  BCEditor.Editor.Base;
+  BCEditor.Editor;
 
 function CompareLines(Item1, Item2: Pointer): Integer;
 begin
@@ -155,11 +155,11 @@ end;
 
 procedure TBCEditorMarkList.Place(AMark: TBCEditorMark);
 var
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
 begin
   LEditor := nil;
-  if Assigned(FEditor) and (FEditor is TBCBaseEditor) then
-    LEditor := FEditor as TBCBaseEditor;
+  if Assigned(FEditor) and (FEditor is TCustomBCEditor) then
+    LEditor := FEditor as TCustomBCEditor;
   if Assigned(LEditor) then
     if Assigned(LEditor.OnBeforeMarkPlaced) then
       LEditor.OnBeforeMarkPlaced(FEditor, AMark);

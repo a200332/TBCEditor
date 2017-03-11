@@ -131,9 +131,6 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.ActiveLine.pas">
             <BuildOrder>3</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Base.pas">
-            <BuildOrder>4</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Caret.pas">
             <BuildOrder>9</BuildOrder>
         </DelphiCompile>

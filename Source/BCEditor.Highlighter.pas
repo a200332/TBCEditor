@@ -493,7 +493,7 @@ implementation {***************************************************************}
 uses
   Types, IOUtils, TypInfo,
   GraphUtil,
-  BCEditor.Editor.Base, BCEditor.Language, BCEditor.Utils,
+  BCEditor.Editor, BCEditor.Language, BCEditor.Utils,
   BCEditor.Editor.CompletionProposal;
 
 { TBCEditorHighlighter.TInfo **************************************************}
@@ -659,13 +659,13 @@ end;
 
 procedure TBCEditorHighlighter.TColors.LoadFromFile(const AFileName: string);
 var
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LStream: TStream;
 begin
   FFileName := AFileName;
   FName := TPath.GetFileNameWithoutExtension(AFileName);
 
-  LEditor := Highlighter.Editor as TBCBaseEditor;
+  LEditor := Highlighter.Editor as TCustomBCEditor;
   LStream := LEditor.CreateFileStream(LEditor.GetColorsFileName(AFileName));
   try
     LoadFromStream(LStream);
@@ -685,7 +685,7 @@ end;
 
 procedure TBCEditorHighlighter.TColors.LoadFromStream(AStream: TStream);
 begin
-  TBCBaseEditor(Highlighter.Editor).BeginUpdate();
+  TCustomBCEditor(Highlighter.Editor).BeginUpdate();
   with TImportJSON.Create(Highlighter) do
     try
       ImportColorsFromStream(AStream);
@@ -693,7 +693,7 @@ begin
       Free;
     end;
   Highlighter.UpdateColors();
-  TBCBaseEditor(Highlighter.Editor).EndUpdate();
+  TCustomBCEditor(Highlighter.Editor).EndUpdate();
 end;
 
 { TBCEditorHighlighter.TAbstractToken *****************************************}
@@ -1750,7 +1750,7 @@ procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingFoldRegion(ACodeFold
   ACodeFoldingObject: TJsonObject);
 var
   LCloseToken: string;
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LFileName: string;
   LFileStream: TStream;
   LFoldRegionArray: TJsonArray;
@@ -1778,7 +1778,7 @@ begin
         LFileName := LJsonDataValue.ObjectValue['File'].Value;
         if LFileName <> '' then
         begin
-          LEditor := FHighlighter.Editor as TBCBaseEditor;
+          LEditor := FHighlighter.Editor as TCustomBCEditor;
           LFileStream := LEditor.CreateFileStream(LEditor.GetHighlighterFileName(LFileName));
           LJSONObject := TJsonObject.ParseFromStream(LFileStream) as TJsonObject;
           if Assigned(LJSONObject) then
@@ -1870,7 +1870,7 @@ procedure TBCEditorHighlighter.TImportJSON.ImportCodeFoldingSkipRegion(ACodeFold
   ACodeFoldingObject: TJsonObject);
 var
   LCloseToken: string;
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LFileName: string;
   LFileStream: TStream;
   LIndex: Integer;
@@ -1897,7 +1897,7 @@ begin
         LFileName := LJsonDataValue.ObjectValue['File'].Value;
         if LFileName <> '' then
         begin
-          LEditor := FHighlighter.Editor as TBCBaseEditor;
+          LEditor := FHighlighter.Editor as TCustomBCEditor;
           LFileStream := LEditor.CreateFileStream(LEditor.GetHighlighterFileName(LFileName));
           LJSONObject := TJsonObject.ParseFromStream(LFileStream) as TJsonObject;
           if Assigned(LJSONObject) then
@@ -1915,7 +1915,7 @@ begin
       end;
 
       LSkipRegionType := StrToRegionType(LJsonDataValue.ObjectValue['RegionType'].Value);
-      if (LSkipRegionType = ritMultiLineComment) and (cfoFoldMultilineComments in TBCBaseEditor(FHighlighter.Editor).CodeFolding.Options) then
+      if (LSkipRegionType = ritMultiLineComment) and (cfoFoldMultilineComments in TCustomBCEditor(FHighlighter.Editor).CodeFolding.Options) then
       begin
         LRegionItem := ACodeFoldingRegion.Add(LOpenToken, LCloseToken);
         LRegionItem.NoSubs := True;
@@ -1955,14 +1955,14 @@ end;
 procedure TBCEditorHighlighter.TImportJSON.ImportColorsEditorProperties(AEditorObject: TJsonObject);
 var
   LColorsObject: TJsonObject;
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LFontSizesObject: TJsonObject;
   LFontsObject: TJsonObject;
   LIndex: Integer;
 begin
   if Assigned(AEditorObject) then
   begin
-    LEditor := FHighlighter.Editor as TBCBaseEditor;
+    LEditor := FHighlighter.Editor as TCustomBCEditor;
     LColorsObject := AEditorObject['Colors'].ObjectValue;
     if Assigned(LColorsObject) then
     begin
@@ -2081,7 +2081,7 @@ end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportCompletionProposal(ACompletionProposalObject: TJsonObject);
 var
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LFileName: string;
   LFileStream: TStream;
   LIndex: Integer;
@@ -2104,7 +2104,7 @@ begin
       LFileName := LJsonDataValue.ObjectValue['File'].Value;
       if LFileName <> '' then
       begin
-        LEditor := FHighlighter.Editor as TBCBaseEditor;
+        LEditor := FHighlighter.Editor as TCustomBCEditor;
         LFileStream := LEditor.CreateFileStream(LEditor.GetHighlighterFileName(LFileName));
         LJSONObject := TJsonObject.ParseFromStream(LFileStream) as TJsonObject;
         if Assigned(LJSONObject) then
@@ -2131,7 +2131,7 @@ end;
 procedure TBCEditorHighlighter.TImportJSON.ImportEditorProperties(AEditorObject: TJsonObject);
 begin
   if Assigned(AEditorObject) then
-    TBCBaseEditor(FHighlighter.Editor).URIOpener := StrToBoolDef(AEditorObject['URIOpener'].Value, False);
+    TCustomBCEditor(FHighlighter.Editor).URIOpener := StrToBoolDef(AEditorObject['URIOpener'].Value, False);
 end;
 
 procedure TBCEditorHighlighter.TImportJSON.ImportElements(AColorsObject: TJsonObject);
@@ -2156,7 +2156,7 @@ begin
     FHighlighter.Colors.Styles.Add(LElement);
 
     if LElement.Name = 'Editor' then
-      (FHighlighter.Editor as TBCBaseEditor).ForegroundColor := LElement.Foreground;
+      (FHighlighter.Editor as TCustomBCEditor).ForegroundColor := LElement.Foreground;
   end;
 end;
 
@@ -2240,7 +2240,7 @@ end;
 procedure TBCEditorHighlighter.TImportJSON.ImportMatchingPair(AMatchingPairObject: TJsonObject);
 var
   LArray: TJsonArray;
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LFileName: string;
   LFileStream: TStream;
   LIndex: Integer;
@@ -2262,7 +2262,7 @@ begin
       LFileName := LJsonDataValue.ObjectValue['File'].Value;
       if LFileName <> '' then
       begin
-        LEditor := FHighlighter.Editor as TBCBaseEditor;
+        LEditor := FHighlighter.Editor as TCustomBCEditor;
         LFileStream := LEditor.CreateFileStream(LEditor.GetHighlighterFileName(LFileName));
         LJSONObject := TJsonObject.ParseFromStream(LFileStream) as TJsonObject;
         if Assigned(LJSONObject) then
@@ -2289,7 +2289,7 @@ procedure TBCEditorHighlighter.TImportJSON.ImportRange(ARange: TRange; RangeObje
 var
   LAlternativeCloseArray: TJsonArray;
   LCloseToken: string;
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LElementPrefix: string;
   LFileName: string;
   LFileStream: TStream;
@@ -2311,7 +2311,7 @@ begin
     if FHighlighter.MultiHighlighter and (LFileName <> '') then
     begin
       LElementPrefix := RangeObject['ElementPrefix'].Value;
-      LEditor := FHighlighter.Editor as TBCBaseEditor;
+      LEditor := FHighlighter.Editor as TCustomBCEditor;
       LFileStream := LEditor.CreateFileStream(LEditor.GetHighlighterFileName(LFileName));
       LJSONObject := TJsonObject.ParseFromStream(LFileStream) as TJsonObject;
       if Assigned(LJSONObject) then
@@ -2454,7 +2454,7 @@ end;
 
 constructor TBCEditorHighlighter.Create(AEditor: TCustomControl);
 begin
-  Assert(AEditor is TBCBaseEditor);
+  Assert(AEditor is TCustomBCEditor);
 
   inherited Create;
 
@@ -2779,7 +2779,7 @@ begin
     FCodeFoldingRegions[LIndex] := nil;
   end;
   CodeFoldingRangeCount := 0;
-  (Editor as TBCBaseEditor).ClearMatchingPair;
+  (Editor as TCustomBCEditor).ClearMatchingPair;
 end;
 
 procedure TBCEditorHighlighter.Prepare;
@@ -2828,11 +2828,11 @@ end;
 
 procedure TBCEditorHighlighter.UpdateColors;
 var
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LFontDummy: TFont;
 begin
   UpdateAttributes(MainRules, nil);
-  LEditor := FEditor as TBCBaseEditor;
+  LEditor := FEditor as TCustomBCEditor;
   if Assigned(LEditor) then
   begin
     LFontDummy := TFont.Create;
@@ -2848,12 +2848,12 @@ end;
 
 procedure TBCEditorHighlighter.LoadFromFile(const AFileName: string);
 var
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LStream: TStream;
 begin
   FFileName := AFileName;
   FName := TPath.GetFileNameWithoutExtension(AFileName);
-  LEditor := FEditor as TBCBaseEditor;
+  LEditor := FEditor as TCustomBCEditor;
   if Assigned(LEditor) then
   begin
     LStream := LEditor.CreateFileStream(LEditor.GetHighlighterFileName(AFileName));
@@ -2877,12 +2877,12 @@ end;
 procedure TBCEditorHighlighter.LoadFromStream(AStream: TStream);
 var
   LCaretPosition: TBCEditorTextPosition;
-  LEditor: TBCBaseEditor;
+  LEditor: TCustomBCEditor;
   LTempLines: TStringList;
   LTopLine: Integer;
 begin
   Clear;
-  LEditor := FEditor as TBCBaseEditor;
+  LEditor := FEditor as TCustomBCEditor;
   if Assigned(LEditor) then
   begin
     FLoading := True;

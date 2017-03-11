@@ -3,7 +3,7 @@ unit BCEditor.Language;
 interface
 
 resourcestring
-  { BCEditor.Editor.Base }
+  { BCEditor.Editor }
   SBCEditorScrollInfoTopLine = 'Top line: %d';
   SBCEditorScrollInfo = '%d - %d';
   SBCEditorSearchStringNotFound = 'Search string ''%s'' not found';

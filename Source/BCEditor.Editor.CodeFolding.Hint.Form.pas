@@ -56,7 +56,7 @@ implementation
 
 uses
   SysUtils, UITypes,
-  BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Utils, BCEditor.Consts;
+  BCEditor.Editor, BCEditor.Editor.KeyCommands, BCEditor.Utils, BCEditor.Consts;
 
 constructor TBCEditorCodeFoldingHintForm.Create(AOwner: TComponent);
 begin
@@ -183,7 +183,7 @@ procedure TBCEditorCodeFoldingHintForm.Execute(const ACurrentString: string; X, 
 
     if LY + LHeight > GetWorkAreaHeight then
     begin
-      LY := LY - LHeight - (Owner as TBCBaseEditor).LineHeight - 2;
+      LY := LY - LHeight - (Owner as TCustomBCEditor).LineHeight - 2;
       if LY < 0 then
         LY := 0;
     end;
@@ -213,7 +213,7 @@ var
   LData: Pointer;
   LEditorCommand: TBCEditorCommand;
 begin
-  with Owner as TBCBaseEditor do
+  with Owner as TCustomBCEditor do
   begin
     LData := nil;
     LChar := BCEDITOR_NONE_CHAR;

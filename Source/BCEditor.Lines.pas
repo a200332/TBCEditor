@@ -243,7 +243,7 @@ implementation {***************************************************************}
 
 uses
   Math, StrUtils,
-  BCEditor.Editor.Base, BCEditor.Language;
+  BCEditor.Editor, BCEditor.Language;
 
 function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
 begin
@@ -492,15 +492,15 @@ var
 begin
   Assert(ABeginPosition < AEndPosition);
 
-  LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
   LText := GetTextBetween(ABeginPosition, AEndPosition);
 
   DoDeleteText(ABeginPosition, AEndPosition);
 
   UndoList.PushItem(utBackspace, LCaretPosition,
-    LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+    LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
     ABeginPosition, AEndPosition, LText);
 end;
 
@@ -562,7 +562,7 @@ end;
 
 constructor TBCEditorLines.Create(const AEditor: TCustomControl);
 begin
-  Assert(AEditor is TBCBaseEditor);
+  Assert(AEditor is TCustomBCEditor);
 
   inherited Create();
 
@@ -601,8 +601,8 @@ begin
       LEndPosition := TextPosition(Length(FLines[AEndLine].Text), AEndLine);
 
     LText := GetTextBetween(LBeginPosition, LEndPosition);
-    UndoList.PushItem(utDelete, TBCBaseEditor(Editor).TextCaretPosition,
-      TBCBaseEditor(Editor).SelectionBeginPosition, TBCBaseEditor(Editor).SelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+    UndoList.PushItem(utDelete, TCustomBCEditor(Editor).TextCaretPosition,
+      TCustomBCEditor(Editor).SelectionBeginPosition, TCustomBCEditor(Editor).SelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
       LBeginPosition, InvalidTextPosition, LText);
 
     QuickSort(ABeginLine, AEndLine, ACompare);
@@ -628,9 +628,9 @@ var
 begin
   Assert((0 <= ALine) and (ALine < Count));
 
-  LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
   if (Count = 1) then
   begin
     LBeginPosition := BOFTextPosition;
@@ -653,7 +653,7 @@ begin
   DoDelete(ALine);
 
   UndoList.PushItem(LUndoType, LCaretPosition,
-    LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+    LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
     LBeginPosition, InvalidTextPosition, LText);
 end;
 
@@ -678,14 +678,14 @@ begin
 
   if (LIndentFound) then
   begin
-    LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
 
     DoDeleteIndent(ABeginPosition, AEndPosition, AIndentText, SelectionMode);
 
     UndoList.PushItem(utDeleteIndent, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
       ABeginPosition, AEndPosition, AIndentText);
 
     RedoList.Clear();
@@ -723,9 +723,9 @@ begin
     // Do nothing
   else if (ASelectionMode = smNormal) then
   begin
-    LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
 
     LBeginPosition := Min(ABeginPosition, AEndPosition);
     LEndPosition := Max(ABeginPosition, AEndPosition);
@@ -735,14 +735,14 @@ begin
     Result := DoDeleteText(LBeginPosition, LEndPosition);
 
     UndoList.PushItem(utDelete, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
       LBeginPosition, InvalidTextPosition, LText);
   end
   else
   begin
-    LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
 
     LBeginPosition := Min(ABeginPosition, AEndPosition);
     LEndPosition := Max(ABeginPosition, AEndPosition);
@@ -751,7 +751,7 @@ begin
 
     try
       UndoList.PushItem(utSelection, LCaretPosition,
-        LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+        LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
         InvalidTextPosition, InvalidTextPosition);
 
       for LLine := LBeginPosition.Line to LEndPosition.Line do
@@ -767,7 +767,7 @@ begin
         DoDeleteText(LBeginText, LEndText);
 
         UndoList.PushItem(utDelete, InvalidTextPosition,
-          InvalidTextPosition, InvalidTextPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+          InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
           LBeginText, InvalidTextPosition, LText);
 
         LLineLength := Length(FLines[LLine].Text);
@@ -778,7 +778,7 @@ begin
           DoInsertText(LEndText, LSpaces);
 
           UndoList.PushItem(utInsert, InvalidTextPosition,
-            InvalidTextPosition, InvalidTextPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+            InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
             TextPosition(LBeginPosition.Char, LLine), TextPosition(LEndPosition.Char, LLine));
         end;
       end;
@@ -1147,10 +1147,10 @@ begin
   begin
     BeginUpdate();
 
-    LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
-    LSelectionMode := TBCBaseEditor(Editor).Selection.ActiveMode;
+    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+    LSelectionMode := TCustomBCEditor(Editor).Selection.ActiveMode;
 
     if (List = UndoList) then
       LDestinationList := RedoList
@@ -1504,9 +1504,9 @@ var
   LSelectionEndPosition: TBCEditorTextPosition;
   LCaretPosition: TBCEditorTextPosition;
 begin
-  LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
 
   DoInsert(ALine, '');
 
@@ -1521,7 +1521,7 @@ begin
   if (not (csLoading in Editor.ComponentState)) then
   begin
     UndoList.PushItem(utInsert, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
       TextPosition(1, ALine), TextPosition(1 + Length(AValue), ALine));
 
     RedoList.Clear();
@@ -1535,14 +1535,14 @@ var
   LSelectionEndPosition: TBCEditorTextPosition;
   LCaretPosition: TBCEditorTextPosition;
 begin
-  LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
+  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
 
   DoInsertIndent(ABeginPosition, AEndPosition, AIndentText, ASelectionMode);
 
   UndoList.PushItem(utInsertIndent, LCaretPosition,
-    LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+    LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
     ABeginPosition, AEndPosition, AIndentText);
 
   RedoList.Clear();
@@ -1567,9 +1567,9 @@ begin
   Assert(ABeginPosition.Char < AEndPosition.Char);
   Assert(ABeginPosition.Line <= AEndPosition.Line);
 
-  LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
 
   UndoList.BeginUpdate();
 
@@ -1594,7 +1594,7 @@ begin
         LInsertEndPosition := InsertText(LInsertBeginPosition, LInsertText);
 
         UndoList.PushItem(utInsert, LCaretPosition,
-          LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+          LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
           LInsertBeginPosition, LInsertEndPosition);
       end
       else if (LLineLength < AEndPosition.Char - 1) then
@@ -1605,7 +1605,7 @@ begin
         DeleteText(LInsertBeginPosition, LInsertEndPosition);
 
         UndoList.PushItem(utDelete, LCaretPosition,
-          LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+          LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
           LInsertBeginPosition, InvalidTextPosition, LDeleteText);
 
         if (LPos > LLineBeginPos) then
@@ -1613,7 +1613,7 @@ begin
           LInsertEndPosition := InsertText(LInsertBeginPosition, LInsertText);
 
           UndoList.PushItem(utInsert, InvalidTextPosition,
-            InvalidTextPosition, InvalidTextPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+            InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
             LInsertBeginPosition, LInsertEndPosition);
         end;
       end
@@ -1626,7 +1626,7 @@ begin
         DeleteText(LInsertBeginPosition, LInsertEndPosition);
 
         UndoList.PushItem(utDelete, LCaretPosition,
-          LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+          LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
           LInsertBeginPosition, InvalidTextPosition, LDeleteText);
 
         if (LPos > LLineBeginPos) then
@@ -1634,7 +1634,7 @@ begin
           LInsertEndPosition := InsertText(LInsertBeginPosition, LeftStr(LInsertText, AEndPosition.Char - ABeginPosition.Char));
 
           UndoList.PushItem(utInsert, LCaretPosition,
-            InvalidTextPosition, InvalidTextPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+            InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
             LInsertBeginPosition, LInsertEndPosition);
         end;
       end;
@@ -1669,9 +1669,9 @@ begin
     Result := APosition
   else
   begin
-    LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
     if ((Count > 0) and (APosition.Char - 1 > Length(FLines[APosition.Line].Text))) then
       LPosition := TextPosition(1 + Length(FLines[APosition.Line].Text), APosition.Line)
     else
@@ -1680,7 +1680,7 @@ begin
     Result := DoInsertText(LPosition, AText, NewText);
 
     UndoList.PushItem(utInsert, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
       LPosition, Result);
   end;
 
@@ -1719,9 +1719,9 @@ begin
   begin
     Assert((0 <= ALine) and (ALine < Count));
 
-    LCaretPosition := TBCBaseEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TBCBaseEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TBCBaseEditor(Editor).SelectionEndPosition;
+    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
     LText := FLines[ALine].Text;
 
     DoPut(ALine, AText);
@@ -1730,12 +1730,12 @@ begin
 
     if (LText <> '') then
       UndoList.PushItem(utDelete, LCaretPosition,
-        LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+        LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
         TextPosition(1, ALine), InvalidTextPosition, LText);
 
     if (AText <> '') then
       UndoList.PushItem(utInsert, LCaretPosition,
-        LSelectionBeginPosition, LSelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+        LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
         TextPosition(1, ALine), TextPosition(1 + Length(AText), ALine));
 
     UndoList.EndUpdate();
@@ -1882,8 +1882,8 @@ begin
   begin
     LText := GetTextBetween(BOFTextPosition, EOFTextPosition);
 
-    UndoList.PushItem(utSelection, TBCBaseEditor(Editor).TextCaretPosition,
-      TBCBaseEditor(Editor).SelectionBeginPosition, TBCBaseEditor(Editor).SelectionEndPosition, TBCBaseEditor(Editor).Selection.ActiveMode,
+    UndoList.PushItem(utSelection, TCustomBCEditor(Editor).TextCaretPosition,
+      TCustomBCEditor(Editor).SelectionBeginPosition, TCustomBCEditor(Editor).SelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
       BOFTextPosition, InvalidTextPosition, LText);
 
     RedoList.Clear();
