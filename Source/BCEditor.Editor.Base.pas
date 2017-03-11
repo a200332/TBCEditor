@@ -291,7 +291,7 @@ type
     function GetSelectionAvailable(): Boolean;
     function GetSelectionBeginPosition: TBCEditorTextPosition;
     function GetSelectionEndPosition: TBCEditorTextPosition;
-    function GetSelStart: Integer;
+    function GetSelStart(): Integer;
     function GetSelText(): string;
     function GetText: string;
     function GetTextBetween(const ATextBeginPosition: TBCEditorTextPosition; const ATextEndPosition: TBCEditorTextPosition): string;
@@ -3627,7 +3627,7 @@ begin
       finally
         CloseClipboard();
       end;
-      Lines.AddUndoGroupBreak();
+      Lines.UndoGroupBreak();
       DoInsertText(Text);
     end;
   end;
@@ -4180,7 +4180,7 @@ begin
   if not ReadOnly and (ASource is TBCBaseEditor) and TBCBaseEditor(ASource).SelectionAvailable then
   begin
     BeginUpdate();
-    Lines.AddUndoGroupBreak();
+    Lines.UndoGroupBreak();
 
     inherited;
 
@@ -5708,46 +5708,33 @@ begin
 end;
 
 function TBCBaseEditor.GetSelectionBeginPosition: TBCEditorTextPosition;
-var
-  LLineLength: Integer;
 begin
-  Result := FSelectionBeginPosition;
-
-  if (FSelection.Mode = smNormal) then
-  begin
-    LLineLength := Length(Lines[Result.Line]);
-
-    if (Result.Char > LLineLength) then
-      Result.Char := 1 + LLineLength;
+  case (Selection.Mode) of
+    smNormal: Result := TextPosition(Min(FSelectionBeginPosition.Char, 1 + Length(Lines[FSelectionBeginPosition.Line])), FSelectionBeginPosition.Line);
+    smColumn: Result := FSelectionBeginPosition;
   end;
 end;
 
 function TBCBaseEditor.GetSelectionEndPosition: TBCEditorTextPosition;
-var
-  LLineLength: Integer;
 begin
-  Result := FSelectionEndPosition;
-
-  if (Selection.Mode = smNormal) then
-  begin
-    LLineLength := Length(Lines[Result.Line]);
-
-    if (Result.Char > LLineLength) then
-      Result.Char := 1 + LLineLength;
+  case (Selection.Mode) of
+    smNormal: Result := TextPosition(Min(FSelectionEndPosition.Char, 1 + Length(Lines[FSelectionEndPosition.Line])), FSelectionEndPosition.Line);
+    smColumn: Result := FSelectionEndPosition;
   end;
 end;
 
-function TBCBaseEditor.GetSelLength: Integer;
+function TBCBaseEditor.GetSelLength(): Integer;
 begin
-  if GetSelectionAvailable then
-    Result := Lines.TextPositionToCharIndex(SelectionEndPosition) - Lines.TextPositionToCharIndex(SelectionBeginPosition)
+  if (not SelectionAvailable) then
+    Result := 0
   else
-    Result := 0;
+    Result := Lines.TextPositionToCharIndex(Max(SelectionBeginPosition, SelectionEndPosition))
+      - Lines.TextPositionToCharIndex(Min(SelectionBeginPosition, SelectionEndPosition));
 end;
 
-function TBCBaseEditor.GetSelStart: Integer;
+function TBCBaseEditor.GetSelStart(): Integer;
 begin
-  Result := Lines.TextPositionToCharIndex(SelectionBeginPosition);
+  Result := Lines.TextPositionToCharIndex(Min(SelectionBeginPosition, SelectionEndPosition));
 end;
 
 function TBCBaseEditor.GetSelText(): string;
@@ -5770,7 +5757,6 @@ begin
       Result := Lines.TextBetween[ATextBeginPosition, ATextEndPosition];
     smColumn:
       Result := Lines.TextBetweenColumn[ATextBeginPosition, ATextEndPosition];
-    else raise ERangeError.Create('ActiveMode: ' + IntToStr(Ord(Selection.ActiveMode)));
   end;
 end;
 
@@ -7109,7 +7095,6 @@ var
   LPoint: TPoint;
   LPositionText: string;
   LRect: TRect;
-  LTextCaretPosition: TBCEditorTextPosition;
 begin
   if FCaret.MultiEdit.Enabled and Focused then
   begin
@@ -7278,9 +7263,8 @@ begin
       LDisplayPosition.Row := DisplayCaretY;
     if not (sfCodeFoldingInfoClicked in FStateFlags) then { No selection when info clicked }
     begin
-      LTextCaretPosition := DisplayToTextPosition(LDisplayPosition);
-      MoveCaretAndSelection(PixelsToTextPosition(FMouseDownX, FMouseDownY), LTextCaretPosition, True);
-      Lines.AddUndoGroupBreak();
+      MoveCaretAndSelection(SelectionBeginPosition, DisplayToTextPosition(LDisplayPosition), True);
+      Lines.UndoGroupBreak();
     end;
     FLastSortOrder := soDesc;
     Include(FStateFlags, sfInSelection);
@@ -7378,18 +7362,17 @@ end;
 procedure TBCBaseEditor.MoveCaretAndSelection(ABeforeTextPosition, AAfterTextPosition: TBCEditorTextPosition;
   const ASelectionCommand: Boolean);
 begin
-  Lines.AddUndoSelection(TextCaretPosition,
-    SelectionBeginPosition, SelectionEndPosition, Selection.ActiveMode);
-
-  SetCaretAndSelection(AAfterTextPosition,
-    MinTextPosition(ABeforeTextPosition, AAfterTextPosition), MaxTextPosition(ABeforeTextPosition, AAfterTextPosition));
+  if (not ASelectionCommand) then
+    SetCaretAndSelection(AAfterTextPosition, AAfterTextPosition, AAfterTextPosition)
+  else
+    SetCaretAndSelection(AAfterTextPosition, SelectionBeginPosition, AAfterTextPosition);
 end;
 
 procedure TBCBaseEditor.MoveCaretHorizontally(const Cols: Integer; const SelectionCommand: Boolean);
 var
   LChangeY: Boolean;
   LCurrentLineLength: Integer;
-  LDestinationPosition: TBCEditorTextPosition;
+  LNewCaretPosition: TBCEditorTextPosition;
   LPLine: PChar;
   LTextCaretPosition: TBCEditorTextPosition;
 begin
@@ -7400,13 +7383,13 @@ begin
     FSelectionEndPosition := LTextCaretPosition;
   end;
 
-  LDestinationPosition := LTextCaretPosition;
+  LNewCaretPosition := LTextCaretPosition;
 
   LCurrentLineLength := Length(Lines[LTextCaretPosition.Line]);
   LChangeY := not (soPastEndOfLine in FScroll.Options) or FWordWrap.Enabled;
 
   if LChangeY and (Cols = -1) and (LTextCaretPosition.Char = 1) and (LTextCaretPosition.Line > 1) then
-    with LDestinationPosition do
+    with LNewCaretPosition do
     begin
       Line := Line - 1;
       Char := Length(Lines[Line]) + 1;
@@ -7414,24 +7397,24 @@ begin
   else
   if LChangeY and (Cols = 1) and (LTextCaretPosition.Char > LCurrentLineLength) and
     (LTextCaretPosition.Line < FLines.Count) then
-    with LDestinationPosition do
+    with LNewCaretPosition do
     begin
-      if LDestinationPosition.Line + 1 >= FLines.Count then
+      if LNewCaretPosition.Line + 1 >= FLines.Count then
         Exit;
-      Line := LDestinationPosition.Line + 1;
+      Line := LNewCaretPosition.Line + 1;
       Char := 1;
     end
   else
   begin
-    LDestinationPosition.Char := Max(1, LDestinationPosition.Char + Cols);
+    LNewCaretPosition.Char := Max(1, LNewCaretPosition.Char + Cols);
     if (Cols > 0) and LChangeY then
-      LDestinationPosition.Char := Min(LDestinationPosition.Char, LCurrentLineLength + 1);
+      LNewCaretPosition.Char := Min(LNewCaretPosition.Char, LCurrentLineLength + 1);
 
     { Skip combined and non-spacing marks }
-    if LDestinationPosition.Char <= Length(Lines[LDestinationPosition.Line]) then
+    if LNewCaretPosition.Char <= Length(Lines[LNewCaretPosition.Line]) then
     begin
-      LPLine := PChar(FLines[LDestinationPosition.Line]);
-      Inc(LPLine, LDestinationPosition.Char - 1);
+      LPLine := PChar(FLines[LNewCaretPosition.Line]);
+      Inc(LPLine, LNewCaretPosition.Char - 1);
       while (LPLine^ <> BCEDITOR_NONE_CHAR) and
         ((LPLine^.GetUnicodeCategory in [TUnicodeCategory.ucCombiningMark, TUnicodeCategory.ucNonSpacingMark]) or
         ((LPLine - 1)^ <> BCEDITOR_NONE_CHAR) and
@@ -7440,23 +7423,23 @@ begin
         if Cols > 0 then
         begin
           Inc(LPLine);
-          Inc(LDestinationPosition.Char);
+          Inc(LNewCaretPosition.Char);
         end
         else
         begin
           Dec(LPLine);
-          Dec(LDestinationPosition.Char);
+          Dec(LNewCaretPosition.Char);
         end;
     end;
   end;
 
-  if not SelectionCommand and (LDestinationPosition.Line <> LTextCaretPosition.Line) then
+  if not SelectionCommand and (LNewCaretPosition.Line <> LTextCaretPosition.Line) then
   begin
     DoTrimTrailingSpaces(LTextCaretPosition.Line);
-    DoTrimTrailingSpaces(LDestinationPosition.Line);
+    DoTrimTrailingSpaces(LNewCaretPosition.Line);
   end;
 
-  MoveCaretAndSelection(LTextCaretPosition, LDestinationPosition, SelectionCommand);
+  MoveCaretAndSelection(SelectionBeginPosition, LNewCaretPosition, SelectionCommand);
 end;
 
 procedure TBCBaseEditor.MoveCaretToBOF;
@@ -7494,17 +7477,16 @@ begin
   end;
 
   LNewCaretPosition := DisplayToTextPosition(LDisplayCaretPosition);
+  if (Rows < 0) then
+    LNewCaretPosition := Max(LNewCaretPosition, BOFTextPosition)
+  else
+    LNewCaretPosition := Min(LNewCaretPosition, Lines.EOFTextPosition);
 
   if (not SelectionCommand and (LNewCaretPosition.Line <> FSelectionBeginPosition.Line)) then
   begin
     DoTrimTrailingSpaces(FSelectionBeginPosition.Line);
     DoTrimTrailingSpaces(LNewCaretPosition.Line);
   end;
-
-  if (Rows < 0) then
-    LNewCaretPosition := MaxTextPosition(LNewCaretPosition, BOFTextPosition)
-  else
-    LNewCaretPosition := MinTextPosition(LNewCaretPosition, Lines.EOFTextPosition);
 
   MoveCaretAndSelection(TextCaretPosition, LNewCaretPosition, SelectionCommand);
 end;
@@ -9990,8 +9972,8 @@ var
 
       if LSelectionAvailable then
       begin
-        LSelectionBeginPosition := GetSelectionBeginPosition;
-        LSelectionEndPosition := GetSelectionEndPosition;
+        LSelectionBeginPosition := Min(SelectionBeginPosition, SelectionEndPosition);
+        LSelectionEndPosition := Max(SelectionBeginPosition, SelectionEndPosition);
 
         if FSelection.Mode = smColumn then
           if LSelectionBeginPosition.Char > LSelectionEndPosition.Char then
@@ -11685,7 +11667,7 @@ begin
   begin
     LTextPosition := DisplayToTextPosition(LDisplayPosition);
     LTextCaretPosition := TextCaretPosition;
-    if (LTextCaretPosition.Char <> LTextPosition.Char) or (LTextCaretPosition.Line <> LTextPosition.Line) then
+    if (LTextCaretPosition <> LTextPosition) then
     begin
       TextCaretPosition := LTextPosition;
       if MouseCapture then
@@ -11960,6 +11942,9 @@ procedure TBCBaseEditor.SetCaretAndSelection(const ATextCaretPosition,
 var
   LOldSelectionMode: TBCEditorSelectionMode;
 begin
+  Lines.AddUndoSelection(TextCaretPosition,
+    SelectionBeginPosition, SelectionEndPosition, Selection.ActiveMode);
+
   BeginUpdate();
 
   LOldSelectionMode := FSelection.ActiveMode;
@@ -12250,7 +12235,7 @@ begin
     else
       LValue.Char := Max(LValue.Char, 1);
 
-    if (LValue.Char <> FSelectionEndPosition.Char) or (LValue.Line <> FSelectionEndPosition.Line) then
+    if (LValue <> FSelectionEndPosition) then
     begin
       FSelectionEndPosition := LValue;
       Invalidate;
