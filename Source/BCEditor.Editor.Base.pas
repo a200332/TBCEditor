@@ -2581,8 +2581,8 @@ begin
         or (LSpaceCount1 <> LTextCaretPosition.Char - 1)) then
       begin
         LNewCaretPosition := TextPosition(LTextCaretPosition.Char - 1, LTextCaretPosition.Line);
-        if (LLineText[LTextCaretPosition.Char].IsSurrogate()) then
-          Dec(LTextCaretPosition.Char);
+        if (LLineText[LNewCaretPosition.Char].IsSurrogate()) then
+          Dec(LNewCaretPosition.Char);
       end
       else
       begin
