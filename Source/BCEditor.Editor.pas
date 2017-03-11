@@ -3845,9 +3845,9 @@ end;
 
 procedure TCustomBCEditor.DoSelectedText(const AValue: string);
 var
+  LNewCaretPosition: TBCEditorTextPosition;
   LSelectionBeginPosition: TBCEditorTextPosition;
   LSelectionEndPosition: TBCEditorTextPosition;
-  LTextEndPosition: TBCEditorTextPosition;
 begin
   Lines.BeginUpdate();
 
@@ -3857,12 +3857,13 @@ begin
   begin
     LSelectionBeginPosition := SelectionBeginPosition;
     LSelectionEndPosition := SelectionEndPosition;
-    SetCaretAndSelection(LSelectionBeginPosition, LSelectionBeginPosition, LSelectionBeginPosition);
-    Lines.DeleteText(LSelectionBeginPosition, LSelectionEndPosition, FSelection.ActiveMode);
+    LNewCaretPosition := Min(LSelectionBeginPosition, LSelectionEndPosition);
+    SetCaretAndSelection(LNewCaretPosition, LNewCaretPosition, LNewCaretPosition);
+    Lines.DeleteText(LNewCaretPosition, Max(LSelectionBeginPosition, LSelectionEndPosition), FSelection.ActiveMode);
     if (AValue <> '') then
     begin
-      LTextEndPosition := InsertText(LSelectionBeginPosition, AValue);
-      SetCaretAndSelection(LTextEndPosition, LTextEndPosition, LTextEndPosition);
+      LNewCaretPosition := InsertText(LNewCaretPosition, AValue);
+      SetCaretAndSelection(LNewCaretPosition, LNewCaretPosition, LNewCaretPosition);
     end;
   end;
 

@@ -532,7 +532,9 @@ begin
       Inc(Result.Line);
     end;
 
-    Assert(LLength <= Length(FLines[Result.Line].Text));
+    Assert(LLength <= Length(FLines[Result.Line].Text),
+      'LLength: ' + IntToStr(LLength) + #13#10
+      + 'Length(Text): ' + IntToStr(Length(FLines[Result.Line].Text)));
 
     Result.Char := 1 + LLength;
   end;
@@ -626,7 +628,7 @@ var
   LCaretPosition: TBCEditorTextPosition;
   LUndoType: TUndoList.TUndoType;
 begin
-  Assert((0 <= ALine) and (ALine < Count));
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
   LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
   LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
@@ -800,7 +802,7 @@ end;
 
 procedure TBCEditorLines.DoDelete(const ALine: Integer);
 begin
-  Assert((0 <= ALine) and (ALine < Count));
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
   if (FIndexOfLongestLine >= 0) then
     if (FIndexOfLongestLine = ALine) then
@@ -933,7 +935,7 @@ end;
 
 procedure TBCEditorLines.DoInsert(ALine: Integer; const AText: string);
 begin
-  Assert((0 <= ALine) and (ALine <= Count));
+  Assert((0 <= ALine) and (ALine <= Count), 'Line: ' + IntToStr(ALine));
 
   if (FCount = FCapacity) then
     Grow();
@@ -1088,7 +1090,7 @@ begin
     DoInsert(0, AText)
   else
   begin
-    Assert((0 <= ALine) and (ALine < Count));
+    Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
     FLines[ALine].Flags := FLines[ALine].Flags + [sfExpandedLengthUnknown] - [sfHasTabs, sfHasNoTabs];
     FLines[ALine].Text := AText;
@@ -1264,7 +1266,9 @@ begin
     Result := ''
   else
   begin
-    Assert((0 <= ALine) and (ALine < Count));
+    Assert((0 <= ALine) and (ALine < Count),
+      'Line: ' + IntToStr(ALine));
+
     Result := FLines[ALine].Text;
   end;
 end;
@@ -1275,7 +1279,7 @@ begin
     Result := nil
   else
   begin
-    Assert((0 <= ALine) and (ALine < Count));
+    Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
     Result := @FLines[ALine].Attribute;
   end;
@@ -1372,7 +1376,7 @@ begin
     Result := nil
   else
   begin
-    Assert((0 <= ALine) and (ALine < Count));
+    Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
     Result := Lines[ALine].Range;
   end;
@@ -1717,7 +1721,7 @@ begin
   end
   else if (AText <> FLines[ALine].Text) then
   begin
-    Assert((0 <= ALine) and (ALine < Count));
+    Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
     LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
     LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
@@ -1746,7 +1750,7 @@ end;
 
 procedure TBCEditorLines.PutAttributes(ALine: Integer; const AValue: PLineAttribute);
 begin
-  Assert((0 <= ALine) and (ALine < Count));
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
   BeginUpdate();
   FLines[ALine].Attribute := AValue^;
@@ -1755,7 +1759,7 @@ end;
 
 procedure TBCEditorLines.PutRange(ALine: Integer; ARange: TRange);
 begin
-  Assert((0 <= ALine) and (ALine < Count));
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
   FLines[ALine].Range := ARange;
 end;
@@ -1964,7 +1968,7 @@ end;
 
 procedure TBCEditorLines.TrimTrailingSpaces(ALine: Integer);
 begin
-  Assert((0 <= ALine) and (ALine < Count));
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine));
 
   Put(ALine, TrimRight(FLines[ALine].Text));
 end;
