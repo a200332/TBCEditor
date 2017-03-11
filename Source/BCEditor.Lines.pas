@@ -813,7 +813,7 @@ begin
   begin
     Finalize(FLines[ALine]);
     System.Move(FLines[ALine + 1], FLines[ALine], (FCount - ALine) * SizeOf(TLine));
-    FillChar(FLines[FCount - 1], SizeOf(FLines[FCount - 1]), 0);
+    FillChar(FLines[FCount], SizeOf(FLines[FCount]), 0);
   end;
 
   if (UpdateCount > 0) then
