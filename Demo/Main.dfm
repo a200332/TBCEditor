@@ -2,8 +2,8 @@ object MainForm: TMainForm
   Left = 0
   Top = 0
   Caption = 'BCEditor Demo'
-  ClientHeight = 642
-  ClientWidth = 984
+  ClientHeight = 530
+  ClientWidth = 706
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,19 +17,19 @@ object MainForm: TMainForm
   object SplitterVertical: TSplitter
     Left = 223
     Top = 0
-    Height = 642
+    Height = 530
   end
   object PanelLeft: TPanel
     Left = 0
     Top = 0
     Width = 223
-    Height = 642
+    Height = 530
     Align = alLeft
     BevelOuter = bvNone
     TabOrder = 0
     object SplitterHorizontal: TSplitter
       Left = 0
-      Top = 502
+      Top = 390
       Width = 223
       Height = 3
       Cursor = crVSplit
@@ -38,7 +38,7 @@ object MainForm: TMainForm
     object ListBoxColors: TListBox
       AlignWithMargins = True
       Left = 3
-      Top = 505
+      Top = 393
       Width = 220
       Height = 134
       Margins.Top = 0
@@ -53,7 +53,7 @@ object MainForm: TMainForm
       Left = 3
       Top = 3
       Width = 220
-      Height = 499
+      Height = 387
       Margins.Right = 0
       Margins.Bottom = 0
       Align = alClient
@@ -66,8 +66,8 @@ object MainForm: TMainForm
     AlignWithMargins = True
     Left = 226
     Top = 3
-    Width = 755
-    Height = 636
+    Width = 477
+    Height = 524
     Cursor = crIBeam
     Margins.Left = 0
     ActiveLine.Indicator.Visible = False
@@ -111,6 +111,7 @@ object MainForm: TMainForm
     LeftMargin.Font.Height = -11
     LeftMargin.Font.Name = 'Courier New'
     LeftMargin.Font.Style = []
+    LeftMargin.Width = 55
     Lines.Strings = (
       '')
     LineSpacing = 0
