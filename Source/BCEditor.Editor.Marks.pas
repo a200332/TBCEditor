@@ -61,6 +61,9 @@ uses
   Types,
   BCEditor.Editor;
 
+type
+  TCustomBCEditor = class(BCEditor.Editor.TCustomBCEditor);
+
 function CompareLines(Item1, Item2: Pointer): Integer;
 begin
   Result := TBCEditorMark(Item1).Line - TBCEditorMark(Item2).Line;

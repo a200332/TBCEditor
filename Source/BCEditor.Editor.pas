@@ -298,8 +298,7 @@ type
     function GetTokenWidth(const AToken: string; const ALength: Integer; const ACharsBefore: Integer): Integer;
     function GetUndoOptions(): TBCEditorLines.TUndoOptions;
     function GetVisibleChars(const ARow: Integer; const ALineText: string = ''): Integer;
-    function GetWordAtCaret(): string;
-    function GetWordAtCursor: string;
+    function GetWordAt(ATextPos: TPoint): string;
     function GetWordAtTextPosition(const ATextPosition: TBCEditorTextPosition): string;
     procedure InitCodeFolding;
     procedure InsertLine();
@@ -495,7 +494,106 @@ type
     procedure SetWantReturns(const AValue: Boolean);
     procedure ShowCaret;
     procedure UpdateMouseCursor;
+    function WordAtCursor(): string; deprecated 'Use WordAt[CaretPos]'; // 2017-03-13
+    function WordAtMouse(): string; deprecated 'Use WordAt[ClientToText()]'; // 2017-03-13
+    property ActiveLine: TBCEditorActiveLine read FActiveLine write SetActiveLine;
+    property AllCodeFoldingRanges: TBCEditorCodeFolding.TAllRanges read FAllCodeFoldingRanges;
+    property AlwaysShowCaret: Boolean read FAlwaysShowCaret write SetAlwaysShowCaret;
+    property BackgroundColor: TColor read FBackgroundColor write SetBackgroundColor default clWindow;
+    property Bookmarks: TBCEditorMarkList read FBookmarkList;
+    property BorderStyle: TBorderStyle read FBorderStyle write SetBorderStyle default bsSingle;
+    property CanPaste: Boolean read GetCanPaste;
+    property CanRedo: Boolean read GetCanRedo;
+    property CanUndo: Boolean read GetCanUndo;
+    property Caret: TBCEditorCaret read FCaret write FCaret;
+    property CaretPos: TPoint read GetCaretPos write SetCaretPos;
+    property CharAtCursor: Char read GetCharAtCaret;
+    property CharWidth: Integer read GetCharWidth;
+    property CodeFolding: TBCEditorCodeFolding read FCodeFolding write SetCodeFolding;
+    property CompletionProposal: TBCEditorCompletionProposal read FCompletionProposal write FCompletionProposal;
+    property Cursor default crIBeam;
+    property Directories: TBCEditorDirectories read FDirectories write FDirectories;
+    property DisplayCaretPosition: TBCEditorDisplayPosition read GetDisplayCaretPosition write SetDisplayCaretPosition;
+    property ForegroundColor: TColor read FForegroundColor write SetForegroundColor default clWindowText;
+    property HideSelection: Boolean read FHideSelection write SetHideSelection default True;
+    property Highlighter: TBCEditorHighlighter read FHighlighter;
+    property IsScrolling: Boolean read FIsScrolling;
+    property KeyCommands: TBCEditorKeyCommands read FKeyCommands write SetKeyCommands stored False;
+    property LeftMargin: TBCEditorLeftMargin read FLeftMargin write SetLeftMargin;
+    property LineHeight: Integer read GetLineHeight;
+    property LineNumbersCount: Integer read FLineNumbersCount;
+    property Lines: TBCEditorLines read FLines;
+    property LineSpacing: Integer read FLinespacing write FLinespacing;
+    property Marks: TBCEditorMarkList read FMarkList;
+    property MatchingPair: TBCEditorMatchingPair read FMatchingPair write FMatchingPair;
+    property Minimap: TBCEditorMinimap read FMinimap write FMinimap;
+    property Modified: Boolean read GetModified write SetModified;
+    property MouseMoveScrollCursors[const AIndex: Integer]: HCursor read GetMouseMoveScrollCursors write SetMouseMoveScrollCursors;
+    property OnAfterBookmarkPlaced: TNotifyEvent read FOnAfterBookmarkPlaced write FOnAfterBookmarkPlaced;
+    property OnAfterDeleteBookmark: TNotifyEvent read FOnAfterDeleteBookmark write FOnAfterDeleteBookmark;
+    property OnAfterDeleteMark: TNotifyEvent read FOnAfterDeleteMark write FOnAfterDeleteMark;
+    property OnAfterLinePaint: TBCEditorLinePaintEvent read FOnAfterLinePaint write FOnAfterLinePaint;
+    property OnAfterMarkPanelPaint: TBCEditorMarkPanelPaintEvent read FOnAfterMarkPanelPaint write FOnAfterMarkPanelPaint;
+    property OnAfterMarkPlaced: TNotifyEvent read FOnAfterMarkPlaced write FOnAfterMarkPlaced;
+    property OnBeforeCompletionProposalExecute: TBCEditorCompletionProposal.TEvent read FOnBeforeCompletionProposalExecute write FOnBeforeCompletionProposalExecute;
+    property OnBeforeDeleteMark: TBCEditorMarkEvent read FOnBeforeDeleteMark write FOnBeforeDeleteMark;
+    property OnBeforeMarkPanelPaint: TBCEditorMarkPanelPaintEvent read FOnBeforeMarkPanelPaint write FOnBeforeMarkPanelPaint;
+    property OnBeforeMarkPlaced: TBCEditorMarkEvent read FOnBeforeMarkPlaced write FOnBeforeMarkPlaced;
+    property OnBeforeTokenInfoExecute: TBCEditorTokenInfoEvent read FOnBeforeTokenInfoExecute write FOnBeforeTokenInfoExecute;
+    property OnCaretChanged: TBCEditorCaret.TChangedEvent read FOnCaretChanged write FOnCaretChanged;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnCommandProcessed: TBCEditorProcessCommandEvent read FOnCommandProcessed write FOnCommandProcessed;
+    property OnCompletionProposalCanceled: TNotifyEvent read FOnCompletionProposalCanceled write FOnCompletionProposalCanceled;
+    property OnCompletionProposalSelected: TBCEditorCompletionProposal.TSelectedEvent read FOnCompletionProposalSelected write FOnCompletionProposalSelected;
+    property OnContextHelp: TBCEditorContextHelpEvent read FOnContextHelp write FOnContextHelp;
+    property OnCreateFileStream: TBCEditorCreateFileStreamEvent read FOnCreateFileStream write FOnCreateFileStream;
+    property OnCustomLineColors: TBCEditorCustomLineColorsEvent read FOnCustomLineColors write FOnCustomLineColors;
+    property OnCustomTokenAttribute: TBCEditorCustomTokenAttributeEvent read FOnCustomTokenAttribute write FOnCustomTokenAttribute;
+    property OnDropFiles: TBCEditorDropFilesEvent read FOnDropFiles write FOnDropFiles;
+    property OnKeyPress: TBCEditorKeyPressWEvent read FOnKeyPressW write FOnKeyPressW;
+    property OnLeftMarginClick: TBCEditorLeftMargin.TClickEvent read FOnLeftMarginClick write FOnLeftMarginClick;
+    property OnMarkPanelLinePaint: TBCEditorMarkPanelLinePaintEvent read FOnMarkPanelLinePaint write FOnMarkPanelLinePaint;
+    property OnModified: TNotifyEvent read FOnModified write FOnModified;
+    property OnPaint: TBCEditorPaintEvent read FOnPaint write FOnPaint;
+    property OnProcessCommand: TBCEditorProcessCommandEvent read FOnProcessCommand write FOnProcessCommand;
+    property OnProcessUserCommand: TBCEditorProcessCommandEvent read FOnProcessUserCommand write FOnProcessUserCommand;
+    property OnReplaceText: TBCEditorReplace.TEvent read FOnReplaceText write FOnReplaceText;
+    property OnRightMarginMouseUp: TNotifyEvent read FOnRightMarginMouseUp write FOnRightMarginMouseUp;
+    property OnScroll: TBCEditorScroll.TEvent read FOnScroll write FOnScroll;
+    property OnSelectionChanged: TNotifyEvent read FOnSelectionChanged write FOnSelectionChanged;
+    property Options: TBCEditorOptions read FOptions write SetOptions default DefaultOptions;
+    property ParentColor default False;
+    property ParentFont default False;
+    property ReadOnly: Boolean read GetReadOnly write SetReadOnly default False;
+    property Replace: TBCEditorReplace read FReplace write FReplace;
+    property RightMargin: TBCEditorRightMargin read FRightMargin write SetRightMargin;
+    property Scroll: TBCEditorScroll read FScroll write SetScroll;
+    property Search: TBCEditorSearch read FSearch write SetSearch;
+    property SearchResultCount: Integer read GetSearchResultCount;
+    property SelectedText: string read GetSelText write SetSelText;
+    property Selection: TBCEditorSelection read FSelection write SetSelection;
+    property SelectionAvailable: Boolean read GetSelectionAvailable;
+    property SelectionBeginPosition: TBCEditorTextPosition read GetSelectionBeginPosition write SetSelectionBeginPosition;
+    property SelectionEndPosition: TBCEditorTextPosition read GetSelectionEndPosition write SetSelectionEndPosition;
+    property SelectionMode: TBCEditorSelectionMode read GetSelectionMode write SetSelectionMode;
+    property SelLength: Integer read GetSelLength write SetSelLength;
+    property SelStart: Integer read GetSelStart write SetSelStart; // 0-based
+    property SelText: string read GetSelText write SetSelText;
+    property SpecialChars: TBCEditorSpecialChars read FSpecialChars write SetSpecialChars;
     property State: TState read FState;
+    property SyncEdit: TBCEditorSyncEdit read FSyncEdit write SetSyncEdit;
+    property Tabs: TBCEditorTabs read FTabs write SetTabs;
+    property TabStop default True;
+    property Text: string read GetText write SetText;
+    property TextEntryMode: TBCEditorTextEntryMode read FTextEntryMode write SetTextEntryMode default temInsert;
+    property TokenInfo: TBCEditorTokenInfo read FTokenInfo write SetTokenInfo;
+    property TopLine: Integer read FTopLine write SetTopLine;
+    property UndoOptions: TBCEditorLines.TUndoOptions read GetUndoOptions write SetUndoOptions;
+    property URIOpener: Boolean read FURIOpener write FURIOpener;
+    property VisibleLines: Integer read FVisibleLines;
+    property WantReturns: Boolean read FWantReturns write SetWantReturns default True;
+    property WordAt[ATextPos: TPoint]: string read GetWordAt;
+    property WordWrap: TBCEditorWordWrap read FWordWrap write SetWordWrap;
     property UpdateCount: Integer read FUpdateCount;
   public
     constructor Create(AOwner: TComponent); override;
@@ -608,111 +706,10 @@ type
     function UpdateAction(Action: TBasicAction): Boolean; override;
     procedure UpdateCaret();
     procedure WndProc(var AMessage: TMessage); override;
-    function WordAtCursor(): string; inline; deprecated 'Use WordAtCaret'; // 2017-03-12
     function WordEnd(): TBCEditorTextPosition; overload; inline;
     function WordEnd(const ATextPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
-    function WordStart: TBCEditorTextPosition; overload;
+    function WordStart(): TBCEditorTextPosition; overload;
     function WordStart(const ATextPosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
-    property ActiveLine: TBCEditorActiveLine read FActiveLine write SetActiveLine;
-    property AllCodeFoldingRanges: TBCEditorCodeFolding.TAllRanges read FAllCodeFoldingRanges;
-    property AlwaysShowCaret: Boolean read FAlwaysShowCaret write SetAlwaysShowCaret;
-    property BackgroundColor: TColor read FBackgroundColor write SetBackgroundColor default clWindow;
-    property Bookmarks: TBCEditorMarkList read FBookmarkList;
-    property BorderStyle: TBorderStyle read FBorderStyle write SetBorderStyle default bsSingle;
-    property CanPaste: Boolean read GetCanPaste;
-    property CanRedo: Boolean read GetCanRedo;
-    property CanUndo: Boolean read GetCanUndo;
-    property Caret: TBCEditorCaret read FCaret write FCaret;
-    property CaretPos: TPoint read GetCaretPos write SetCaretPos;
-    property CharAtCursor: Char read GetCharAtCaret;
-    property CharWidth: Integer read GetCharWidth;
-    property CodeFolding: TBCEditorCodeFolding read FCodeFolding write SetCodeFolding;
-    property CompletionProposal: TBCEditorCompletionProposal read FCompletionProposal write FCompletionProposal;
-    property Cursor default crIBeam;
-    property Directories: TBCEditorDirectories read FDirectories write FDirectories;
-    property DisplayCaretPosition: TBCEditorDisplayPosition read GetDisplayCaretPosition write SetDisplayCaretPosition;
-    property ForegroundColor: TColor read FForegroundColor write SetForegroundColor default clWindowText;
-    property HideSelection: Boolean read FHideSelection write SetHideSelection default True;
-    property Highlighter: TBCEditorHighlighter read FHighlighter;
-    property IsScrolling: Boolean read FIsScrolling;
-    property KeyCommands: TBCEditorKeyCommands read FKeyCommands write SetKeyCommands stored False;
-    property LeftMargin: TBCEditorLeftMargin read FLeftMargin write SetLeftMargin;
-    property LineHeight: Integer read GetLineHeight;
-    property LineNumbersCount: Integer read FLineNumbersCount;
-    property Lines: TBCEditorLines read FLines;
-    property LineSpacing: Integer read FLinespacing write FLinespacing;
-    property Marks: TBCEditorMarkList read FMarkList;
-    property MatchingPair: TBCEditorMatchingPair read FMatchingPair write FMatchingPair;
-    property Minimap: TBCEditorMinimap read FMinimap write FMinimap;
-    property Modified: Boolean read GetModified write SetModified;
-    property MouseMoveScrollCursors[const AIndex: Integer]: HCursor read GetMouseMoveScrollCursors write SetMouseMoveScrollCursors;
-    property Options: TBCEditorOptions read FOptions write SetOptions default DefaultOptions;
-    property ParentColor default False;
-    property ParentFont default False;
-    property ReadOnly: Boolean read GetReadOnly write SetReadOnly default False;
-    property Replace: TBCEditorReplace read FReplace write FReplace;
-    property RightMargin: TBCEditorRightMargin read FRightMargin write SetRightMargin;
-    property Scroll: TBCEditorScroll read FScroll write SetScroll;
-    property Search: TBCEditorSearch read FSearch write SetSearch;
-    property SearchResultCount: Integer read GetSearchResultCount;
-    property SelectedText: string read GetSelText write SetSelText;
-    property Selection: TBCEditorSelection read FSelection write SetSelection;
-    property SelectionAvailable: Boolean read GetSelectionAvailable;
-    property SelectionBeginPosition: TBCEditorTextPosition read GetSelectionBeginPosition write SetSelectionBeginPosition;
-    property SelectionEndPosition: TBCEditorTextPosition read GetSelectionEndPosition write SetSelectionEndPosition;
-    property SelectionMode: TBCEditorSelectionMode read GetSelectionMode write SetSelectionMode;
-    property SelLength: Integer read GetSelLength write SetSelLength;
-    property SelStart: Integer read GetSelStart write SetSelStart; // 0-based
-    property SelText: string read GetSelText write SetSelText;
-    property SpecialChars: TBCEditorSpecialChars read FSpecialChars write SetSpecialChars;
-    property SyncEdit: TBCEditorSyncEdit read FSyncEdit write SetSyncEdit;
-    property Tabs: TBCEditorTabs read FTabs write SetTabs;
-    property TabStop default True;
-    property Text: string read GetText write SetText;
-    property TextEntryMode: TBCEditorTextEntryMode read FTextEntryMode write SetTextEntryMode default temInsert;
-    property TokenInfo: TBCEditorTokenInfo read FTokenInfo write SetTokenInfo;
-    property TopLine: Integer read FTopLine write SetTopLine;
-    property UndoOptions: TBCEditorLines.TUndoOptions read GetUndoOptions write SetUndoOptions;
-    property URIOpener: Boolean read FURIOpener write FURIOpener;
-    property VisibleLines: Integer read FVisibleLines;
-    property WantReturns: Boolean read FWantReturns write SetWantReturns default True;
-    property WordAtCaret: string read GetWordAtCaret;
-    property WordAtMouse: string read GetWordAtCursor;
-    property WordWrap: TBCEditorWordWrap read FWordWrap write SetWordWrap;
-    property OnAfterBookmarkPlaced: TNotifyEvent read FOnAfterBookmarkPlaced write FOnAfterBookmarkPlaced;
-    property OnAfterDeleteBookmark: TNotifyEvent read FOnAfterDeleteBookmark write FOnAfterDeleteBookmark;
-    property OnAfterDeleteMark: TNotifyEvent read FOnAfterDeleteMark write FOnAfterDeleteMark;
-    property OnAfterLinePaint: TBCEditorLinePaintEvent read FOnAfterLinePaint write FOnAfterLinePaint;
-    property OnAfterMarkPanelPaint: TBCEditorMarkPanelPaintEvent read FOnAfterMarkPanelPaint write FOnAfterMarkPanelPaint;
-    property OnAfterMarkPlaced: TNotifyEvent read FOnAfterMarkPlaced write FOnAfterMarkPlaced;
-    property OnBeforeCompletionProposalExecute: TBCEditorCompletionProposal.TEvent read FOnBeforeCompletionProposalExecute write FOnBeforeCompletionProposalExecute;
-    property OnBeforeDeleteMark: TBCEditorMarkEvent read FOnBeforeDeleteMark write FOnBeforeDeleteMark;
-    property OnBeforeMarkPanelPaint: TBCEditorMarkPanelPaintEvent read FOnBeforeMarkPanelPaint write FOnBeforeMarkPanelPaint;
-    property OnBeforeMarkPlaced: TBCEditorMarkEvent read FOnBeforeMarkPlaced write FOnBeforeMarkPlaced;
-    property OnBeforeTokenInfoExecute: TBCEditorTokenInfoEvent read FOnBeforeTokenInfoExecute write FOnBeforeTokenInfoExecute;
-    property OnCaretChanged: TBCEditorCaret.TChangedEvent read FOnCaretChanged write FOnCaretChanged;
-    property OnChange: TNotifyEvent read FOnChange write FOnChange;
-    property OnCommandProcessed: TBCEditorProcessCommandEvent read FOnCommandProcessed write FOnCommandProcessed;
-    property OnCompletionProposalCanceled: TNotifyEvent read FOnCompletionProposalCanceled write FOnCompletionProposalCanceled;
-    property OnCompletionProposalSelected: TBCEditorCompletionProposal.TSelectedEvent read FOnCompletionProposalSelected write FOnCompletionProposalSelected;
-    property OnContextHelp: TBCEditorContextHelpEvent read FOnContextHelp write FOnContextHelp;
-    property OnCreateFileStream: TBCEditorCreateFileStreamEvent read FOnCreateFileStream write FOnCreateFileStream;
-    property OnCustomLineColors: TBCEditorCustomLineColorsEvent read FOnCustomLineColors write FOnCustomLineColors;
-    property OnCustomTokenAttribute: TBCEditorCustomTokenAttributeEvent read FOnCustomTokenAttribute write FOnCustomTokenAttribute;
-    property OnDropFiles: TBCEditorDropFilesEvent read FOnDropFiles write FOnDropFiles;
-    property OnKeyPress: TBCEditorKeyPressWEvent read FOnKeyPressW write FOnKeyPressW;
-    property OnLeftMarginClick: TBCEditorLeftMargin.TClickEvent read FOnLeftMarginClick write FOnLeftMarginClick;
-    property OnMarkPanelLinePaint: TBCEditorMarkPanelLinePaintEvent read FOnMarkPanelLinePaint write FOnMarkPanelLinePaint;
-    property OnModified: TNotifyEvent read FOnModified write FOnModified;
-    property OnPaint: TBCEditorPaintEvent read FOnPaint write FOnPaint;
-    property OnProcessCommand: TBCEditorProcessCommandEvent read FOnProcessCommand write FOnProcessCommand;
-    property OnProcessUserCommand: TBCEditorProcessCommandEvent read FOnProcessUserCommand write FOnProcessUserCommand;
-    property OnReplaceText: TBCEditorReplace.TEvent read FOnReplaceText write FOnReplaceText;
-    property OnRightMarginMouseUp: TNotifyEvent read FOnRightMarginMouseUp write FOnRightMarginMouseUp;
-    property OnScroll: TBCEditorScroll.TEvent read FOnScroll write FOnScroll;
-    property OnSelectionChanged: TNotifyEvent read FOnSelectionChanged write FOnSelectionChanged;
-    property Font;
-    property OnKeyDown;
   end;
 
   TBCEditor = class(TCustomBCEditor)
@@ -731,6 +728,7 @@ type
     property Enabled;
     property Font;
     property Height;
+    property Highlighter;
     property ImeMode;
     property ImeName;
     property KeyCommands;
@@ -803,6 +801,8 @@ type
     property Scroll;
     property Search;
     property Selection;
+    property SelectionBeginPosition;
+    property SelectionEndPosition;
     property ShowHint;
     property SpecialChars;
     property SyncEdit;
@@ -810,6 +810,7 @@ type
     property Tabs;
     property TabStop;
     property Tag;
+    property Text;
     property TextEntryMode;
     property TokenInfo;
     property UndoOptions;
@@ -4608,7 +4609,7 @@ begin
       Lines.SelMode := smColumn;
     ecContextHelp:
       if Assigned(FOnContextHelp) then
-        FOnContextHelp(Self, WordAtCaret);
+        FOnContextHelp(Self, WordAt[CaretPos]);
     ecBlockComment:
       if not ReadOnly then
         DoBlockComment;
@@ -5803,18 +5804,9 @@ begin
       Result := FRightMargin.Position;
 end;
 
-function TCustomBCEditor.GetWordAtCaret(): string;
+function TCustomBCEditor.GetWordAt(ATextPos: TPoint): string;
 begin
-  Result := GetWordAtTextPosition(Lines.CaretPosition);
-end;
-
-function TCustomBCEditor.GetWordAtCursor: string;
-var
-  LTextPosition: TBCEditorTextPosition;
-begin
-  Result := '';
-  if GetTextPositionOfMouse(LTextPosition) then
-    Result := GetWordAtTextPosition(LTextPosition);
+  GetWordAtTextPosition(TextPosition(ATextPos));
 end;
 
 function TCustomBCEditor.GetWordAtPixels(const X, Y: Integer): string;
@@ -7618,125 +7610,128 @@ begin
     Canvas.Brush.Color := FBackgroundColor;
 
     FPaintHelper.BeginDrawing(Canvas.Handle);
-    FPaintHelper.SetBaseFont(Font);
-
-    { Text lines }
-    LDrawRect.Top := 0;
-    LDrawRect.Left := FLeftMarginWidth - FHorizontalScrollPosition;
-    LDrawRect.Right := ClientRect.Width;
-    LDrawRect.Bottom := LClipRect.Height;
-
-    PaintTextLines(LDrawRect, LLine1, LLine2, False);
-
-    PaintRightMargin(LDrawRect);
-
-    if FCodeFolding.Visible and (cfoShowIndentGuides in CodeFolding.Options) then
-      PaintGuides(FTopLine, Min(FTopLine + FVisibleLines, FLineNumbersCount), False);
-
-    if FSyncEdit.Enabled and FSyncEdit.Active then
-      PaintSyncItems;
-
-    if FCaret.NonBlinking.Enabled or Assigned(FMultiCarets) and (FMultiCarets.Count > 0) and FDrawMultiCarets then
-      DrawCaret;
-
-    if not Assigned(FCompletionProposalPopupWindow) and FCaret.MultiEdit.Enabled and (FMultiCaretPosition.Row <> -1) then
-      PaintCaretBlock(FMultiCaretPosition);
-
-    if FRightMargin.Moving then
-      PaintRightMarginMove;
-
-    if FMouseMoveScrolling then
-      PaintMouseMoveScrollPoint;
-
-    { Left margin and code folding }
-    LDrawRect := LClipRect;
-    LDrawRect.Left := 0;
-    if FMinimap.Align = maLeft then
-      Inc(LDrawRect.Left, FMinimap.GetWidth);
-    if FSearch.Map.Align = saLeft then
-      Inc(LDrawRect.Left, FSearch.Map.GetWidth);
-
-    if FLeftMargin.Visible then
-    begin
-      LDrawRect.Right := LDrawRect.Left + FLeftMargin.GetWidth;
-      PaintLeftMargin(LDrawRect, LLine1, LLine2, LLine3);
-    end;
-
-    if FCodeFolding.Visible then
-    begin
-      Inc(LDrawRect.Left, FLeftMargin.GetWidth);
-      LDrawRect.Right := LDrawRect.Left + FCodeFolding.GetWidth;
-      PaintCodeFolding(LDrawRect, LLine1, LLine2);
-    end;
-
-    { Minimap }
-    if FMinimap.Visible then
-    begin
-      LDrawRect := LClipRect;
-
-      if FMinimap.Align = maRight then
-      begin
-        LDrawRect.Left := ClientRect.Width - FMinimap.GetWidth - FSearch.Map.GetWidth - 2;
-        LDrawRect.Right := ClientRect.Width;
-        if FSearch.Map.Align = saRight then
-          Dec(LDrawRect.Right, FSearch.Map.GetWidth);
-      end
-      else
-      begin
-        LDrawRect.Left := 0;
-        LDrawRect.Right := FMinimap.GetWidth;
-        if FSearch.Map.Align = saLeft then
-        begin
-          Inc(LDrawRect.Left, FSearch.Map.GetWidth);
-          Inc(LDrawRect.Right, FSearch.Map.GetWidth);
-        end;
-      end;
-
-      FPaintHelper.SetBaseFont(FMinimap.Font);
-
-      if not FMinimap.Dragging and (LDrawRect.Height = FMinimapBufferBitmap.Height) and (FLastTopLine = FTopLine) and
-        (FLastLineNumberCount = FLineNumbersCount) and
-        (not SelectionAvailable or (Lines.SelBeginPosition.Line >= FTopLine) and (Lines.SelEndPosition.Line <= FTopLine + FVisibleLines)) then
-      begin
-        LLine1 := FTopLine;
-        LLine2 := FTopLine + FVisibleLines;
-        BitBlt(Canvas.Handle, LDrawRect.Left, LDrawRect.Top, LDrawRect.Width, LDrawRect.Height,
-          FMinimapBufferBitmap.Canvas.Handle, 0, 0, SRCCOPY);
-        LDrawRect.Top := (FTopLine - FMinimap.TopLine) * FMinimap.CharHeight;
-      end
-      else
-      begin
-        LLine1 := Max(FMinimap.TopLine, 1);
-        LLine2 := Min(FLineNumbersCount, LLine1 + LClipRect.Height div Max(FMinimap.CharHeight - 1, 1));
-      end;
-
-      PaintTextLines(LDrawRect, LLine1, LLine2, True);
-      if FCodeFolding.Visible and (moShowIndentGuides in FMinimap.Options) then
-        PaintGuides(LLine1, LLine2, True);
-      if ioUseBlending in FMinimap.Indicator.Options then
-        PaintMinimapIndicator(LDrawRect);
-
-      FMinimapBufferBitmap.Width := LDrawRect.Width;
-      FMinimapBufferBitmap.Height := LDrawRect.Height;
-      BitBlt(FMinimapBufferBitmap.Canvas.Handle, 0, 0, LDrawRect.Width, LDrawRect.Height, Canvas.Handle, LDrawRect.Left,
-        LDrawRect.Top, SRCCOPY);
+    try
       FPaintHelper.SetBaseFont(Font);
-    end;
 
-    { Search map }
-    if FSearch.Map.Visible then
-    begin
+      { Text lines }
+      LDrawRect.Top := 0;
+      LDrawRect.Left := FLeftMarginWidth - FHorizontalScrollPosition;
+      LDrawRect.Right := ClientRect.Width;
+      LDrawRect.Bottom := LClipRect.Height;
+
+      PaintTextLines(LDrawRect, LLine1, LLine2, False);
+
+      PaintRightMargin(LDrawRect);
+
+      if FCodeFolding.Visible and (cfoShowIndentGuides in CodeFolding.Options) then
+        PaintGuides(FTopLine, Min(FTopLine + FVisibleLines, FLineNumbersCount), False);
+
+      if FSyncEdit.Enabled and FSyncEdit.Active then
+        PaintSyncItems;
+
+      if FCaret.NonBlinking.Enabled or Assigned(FMultiCarets) and (FMultiCarets.Count > 0) and FDrawMultiCarets then
+        DrawCaret;
+
+      if not Assigned(FCompletionProposalPopupWindow) and FCaret.MultiEdit.Enabled and (FMultiCaretPosition.Row <> -1) then
+        PaintCaretBlock(FMultiCaretPosition);
+
+      if FRightMargin.Moving then
+        PaintRightMarginMove;
+
+      if FMouseMoveScrolling then
+        PaintMouseMoveScrollPoint;
+
+      { Left margin and code folding }
       LDrawRect := LClipRect;
-      if FSearch.Map.Align = saRight then
-        LDrawRect.Left := ClientRect.Width - FSearch.Map.GetWidth
-      else
+      LDrawRect.Left := 0;
+      if FMinimap.Align = maLeft then
+        Inc(LDrawRect.Left, FMinimap.GetWidth);
+      if FSearch.Map.Align = saLeft then
+        Inc(LDrawRect.Left, FSearch.Map.GetWidth);
+
+      if FLeftMargin.Visible then
       begin
-        LDrawRect.Left := 0;
-        LDrawRect.Right := FSearch.Map.GetWidth;
+        LDrawRect.Right := LDrawRect.Left + FLeftMargin.GetWidth;
+        PaintLeftMargin(LDrawRect, LLine1, LLine2, LLine3);
       end;
-      PaintSearchMap(LDrawRect);
+
+      if FCodeFolding.Visible then
+      begin
+        Inc(LDrawRect.Left, FLeftMargin.GetWidth);
+        LDrawRect.Right := LDrawRect.Left + FCodeFolding.GetWidth;
+        PaintCodeFolding(LDrawRect, LLine1, LLine2);
+      end;
+
+      { Minimap }
+      if FMinimap.Visible then
+      begin
+        LDrawRect := LClipRect;
+
+        if FMinimap.Align = maRight then
+        begin
+          LDrawRect.Left := ClientRect.Width - FMinimap.GetWidth - FSearch.Map.GetWidth - 2;
+          LDrawRect.Right := ClientRect.Width;
+          if FSearch.Map.Align = saRight then
+            Dec(LDrawRect.Right, FSearch.Map.GetWidth);
+        end
+        else
+        begin
+          LDrawRect.Left := 0;
+          LDrawRect.Right := FMinimap.GetWidth;
+          if FSearch.Map.Align = saLeft then
+          begin
+            Inc(LDrawRect.Left, FSearch.Map.GetWidth);
+            Inc(LDrawRect.Right, FSearch.Map.GetWidth);
+          end;
+        end;
+
+        FPaintHelper.SetBaseFont(FMinimap.Font);
+
+        if not FMinimap.Dragging and (LDrawRect.Height = FMinimapBufferBitmap.Height) and (FLastTopLine = FTopLine) and
+          (FLastLineNumberCount = FLineNumbersCount) and
+          (not SelectionAvailable or (Lines.SelBeginPosition.Line >= FTopLine) and (Lines.SelEndPosition.Line <= FTopLine + FVisibleLines)) then
+        begin
+          LLine1 := FTopLine;
+          LLine2 := FTopLine + FVisibleLines;
+          BitBlt(Canvas.Handle, LDrawRect.Left, LDrawRect.Top, LDrawRect.Width, LDrawRect.Height,
+            FMinimapBufferBitmap.Canvas.Handle, 0, 0, SRCCOPY);
+          LDrawRect.Top := (FTopLine - FMinimap.TopLine) * FMinimap.CharHeight;
+        end
+        else
+        begin
+          LLine1 := Max(FMinimap.TopLine, 1);
+          LLine2 := Min(FLineNumbersCount, LLine1 + LClipRect.Height div Max(FMinimap.CharHeight - 1, 1));
+        end;
+
+        PaintTextLines(LDrawRect, LLine1, LLine2, True);
+        if FCodeFolding.Visible and (moShowIndentGuides in FMinimap.Options) then
+          PaintGuides(LLine1, LLine2, True);
+        if ioUseBlending in FMinimap.Indicator.Options then
+          PaintMinimapIndicator(LDrawRect);
+
+        FMinimapBufferBitmap.Width := LDrawRect.Width;
+        FMinimapBufferBitmap.Height := LDrawRect.Height;
+        BitBlt(FMinimapBufferBitmap.Canvas.Handle, 0, 0, LDrawRect.Width, LDrawRect.Height, Canvas.Handle, LDrawRect.Left,
+          LDrawRect.Top, SRCCOPY);
+        FPaintHelper.SetBaseFont(Font);
+      end;
+
+      { Search map }
+      if FSearch.Map.Visible then
+      begin
+        LDrawRect := LClipRect;
+        if FSearch.Map.Align = saRight then
+          LDrawRect.Left := ClientRect.Width - FSearch.Map.GetWidth
+        else
+        begin
+          LDrawRect.Left := 0;
+          LDrawRect.Right := FSearch.Map.GetWidth;
+        end;
+        PaintSearchMap(LDrawRect);
+      end;
+    finally
+      FPaintHelper.EndDrawing;
     end;
-    FPaintHelper.EndDrawing;
 
     DoOnPaint;
   finally
@@ -10341,7 +10336,7 @@ end;
 
 procedure TCustomBCEditor.Redo();
 begin
-  Lines.ExecuteRedo();
+  Lines.Redo();
 end;
 
 procedure TCustomBCEditor.RegisterCommandHandler(const AHookedCommandEvent: TBCEditorHookedCommandEvent;
@@ -12695,7 +12690,7 @@ end;
 
 procedure TCustomBCEditor.Undo();
 begin
-  Lines.ExecuteUndo();
+  Lines.Undo();
 end;
 
 procedure TCustomBCEditor.UnfoldAll(const AFromLineNumber: Integer = -1; const AToLineNumber: Integer = -1);
@@ -13554,7 +13549,16 @@ end;
 
 function TCustomBCEditor.WordAtCursor(): string;
 begin
-  Result := GetWordAtCaret();
+  Result := GetWordAt(CaretPos);
+end;
+
+function TCustomBCEditor.WordAtMouse(): string;
+var
+  LTextPosition: TBCEditorTextPosition;
+begin
+  Result := '';
+  if GetTextPositionOfMouse(LTextPosition) then
+    Result := GetWordAtTextPosition(LTextPosition);
 end;
 
 function TCustomBCEditor.WordEnd(): TBCEditorTextPosition;

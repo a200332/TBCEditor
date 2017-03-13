@@ -73,7 +73,7 @@ uses
   BCEditor.Consts, BCEditor.Editor, BCEditor.Editor.KeyCommands, BCEditor.Lines;
 
 type
-  TUnprotectedCustomBCEditor = class(TCustomBCEditor);
+  TCustomBCEditor = class(BCEditor.Editor.TCustomBCEditor);
 
 { TBCEditorCompletionProposalPopupWindow **************************************}
 
@@ -362,7 +362,7 @@ var
   LTextPosition: TBCEditorTextPosition;
   LValue: string;
 begin
-  with TUnprotectedCustomBCEditor(Editor) do
+  with TCustomBCEditor(Editor) do
   begin
     BeginUpdate;
     Lines.BeginUpdate();

@@ -58,6 +58,9 @@ uses
   SysUtils, UITypes,
   BCEditor.Editor, BCEditor.Editor.KeyCommands, BCEditor.Utils, BCEditor.Consts;
 
+type
+  TCustomBCEditor = class(BCEditor.Editor.TCustomBCEditor);
+
 constructor TBCEditorCodeFoldingHintForm.Create(AOwner: TComponent);
 begin
   CreateNew(AOwner);
