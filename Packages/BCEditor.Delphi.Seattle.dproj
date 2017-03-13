@@ -132,7 +132,6 @@
         <DCCReference Include="..\Source\BCEditor.Editor.CodeFolding.Hint.Form.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.CompletionProposal.PopupWindow.pas"/>
-        <DCCReference Include="..\Source\BCEditor.Editor.Directories.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.Glyph.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.InternalImage.pas"/>
         <DCCReference Include="..\Source\BCEditor.Editor.KeyCommands.pas"/>

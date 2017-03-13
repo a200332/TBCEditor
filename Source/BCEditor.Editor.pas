@@ -12,7 +12,7 @@ uses
   BCEditor.Editor.CompletionProposal.PopupWindow, BCEditor.Editor.Glyph, BCEditor.Editor.InternalImage,
   BCEditor.Editor.KeyCommands, BCEditor.Editor.LeftMargin, BCEditor.Editor.MatchingPair, BCEditor.Editor.Minimap,
   BCEditor.Editor.Replace, BCEditor.Editor.RightMargin, BCEditor.Editor.Scroll, BCEditor.Editor.Search,
-  BCEditor.Editor.Directories, BCEditor.Editor.Selection, BCEditor.Editor.SpecialChars,
+  BCEditor.Editor.Selection, BCEditor.Editor.SpecialChars,
   BCEditor.Editor.Tabs, BCEditor.Editor.WordWrap,
   BCEditor.Editor.CodeFolding.Hint.Form, BCEditor.Highlighter,
   BCEditor.KeyboardHandler, BCEditor.Lines, BCEditor.Search, BCEditor.PaintHelper, BCEditor.Editor.SyncEdit,
@@ -54,7 +54,6 @@ type
     FCompletionProposalTimer: TTimer;
     FCurrentMatchingPair: TBCEditorMatchingTokenResult;
     FCurrentMatchingPairMatch: TBCEditorHighlighter.TMatchingPairMatch;
-    FDirectories: TBCEditorDirectories;
     FDoubleClickTime: Cardinal;
     FDragBeginTextCaretPosition: TBCEditorTextPosition;
     FDrawMultiCarets: Boolean;
@@ -627,7 +626,6 @@ type
     property CodeFolding: TBCEditorCodeFolding read FCodeFolding write SetCodeFolding;
     property CompletionProposal: TBCEditorCompletionProposal read FCompletionProposal write FCompletionProposal;
     property Cursor default crIBeam;
-    property Directories: TBCEditorDirectories read FDirectories write FDirectories;
     property DisplayCaretPosition: TBCEditorDisplayPosition read GetDisplayCaretPosition write SetDisplayCaretPosition;
     property ForegroundColor: TColor read FForegroundColor write SetForegroundColor default clWindowText;
     property HideSelection: Boolean read FHideSelection write SetHideSelection default True;
@@ -724,7 +722,6 @@ type
     property CompletionProposal;
     property Constraints;
     property Ctl3D;
-    property Directories;
     property Enabled;
     property Font;
     property Height;
@@ -897,8 +894,6 @@ begin
   FCodeFolding.OnChange := CodeFoldingOnChange;
   FCodeFoldingDelayTimer := TTimer.Create(Self);
   FCodeFoldingDelayTimer.OnTimer := OnCodeFoldingDelayTimer;
-  { Directory }
-  FDirectories := TBCEditorDirectories.Create;
   { Matching pair }
   FMatchingPair := TBCEditorMatchingPair.Create;
   { Line spacing }
@@ -1035,7 +1030,6 @@ begin
   ClearCodeFolding;
   FCodeFolding.Free;
   FCodeFoldingDelayTimer.Free;
-  FDirectories.Free;
   FAllCodeFoldingRanges.Free;
   FHighlighter.Free;
   FHighlighter := nil;
@@ -1292,7 +1286,6 @@ begin
       Self.FCaret.Assign(FCaret);
       Self.FCodeFolding.Assign(FCodeFolding);
       Self.FCompletionProposal.Assign(FCompletionProposal);
-      Self.FDirectories.Assign(FDirectories);
       Self.FKeyCommands.Assign(FKeyCommands);
       Self.FLeftMargin.Assign(FLeftMargin);
       Self.FMatchingPair.Assign(FMatchingPair);
@@ -5113,8 +5106,6 @@ end;
 function TCustomBCEditor.GetColorsFileName(const AFileName: string): string;
 begin
   Result := Trim(ExtractFilePath(AFileName));
-  if Result = '' then
-    Result := FDirectories.Colors;
   if Trim(ExtractFilePath(Result)) = '' then
 {$WARN SYMBOL_PLATFORM OFF}
     Result := IncludeTrailingBackslash(ExtractFilePath(Application.ExeName)) + Result;
@@ -5252,8 +5243,6 @@ end;
 function TCustomBCEditor.GetHighlighterFileName(const AFileName: string): string;
 begin
   Result := Trim(ExtractFilePath(AFileName));
-  if Result = '' then
-    Result := FDirectories.Highlighters;
   if Trim(ExtractFilePath(Result)) = '' then
 {$WARN SYMBOL_PLATFORM OFF}
     Result := IncludeTrailingBackslash(ExtractFilePath(Application.ExeName)) + Result;

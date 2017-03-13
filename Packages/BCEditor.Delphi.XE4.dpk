@@ -45,7 +45,6 @@ contains
   BCEditor.Editor.CodeFolding.Hint.Form in '..\Source\BCEditor.Editor.CodeFolding.Hint.Form.pas',
   BCEditor.Editor.CompletionProposal in '..\Source\BCEditor.Editor.CompletionProposal.pas',
   BCEditor.Editor.CompletionProposal.PopupWindow in '..\Source\BCEditor.Editor.CompletionProposal.PopupWindow.pas',
-  BCEditor.Editor.Directories in '..\Source\BCEditor.Editor.Directories.pas',
   BCEditor.Editor.Glyph in '..\Source\BCEditor.Editor.Glyph.pas',
   BCEditor.Editor.InternalImage in '..\Source\BCEditor.Editor.InternalImage.pas',
   BCEditor.Editor.KeyCommands in '..\Source\BCEditor.Editor.KeyCommands.pas',

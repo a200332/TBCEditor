@@ -99,8 +99,6 @@ object MainForm: TMainForm
     CompletionProposal.Trigger.Chars = '.'
     CompletionProposal.Trigger.Enabled = False
     CompletionProposal.Width = 280
-    Directories.Colors = 'Colors'
-    Directories.Highlighters = 'Highlighters'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -12
@@ -112,8 +110,6 @@ object MainForm: TMainForm
     LeftMargin.Font.Name = 'Courier New'
     LeftMargin.Font.Style = []
     LeftMargin.Width = 55
-    Lines.Strings = (
-      '')
     LineSpacing = 0
     MatchingPair.Enabled = True
     Minimap.Font.Charset = DEFAULT_CHARSET
@@ -124,6 +120,7 @@ object MainForm: TMainForm
     SpecialChars.Style = scsDot
     SyncEdit.ShortCut = 24650
     TabOrder = 1
+    Text = ''
     TokenInfo.Font.Charset = DEFAULT_CHARSET
     TokenInfo.Font.Color = clWindowText
     TokenInfo.Font.Height = -11

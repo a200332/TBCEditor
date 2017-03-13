@@ -140,9 +140,6 @@
         <DelphiCompile Include="..\Source\BCEditor.Editor.CompletionProposal.pas">
             <BuildOrder>22</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="..\Source\BCEditor.Editor.Directories.pas">
-            <BuildOrder>25</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="..\Source\BCEditor.Editor.Glyph.pas">
             <BuildOrder>26</BuildOrder>
         </DelphiCompile>
