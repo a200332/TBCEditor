@@ -2889,7 +2889,7 @@ begin
     LTempLines := TStringList.Create;
     try
       if LEditor.Visible then
-        LCaretPosition := LEditor.TextCaretPosition;
+        LCaretPosition := TextPosition(LEditor.CaretPos.X + 1, LEditor.CaretPos.Y);
       LTopLine := LEditor.TopLine;
       LTempLines.AddStrings(LEditor.Lines);
       LEditor.Lines.Clear;
@@ -2902,7 +2902,7 @@ begin
       LEditor.Lines.Text := LTempLines.Text;
       LEditor.TopLine := LTopLine;
       if LEditor.Visible then
-        LEditor.TextCaretPosition := LCaretPosition;
+        LEditor.CaretPos := Point(LCaretPosition.Char - 1, LCaretPosition.Line);
     finally
       LTempLines.Free;
     end;

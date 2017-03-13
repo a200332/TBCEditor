@@ -282,7 +282,7 @@ var
 begin
   Result := '';
 
-  LTextCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
+  LTextCaretPosition := TextPosition(TCustomBCEditor(Editor).CaretPos.X + 1, TCustomBCEditor(Editor).CaretPos.Y);
 
   LLineText := TCustomBCEditor(Editor).Lines[LTextCaretPosition.Line];
   LIndex := LTextCaretPosition.Char - 1;
@@ -367,7 +367,7 @@ begin
     BeginUpdate;
     Lines.BeginUpdate();
     try
-      LTextPosition := TextCaretPosition;
+      LTextPosition := TextPosition(CaretPos.X + 1, CaretPos.Y);
       if FAdjustCompletionStart then
         FCompletionStart := TextPosition(FCompletionStart, LTextPosition.Line).Char;
 
@@ -401,9 +401,9 @@ begin
       if CanFocus then
         SetFocus;
 
-      EnsureCursorPositionVisible;
-      TextCaretPosition := SelectionEndPosition;
-      SelectionBeginPosition := TextCaretPosition;
+      EnsureCaretPositionVisible;
+      CaretPos := Point(SelectionEndPosition.Char - 1, SelectionEndPosition.Line);
+      SelectionBeginPosition := TextPosition(CaretPos.X + 1, CaretPos.Y);
     finally
       Lines.EndUpdate();
       EndUpdate;
@@ -446,7 +446,7 @@ begin
     VK_RIGHT:
       with TCustomBCEditor(Editor) do
       begin
-        LTextCaretPosition := TextCaretPosition;
+        LTextCaretPosition := TextPosition(CaretPos.X + 1, CaretPos.Y);
         if LTextCaretPosition.Char <= Length(Lines[LTextCaretPosition.Line]) then
           LChar := Lines[LTextCaretPosition.Line][LTextCaretPosition.Char]
         else

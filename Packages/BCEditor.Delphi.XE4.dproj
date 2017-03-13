@@ -170,6 +170,10 @@
         <DCCReference Include="..\Source\BCEditor.Types.pas"/>
         <DCCReference Include="..\Source\BCEditor.Utils.pas"/>
         <DCCReference Include="..\Source\JsonDataObjects.pas"/>
+        <DCCReference Include="..\Debugger\uWMemo.pas">
+            <Form>WMemo</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

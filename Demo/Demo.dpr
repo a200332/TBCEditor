@@ -1,10 +1,8 @@
 program Demo;
 
 uses
-  Vcl.Forms,
+  Forms,
   Main in 'Main.pas' {MainForm};
-
-{$R *.res}
 
 begin
   Application.Initialize;
@@ -12,4 +10,3 @@ begin
   Application.CreateForm(TMainForm, MainForm);
   Application.Run;
 end.
-

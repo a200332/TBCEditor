@@ -128,7 +128,6 @@ type
     FOnChange: TNotifyEvent;
     FOptions: TOptions;
     FStyles: TStyles;
-    FVisible: Boolean;
     procedure DoChange(ASender: TObject);
     procedure SetMultiEdit(AValue: TBCEditorCaret.TMultiEdit);
     procedure SetNonBlinking(AValue: TBCEditorCaret.TNonBlinking);
@@ -136,7 +135,6 @@ type
     procedure SetOnChange(AValue: TNotifyEvent);
     procedure SetOptions(const AValue: TOptions);
     procedure SetStyles(const AValue: TBCEditorCaret.TStyles);
-    procedure SetVisible(AValue: Boolean);
   public
     constructor Create;
     destructor Destroy; override;
@@ -148,7 +146,6 @@ type
     property Offsets: TBCEditorCaret.TOffsets read FOffsets write SetOffsets;
     property Options: TOptions read FOptions write SetOptions;
     property Styles: TBCEditorCaret.TStyles read FStyles write SetStyles;
-    property Visible: Boolean read FVisible write SetVisible default True;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
   end;
 
@@ -424,7 +421,6 @@ begin
   FNonBlinking := TBCEditorCaret.TNonBlinking.Create;
   FOffsets := TBCEditorCaret.TOffsets.Create;
   FStyles := TBCEditorCaret.TStyles.Create;
-  FVisible := True;
 end;
 
 destructor TBCEditorCaret.Destroy;
@@ -447,7 +443,6 @@ begin
     Self.FNonBlinking.Assign(FNonBlinking);
     Self.FOffsets.Assign(FOffsets);
     Self.FOptions := FOptions;
-    Self.FVisible := FVisible;
     Self.DoChange(Self);
   end
   else
@@ -504,15 +499,6 @@ end;
 procedure TBCEditorCaret.SetStyles(const AValue: TBCEditorCaret.TStyles);
 begin
   FStyles.Assign(AValue);
-end;
-
-procedure TBCEditorCaret.SetVisible(AValue: Boolean);
-begin
-  if FVisible <> AValue then
-  begin
-    FVisible := AValue;
-    DoChange(Self);
-  end;
 end;
 
 end.

@@ -24,8 +24,9 @@ package BCEditor.Delphi.XE4;
 {$WRITEABLECONST ON}
 {$MINENUMSIZE 1}
 {$IMAGEBASE $400000}
+{$DEFINE DEBUG}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'BCEditor Components'}
+{$DESCRIPTION 'BCEditor components'}
 {$IMPLICITBUILD ON}
 
 requires
@@ -78,6 +79,7 @@ contains
   BCEditor.PaintHelper in '..\Source\BCEditor.PaintHelper.pas',
   BCEditor.Types in '..\Source\BCEditor.Types.pas',
   BCEditor.Utils in '..\Source\BCEditor.Utils.pas',
-  JsonDataObjects in '..\Source\JsonDataObjects.pas';
+  JsonDataObjects in '..\Source\JsonDataObjects.pas',
+  uWMemo in '..\Debugger\uWMemo.pas' {WMemo};
 
 end.

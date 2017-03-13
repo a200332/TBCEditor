@@ -33,14 +33,14 @@ type
     end;
     TLines = array of TLine;
 
-    TState = set of (lsLoading);
+    TState = set of (lsLoading, lsUndo, lsRedo, lsCaretMoved, lsSelChanged, lsTextChanged);
 
     TUndoOptions = set of TBCEditorUndoOption;
 
     TUndoList = class(TPersistent)
     type
-      TUndoType = (utSelection, utInsert, utBackspace, utDelete,
-        utClear, utInsertIndent, utDeleteIndent);
+      TUndoType = (utSelection, utInsert, utBackspace, utDelete, utClear,
+        utInsertIndent, utDeleteIndent);
 
       PItem = ^TItem;
       TItem = packed record
@@ -56,7 +56,8 @@ type
       end;
 
     strict private const
-      TextChangeTypes = [utInsert, utBackspace, utDelete, utClear, utInsertIndent, utDeleteIndent];
+      TextChangeTypes = [utInsert, utBackspace, utDelete, utClear,
+        utInsertIndent, utDeleteIndent];
     strict private
       FBlockNumber: Integer;
       FChanged: Boolean;
@@ -66,9 +67,11 @@ type
       FGroupBreak: Boolean;
       FItems: array of TItem;
       FLines: TBCEditorLines;
+      FOldCount: Integer;
       FUpdateCount: Integer;
       function GetItemCount(): Integer; inline;
       function GetItems(const AIndex: Integer): TItem;
+      function GetUpdated(): Boolean;
       procedure Grow();
       procedure SetItems(const AIndex: Integer; const AValue: TItem);
     protected
@@ -92,10 +95,12 @@ type
       property ItemCount: Integer read GetItemCount;
       property Items[const AIndex: Integer]: TItem read GetItems write SetItems;
       property UpdateCount: Integer read FUpdateCount;
+      property Updated: Boolean read GetUpdated;
     end;
 
   strict private
     FCapacity: Integer;
+    FCaretPosition: TBCEditorTextPosition;
     FCaseSensitive: Boolean;
     FColumns: Boolean;
     FCount: Integer;
@@ -106,22 +111,28 @@ type
     FLines: TLines;
     FLongestLineNeedsUpdate: Boolean;
     FModified: Boolean;
-    FOnAfterSetText: TNotifyEvent;
-    FOnBeforeSetText: TNotifyEvent;
-    FOnChange: TNotifyEvent;
-    FOnChanging: TNotifyEvent;
+    FOldCaretPosition: TBCEditorTextPosition;
+    FOldSelBeginPosition: TBCEditorTextPosition;
+    FOldSelEndPosition: TBCEditorTextPosition;
+    FOnAfterLoad: TNotifyEvent;
+    FOnBeforeLoad: TNotifyEvent;
+    FOnCaretMoved: TNotifyEvent;
     FOnCleared: TNotifyEvent;
     FOnDeleted: TChangeEvent;
     FOnInserted: TChangeEvent;
     FOnModified: TNotifyEvent;
+    FOnSelChange: TNotifyEvent;
     FOnUpdated: TChangeEvent;
-    FUndoOptions: TUndoOptions;
     FReadOnly: Boolean;
     FRedoList: TUndoList;
+    FSelBeginPosition: TBCEditorTextPosition;
+    FSelEndPosition: TBCEditorTextPosition;
+    FSelMode: TBCEditorSelectionMode;
     FSortOrder: TBCEditorSortOrder;
     FState: TState;
     FTabWidth: Integer;
     FUndoList: TUndoList;
+    FUndoOptions: TUndoOptions;
     FUpdatedLineCount: Integer;
     procedure DoDelete(const ALine: Integer);
     procedure DoDeleteIndent(const ABeginPosition, AEndPosition: TBCEditorTextPosition;
@@ -134,11 +145,14 @@ type
       const AText: string): TBCEditorTextPosition;
     procedure DoPut(const ALine: Integer; const AText: string);
     procedure ExchangeItems(ALine1, ALine2: Integer);
+    procedure ExecuteUndoRedo(const List: TBCEditorLines.TUndoList);
     function ExpandString(ALine: Integer): string;
     function GetAttributes(ALine: Integer): PLineAttribute;
+    function GetBOLTextPosition(ALine: Integer): TBCEditorTextPosition;
     function GetCanRedo(): Boolean;
     function GetCanUndo(): Boolean;
     function GetEOFPosition(): TBCEditorTextPosition;
+    function GetEOLTextPosition(ALine: Integer): TBCEditorTextPosition;
     function GetExpandedString(ALine: Integer): string;
     function GetExpandedStringLength(ALine: Integer): Integer;
     function GetRange(ALine: Integer): TRange;
@@ -148,17 +162,17 @@ type
     procedure InternalClear(const AClearUndo: Boolean); overload;
     procedure PutAttributes(ALine: Integer; const AValue: PLineAttribute);
     procedure PutRange(ALine: Integer; ARange: TRange);
+    procedure SetCaretPosition(const AValue: TBCEditorTextPosition);
     procedure SetModified(const AValue: Boolean);
+    procedure SetSelBeginPosition(const AValue: TBCEditorTextPosition);
+    procedure SetSelEndPosition(const AValue: TBCEditorTextPosition);
     procedure QuickSort(ALeft, ARight: Integer; ACompare: TCompare);
     property Capacity: Integer read FCapacity write SetCapacity;
   protected
-    procedure AddUndoSelection(const ACaretPosition: TBCEditorTextPosition;
-      const ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-      const ASelectionMode: TBCEditorSelectionMode);
     procedure Backspace(const ABeginPosition, AEndPosition: TBCEditorTextPosition);
     procedure ClearUndo();
-    function CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition; overload; inline;
-    function CharIndexToTextPosition(const ACharIndex: Integer;
+    function CharIndexToPosition(const ACharIndex: Integer): TBCEditorTextPosition; overload; inline;
+    function CharIndexToPosition(const ACharIndex: Integer;
       const ARelativePosition: TBCEditorTextPosition): TBCEditorTextPosition; overload;
     function CompareStrings(const S1, S2: string): Integer; override;
     procedure CustomSort(const ABeginLine, AEndLine: Integer; ACompare: TCompare);
@@ -166,9 +180,8 @@ type
       const AIndentText: string; const SelectionMode: TBCEditorSelectionMode);
     function DeleteText(const ABeginPosition, AEndPosition: TBCEditorTextPosition;
       const ASelectionMode: TBCEditorSelectionMode = smNormal): string; overload;
-    procedure ExecuteUndoRedo(const List: TBCEditorLines.TUndoList;
-      var ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-      var ASelectionMode: TBCEditorSelectionMode);
+    procedure ExecuteRedo(); inline;
+    procedure ExecuteUndo(); inline;
     function Get(ALine: Integer): string; override;
     function GetCapacity: Integer; override;
     function GetCount: Integer; override;
@@ -181,45 +194,52 @@ type
       const AText: string); overload;
     function InsertText(const APosition: TBCEditorTextPosition;
       const AText: string): TBCEditorTextPosition; overload;
+    function IsPositionInSelection(const APosition: TBCEditorTextPosition): Boolean;
     procedure Put(ALine: Integer; const AText: string); override;
     procedure SetCapacity(AValue: Integer); override;
-    procedure SetColumns(AValue: Boolean);
-    procedure SetTabWidth(AValue: Integer);
+    procedure SetColumns(const AValue: Boolean);
+    procedure SetTabWidth(const AValue: Integer);
     procedure SetTextStr(const AValue: string); override;
     procedure SetUpdateState(AUpdating: Boolean); override;
     procedure Sort(const ABeginLine, AEndLine: Integer); virtual;
-    function TextPositionToCharIndex(const APosition: TBCEditorTextPosition): Integer;
+    function PositionToCharIndex(const APosition: TBCEditorTextPosition): Integer;
     procedure UndoGroupBreak();
     property Attributes[ALine: Integer]: PLineAttribute read GetAttributes write PutAttributes;
+    property BOLTextPosition[ALine: Integer]: TBCEditorTextPosition read GetBOLTextPosition;
     property CanRedo: Boolean read GetCanRedo;
     property CanUndo: Boolean read GetCanUndo;
+    property CaretPosition: TBCEditorTextPosition read FCaretPosition write SetCaretPosition;
     property CaseSensitive: Boolean read FCaseSensitive write FCaseSensitive default False;
     property Columns: Boolean read FColumns write SetColumns;
     property Editor: TCustomControl read FEditor write FEditor;
     property EOFTextPosition: TBCEditorTextPosition read GetEOFPosition;
+    property EOLTextPosition[ALine: Integer]: TBCEditorTextPosition read GetEOLTextPosition;
     property ExpandedStringLengths[AIndex: Integer]: Integer read GetExpandedStringLength;
     property ExpandedStrings[ALine: Integer]: string read GetExpandedString;
     property Lines: TLines read FLines;
     property Modified: Boolean read FModified write SetModified;
-    property OnAfterSetText: TNotifyEvent read FOnAfterSetText write FOnAfterSetText;
-    property OnBeforeSetText: TNotifyEvent read FOnBeforeSetText write FOnBeforeSetText;
-    property OnChange: TNotifyEvent read FOnChange write FOnChange;
-    property OnChanging: TNotifyEvent read FOnChanging write FOnChanging;
+    property OnAfterLoad: TNotifyEvent read FOnAfterLoad write FOnAfterLoad;
+    property OnBeforeLoad: TNotifyEvent read FOnBeforeLoad write FOnBeforeLoad;
+    property OnCaretMoved: TNotifyEvent read FOnCaretMoved write FOnCaretMoved;
     property OnCleared: TNotifyEvent read FOnCleared write FOnCleared;
     property OnDeleted: TChangeEvent read FOnDeleted write FOnDeleted;
     property OnInserted: TChangeEvent read FOnInserted write FOnInserted;
     property OnModified: TNotifyEvent read FOnModified write FOnModified;
+    property OnSelChange: TNotifyEvent read FOnSelChange write FOnSelChange;
     property OnUpdated: TChangeEvent read FOnUpdated write FOnUpdated;
     property Ranges[ALine: Integer]: TRange read GetRange write PutRange;
     property ReadOnly: Boolean read FReadOnly write FReadOnly;
     property RedoList: TUndoList read FRedoList;
+    property SelBeginPosition: TBCEditorTextPosition read FSelBeginPosition write SetSelBeginPosition;
+    property SelEndPosition: TBCEditorTextPosition read FSelEndPosition write SetSelEndPosition;
+    property SelMode: TBCEditorSelectionMode read FSelMode write FSelMode;
     property SortOrder: TBCEditorSortOrder read FSortOrder write FSortOrder;
     property State: TState read FState;
     property TabWidth: Integer read FTabWidth write SetTabWidth;
     property TextBetween[const ABeginPosition, AEndPosition: TBCEditorTextPosition]: string read GetTextBetween;
     property TextBetweenColumn[const ABeginPosition, AEndPosition: TBCEditorTextPosition]: string read GetTextBetweenColumn;
     procedure TrimTrailingSpaces(ALine: Integer);
-    property UndoList: TBCEditorLines.TUndoList read FUndoList;
+    property UndoList: TUndoList read FUndoList;
     property UndoOptions: TUndoOptions read FUndoOptions write FUndoOptions;
   public
     function Add(const AText: string): Integer; override;
@@ -227,13 +247,9 @@ type
     constructor Create(const AEditor: TCustomControl);
     procedure Delete(ALine: Integer); overload; override;
     destructor Destroy; override;
-    procedure Insert(ALine: Integer; const AValue: string); override;
+    procedure Insert(ALine: Integer; const AText: string); override;
     procedure SaveToStream(AStream: TStream; AEncoding: TEncoding = nil); override;
   end;
-
-function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition; inline;
-function Max(const A, B: TBCEditorTextPosition): TBCEditorTextPosition; overload; inline;
-function Min(const A, B: TBCEditorTextPosition): TBCEditorTextPosition; overload; inline;
 
 const
   BOFTextPosition: TBCEditorTextPosition = (Char: 1; Line: 0);
@@ -243,13 +259,7 @@ implementation {***************************************************************}
 
 uses
   Math, StrUtils,
-  BCEditor.Editor, BCEditor.Language;
-
-function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
-begin
-  Result.Char := AChar;
-  Result.Line := ALine;
-end;
+  BCEditor.Language;
 
 function HasLineBreak(const Text: string): Boolean;
 var
@@ -263,22 +273,6 @@ begin
     else
       Inc(LPos);
   Result := False;
-end;
-
-function Max(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
-begin
-  if (A > B) then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Min(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
-begin
-  if (A < B) then
-    Result := A
-  else
-    Result := B;
 end;
 
 { TBCEditorLines.TUndoList ****************************************************}
@@ -302,6 +296,7 @@ begin
   begin
     Inc(FBlockNumber);
     FCurrentBlockNumber := FBlockNumber;
+    FOldCount := Count;
   end;
 
   Inc(FUpdateCount);
@@ -347,6 +342,11 @@ end;
 function TBCEditorLines.TUndoList.GetItems(const AIndex: Integer): TItem;
 begin
   Result := TItem(FItems[AIndex]);
+end;
+
+function TBCEditorLines.TUndoList.GetUpdated(): Boolean;
+begin
+  Result := (FUpdateCount > 0) and (FOldCount < Count);
 end;
 
 procedure TBCEditorLines.TUndoList.GroupBreak();
@@ -473,16 +473,6 @@ begin
   Insert(Result, AText);
 end;
 
-procedure TBCEditorLines.AddUndoSelection(const ACaretPosition: TBCEditorTextPosition;
-  const ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-  const ASelectionMode: TBCEditorSelectionMode);
-begin
-  UndoList.PushItem(utSelection, ACaretPosition,
-    ASelectionBeginPosition, ASelectionEndPosition, ASelectionMode,
-      InvalidTextPosition, InvalidTextPosition);
-  RedoList.Clear();
-end;
-
 procedure TBCEditorLines.Backspace(const ABeginPosition, AEndPosition: TBCEditorTextPosition);
 var
   LSelectionBeginPosition: TBCEditorTextPosition;
@@ -492,24 +482,24 @@ var
 begin
   Assert(ABeginPosition < AEndPosition);
 
-  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+  LCaretPosition := CaretPosition;
+  LSelectionBeginPosition := SelBeginPosition;
+  LSelectionEndPosition := SelEndPosition;
   LText := GetTextBetween(ABeginPosition, AEndPosition);
 
   DoDeleteText(ABeginPosition, AEndPosition);
 
   UndoList.PushItem(utBackspace, LCaretPosition,
-    LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+    LSelectionBeginPosition, LSelectionEndPosition, SelMode,
     ABeginPosition, AEndPosition, LText);
 end;
 
-function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer): TBCEditorTextPosition;
+function TBCEditorLines.CharIndexToPosition(const ACharIndex: Integer): TBCEditorTextPosition;
 begin
-  Result := CharIndexToTextPosition(ACharIndex, TextPosition(1, 0));
+  Result := CharIndexToPosition(ACharIndex, BOFTextPosition);
 end;
 
-function TBCEditorLines.CharIndexToTextPosition(const ACharIndex: Integer;
+function TBCEditorLines.CharIndexToPosition(const ACharIndex: Integer;
   const ARelativePosition: TBCEditorTextPosition): TBCEditorTextPosition;
 var
   LLength: Integer;
@@ -564,21 +554,31 @@ end;
 
 constructor TBCEditorLines.Create(const AEditor: TCustomControl);
 begin
-  Assert(AEditor is TCustomBCEditor);
-
   inherited Create();
 
   FEditor := AEditor;
 
+  FCaretPosition := BOFTextPosition;
   FCaseSensitive := False;
   FCount := 0;
   FIndexOfLongestLine := -1;
   FLengthOfLongestLine := 0;
   FLongestLineNeedsUpdate := False;
   FModified := False;
+  FOnAfterLoad := nil;
+  FOnBeforeLoad := nil;
+  FOnCaretMoved := nil;
+  FOnCleared := nil;
+  FOnDeleted := nil;
+  FOnInserted := nil;
   FOnModified := nil;
+  FOnSelChange := nil;
+  FOnUpdated := nil;
   FRedoList := TUndoList.Create(Self);
   FReadOnly := False;
+  FSelBeginPosition := BOFTextPosition;
+  FSelEndPosition := BOFTextPosition;
+  FSelMode := smNormal;
   FState := [];
   FUndoList := TUndoList.Create(Self);
   FUndoOptions := [uoGroupUndo];
@@ -603,8 +603,8 @@ begin
       LEndPosition := TextPosition(Length(FLines[AEndLine].Text), AEndLine);
 
     LText := GetTextBetween(LBeginPosition, LEndPosition);
-    UndoList.PushItem(utDelete, TCustomBCEditor(Editor).TextCaretPosition,
-      TCustomBCEditor(Editor).SelectionBeginPosition, TCustomBCEditor(Editor).SelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+    UndoList.PushItem(utDelete, CaretPosition,
+      SelBeginPosition, SelEndPosition, SelMode,
       LBeginPosition, InvalidTextPosition, LText);
 
     QuickSort(ABeginLine, AEndLine, ACompare);
@@ -630,9 +630,9 @@ var
 begin
   Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine) + '/' + IntToStr(Count));
 
-  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+  LCaretPosition := CaretPosition;
+  LSelectionBeginPosition := SelBeginPosition;
+  LSelectionEndPosition := SelEndPosition;
   if (Count = 1) then
   begin
     LBeginPosition := BOFTextPosition;
@@ -654,8 +654,22 @@ begin
 
   DoDelete(ALine);
 
+  if (SelMode = smNormal) then
+  begin
+    CaretPosition := TextPosition(1, ALine);
+    SelBeginPosition := CaretPosition;
+    SelEndPosition := CaretPosition;
+  end
+  else
+  begin
+    if (SelBeginPosition.Line > ALine) then
+      SelBeginPosition := TextPosition(SelBeginPosition.Char, SelBeginPosition.Line - 1);
+    if (SelEndPosition.Line >= ALine) then
+      SelEndPosition := TextPosition(SelEndPosition.Char, SelEndPosition.Line - 1);
+  end;
+
   UndoList.PushItem(LUndoType, LCaretPosition,
-    LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+    LSelectionBeginPosition, LSelectionEndPosition, SelMode,
     LBeginPosition, InvalidTextPosition, LText);
 end;
 
@@ -680,14 +694,14 @@ begin
 
   if (LIndentFound) then
   begin
-    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+    LCaretPosition := CaretPosition;
+    LSelectionBeginPosition := SelBeginPosition;
+    LSelectionEndPosition := SelEndPosition;
 
     DoDeleteIndent(ABeginPosition, AEndPosition, AIndentText, SelectionMode);
 
     UndoList.PushItem(utDeleteIndent, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, SelMode,
       ABeginPosition, AEndPosition, AIndentText);
 
     RedoList.Clear();
@@ -725,9 +739,9 @@ begin
     // Do nothing
   else if (ASelectionMode = smNormal) then
   begin
-    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+    LCaretPosition := CaretPosition;
+    LSelectionBeginPosition := SelBeginPosition;
+    LSelectionEndPosition := SelEndPosition;
 
     LBeginPosition := Min(ABeginPosition, AEndPosition);
     LEndPosition := Max(ABeginPosition, AEndPosition);
@@ -737,14 +751,14 @@ begin
     Result := DoDeleteText(LBeginPosition, LEndPosition);
 
     UndoList.PushItem(utDelete, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, SelMode,
       LBeginPosition, InvalidTextPosition, LText);
   end
   else
   begin
-    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+    LCaretPosition := CaretPosition;
+    LSelectionBeginPosition := SelBeginPosition;
+    LSelectionEndPosition := SelEndPosition;
 
     LBeginPosition := Min(ABeginPosition, AEndPosition);
     LEndPosition := Max(ABeginPosition, AEndPosition);
@@ -753,7 +767,7 @@ begin
 
     try
       UndoList.PushItem(utSelection, LCaretPosition,
-        LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+        LSelectionBeginPosition, LSelectionEndPosition, SelMode,
         InvalidTextPosition, InvalidTextPosition);
 
       for LLine := LBeginPosition.Line to LEndPosition.Line do
@@ -769,7 +783,7 @@ begin
         DoDeleteText(LBeginText, LEndText);
 
         UndoList.PushItem(utDelete, InvalidTextPosition,
-          InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+          InvalidTextPosition, InvalidTextPosition, SelMode,
           LBeginText, InvalidTextPosition, LText);
 
         LLineLength := Length(FLines[LLine].Text);
@@ -780,7 +794,7 @@ begin
           DoInsertText(LEndText, LSpaces);
 
           UndoList.PushItem(utInsert, InvalidTextPosition,
-            InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+            InvalidTextPosition, InvalidTextPosition, SelMode,
             TextPosition(LBeginPosition.Char, LLine), TextPosition(LEndPosition.Char, LLine));
         end;
       end;
@@ -790,6 +804,13 @@ begin
   end;
 
   RedoList.Clear();
+
+  if (SelMode = smNormal) then
+  begin
+    CaretPosition := ABeginPosition;
+    SelBeginPosition := CaretPosition;
+    SelEndPosition := CaretPosition;
+  end;
 end;
 
 destructor TBCEditorLines.Destroy;
@@ -831,9 +852,10 @@ begin
       Dec(FUpdatedLineCount)
     else
       FUpdatedLineCount := ALine - FFirstUpdatedLine - 1;
+    Include(FState, lsTextChanged);
   end;
-  if (Assigned(FOnDeleted)) then
-    FOnDeleted(Self, ALine, 1);
+  if (Assigned(OnDeleted)) then
+    OnDeleted(Self, ALine, 1);
 end;
 
 procedure TBCEditorLines.DoDeleteIndent(const ABeginPosition, AEndPosition: TBCEditorTextPosition;
@@ -967,12 +989,7 @@ begin
 
   if (UpdateCount > 0) then
   begin
-    if (Count = 1) then
-    begin
-      FFirstUpdatedLine := 0;
-      FUpdatedLineCount := 1;
-    end
-    else if (FFirstUpdatedLine < 0) then
+    if ((Count = 1) or (FFirstUpdatedLine < 0)) then
     begin
       FFirstUpdatedLine := ALine;
       FUpdatedLineCount := 1;
@@ -984,9 +1001,10 @@ begin
     end
     else
       FUpdatedLineCount := ALine - FFirstUpdatedLine + 1;
+    Include(FState, lsTextChanged);
   end;
-  if (Assigned(FOnInserted)) then
-    FOnInserted(Self, ALine, 1);
+  if (Assigned(OnInserted)) then
+    OnInserted(Self, ALine, 1);
 end;
 
 function TBCEditorLines.DoInsertText(const APosition: TBCEditorTextPosition;
@@ -1079,7 +1097,7 @@ begin
           Inc(LLine);
           DoInsert(LLine, '');
         end
-        else if (not (lsLoading in FState) and (LPos^ = BCEDITOR_CARRIAGE_RETURN)) then
+        else if (not (lsLoading in State) and (LPos^ = BCEDITOR_CARRIAGE_RETURN)) then
         begin
           Inc(LPos);
           if (LPos^ = BCEDITOR_LINEFEED) then
@@ -1107,7 +1125,7 @@ begin
     finally
       EndUpdate();
 
-      if (not FirstLineBreak and (lsLoading in FState)) then
+      if (not FirstLineBreak and (lsLoading in State)) then
         LineBreak := StrPas(PChar(@LLineBreak[0]));
     end;
   end;
@@ -1145,6 +1163,8 @@ begin
       end
       else if (ALine > FFirstUpdatedLine + FUpdatedLineCount - 1) then
         FUpdatedLineCount := ALine - FFirstUpdatedLine + 1;
+
+      Include(FState, lsTextChanged);
     end
     else if (Assigned(OnUpdated)) then
       OnUpdated(Self, ALine, 1);
@@ -1160,9 +1180,17 @@ begin
   FLines[ALine2] := LLine;
 end;
 
-procedure TBCEditorLines.ExecuteUndoRedo(const List: TBCEditorLines.TUndoList;
-  var ACaretPosition, ASelectionBeginPosition, ASelectionEndPosition: TBCEditorTextPosition;
-  var ASelectionMode: TBCEditorSelectionMode);
+procedure TBCEditorLines.ExecuteRedo();
+begin
+  ExecuteUndoRedo(RedoList);
+end;
+
+procedure TBCEditorLines.ExecuteUndo();
+begin
+  ExecuteUndoRedo(UndoList);
+end;
+
+procedure TBCEditorLines.ExecuteUndoRedo(const List: TBCEditorLines.TUndoList);
 var
   LBlockNumber: Integer;
   LCaretPosition: TBCEditorTextPosition;
@@ -1176,12 +1204,17 @@ var
 begin
   if (not ReadOnly and List.PopItem(LUndoItem)) then
   begin
+    if (List = UndoList) then
+      Include(FState, lsUndo)
+    else
+      Include(FState, lsRedo);
+
     BeginUpdate();
 
-    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
-    LSelectionMode := TCustomBCEditor(Editor).Selection.ActiveMode;
+    LCaretPosition := CaretPosition;
+    LSelectionBeginPosition := SelBeginPosition;
+    LSelectionEndPosition := SelEndPosition;
+    LSelectionMode := SelMode;
 
     if (List = UndoList) then
       LDestinationList := RedoList
@@ -1245,10 +1278,10 @@ begin
         end;
       end;
 
-      ACaretPosition := LUndoItem^.CaretPosition;
-      ASelectionBeginPosition := LUndoItem^.SelectionBeginPosition;
-      ASelectionEndPosition := LUndoItem^.SelectionEndPosition;
-      ASelectionMode := LUndoItem^.SelectionMode;
+      CaretPosition := LUndoItem^.CaretPosition;
+      SelBeginPosition := LUndoItem^.SelectionBeginPosition;
+      SelEndPosition := LUndoItem^.SelectionEndPosition;
+      SelMode := LUndoItem^.SelectionMode;
 
       LBlockNumber := LUndoItem^.BlockNumber;
     until (not List.PeekItem(LUndoItem)
@@ -1256,6 +1289,11 @@ begin
       or not List.PopItem(LUndoItem));
 
     EndUpdate();
+
+    if (List = UndoList) then
+      Exclude(FState, lsUndo)
+    else
+      Exclude(FState, lsRedo);
   end;
 end;
 
@@ -1314,6 +1352,13 @@ begin
   end;
 end;
 
+function TBCEditorLines.GetBOLTextPosition(ALine: Integer): TBCEditorTextPosition;
+begin
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine) + '/' + IntToStr(Count));
+
+  Result := TextPosition(1, ALine);
+end;
+
 function TBCEditorLines.GetCanRedo(): Boolean;
 begin
   Result := RedoList.Count > 0;
@@ -1324,12 +1369,12 @@ begin
   Result := UndoList.Count > 0;
 end;
 
-function TBCEditorLines.GetCapacity: Integer;
+function TBCEditorLines.GetCapacity(): Integer;
 begin
   Result := FCapacity;
 end;
 
-function TBCEditorLines.GetCount: Integer;
+function TBCEditorLines.GetCount(): Integer;
 begin
   Result := FCount;
 end;
@@ -1340,6 +1385,13 @@ begin
     Result := BOFTextPosition
   else
     Result := TextPosition(Length(FLines[Count - 1].Text) + 1, Count - 1);
+end;
+
+function TBCEditorLines.GetEOLTextPosition(ALine: Integer): TBCEditorTextPosition;
+begin
+  Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine) + '/' + IntToStr(Count));
+
+  Result := TextPosition(1 + Length(FLines[ALine].Text), ALine);
 end;
 
 function TBCEditorLines.GetExpandedString(ALine: Integer): string;
@@ -1486,7 +1538,7 @@ begin
   end;
 end;
 
-function TBCEditorLines.GetTextLength: Integer;
+function TBCEditorLines.GetTextLength(): Integer;
 var
   i: Integer;
   LLineBreakLength: Integer;
@@ -1531,30 +1583,46 @@ begin
   Capacity := FCapacity + LDelta;
 end;
 
-procedure TBCEditorLines.Insert(ALine: Integer; const AValue: string);
+procedure TBCEditorLines.Insert(ALine: Integer; const AText: string);
 var
   LSelectionBeginPosition: TBCEditorTextPosition;
   LSelectionEndPosition: TBCEditorTextPosition;
   LCaretPosition: TBCEditorTextPosition;
 begin
-  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+  LCaretPosition := CaretPosition;
+  LSelectionBeginPosition := SelBeginPosition;
+  LSelectionEndPosition := SelEndPosition;
 
-  DoInsert(ALine, AValue);
+  DoInsert(ALine, AText);
 
   FLines[ALine].Flags := FLines[ALine].Flags + [sfExpandedLengthUnknown] - [sfHasTabs, sfHasNoTabs];
   FLines[ALine].Attribute.LineState := lsModified;
 
-  if ((FIndexOfLongestLine >= 0)
-    and (FLines[FIndexOfLongestLine].ExpandedLength < ExpandedStringLengths[ALine])) then
-    FIndexOfLongestLine := ALine;
+  if (SelMode = smNormal) then
+  begin
+    if (Count = 1) then
+      CaretPosition := TextPosition(1 + Length(AText), 0)
+    else
+      CaretPosition := TextPosition(1, ALine + 1);
+    SelBeginPosition := CaretPosition;
+    SelEndPosition := CaretPosition;
+  end
+  else
+  begin
+    if (SelBeginPosition.Line < ALine) then
+      SelBeginPosition := TextPosition(SelBeginPosition.Char, SelBeginPosition.Line + 1);
+    if (SelEndPosition.Line <= ALine) then
+      if (ALine < Count) then
+        SelEndPosition := TextPosition(1 + Length(FLines[ALine].Text), ALine)
+      else
+        SelEndPosition := TextPosition(SelEndPosition.Char, SelEndPosition.Line + 1);
+  end;
 
-  if (not (csLoading in Editor.ComponentState)) then
+  if (not (lsLoading in State)) then
   begin
     UndoList.PushItem(utInsert, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
-      TextPosition(1, ALine), TextPosition(1 + Length(AValue), ALine));
+      LSelectionBeginPosition, LSelectionEndPosition, SelMode,
+      TextPosition(1, ALine), TextPosition(1 + Length(AText), ALine));
 
     RedoList.Clear();
   end;
@@ -1567,14 +1635,14 @@ var
   LSelectionEndPosition: TBCEditorTextPosition;
   LCaretPosition: TBCEditorTextPosition;
 begin
-  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
+  LCaretPosition := CaretPosition;
+  LSelectionBeginPosition := SelBeginPosition;
+  LSelectionEndPosition := SelBeginPosition;
 
   DoInsertIndent(ABeginPosition, AEndPosition, AIndentText, ASelectionMode);
 
   UndoList.PushItem(utInsertIndent, LCaretPosition,
-    LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+    LSelectionBeginPosition, LSelectionEndPosition, SelMode,
     ABeginPosition, AEndPosition, AIndentText);
 
   RedoList.Clear();
@@ -1599,9 +1667,9 @@ begin
   Assert(ABeginPosition.Char < AEndPosition.Char);
   Assert(ABeginPosition.Line <= AEndPosition.Line);
 
-  LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-  LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-  LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+  LCaretPosition := CaretPosition;
+  LSelectionBeginPosition := SelBeginPosition;
+  LSelectionEndPosition := SelEndPosition;
 
   UndoList.BeginUpdate();
 
@@ -1626,7 +1694,7 @@ begin
         LInsertEndPosition := InsertText(LInsertBeginPosition, LInsertText);
 
         UndoList.PushItem(utInsert, LCaretPosition,
-          LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+          LSelectionBeginPosition, LSelectionEndPosition, SelMode,
           LInsertBeginPosition, LInsertEndPosition);
       end
       else if (LLineLength < AEndPosition.Char - 1) then
@@ -1637,7 +1705,7 @@ begin
         DeleteText(LInsertBeginPosition, LInsertEndPosition);
 
         UndoList.PushItem(utDelete, LCaretPosition,
-          LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+          LSelectionBeginPosition, LSelectionEndPosition, SelMode,
           LInsertBeginPosition, InvalidTextPosition, LDeleteText);
 
         if (LPos > LLineBeginPos) then
@@ -1645,7 +1713,7 @@ begin
           LInsertEndPosition := InsertText(LInsertBeginPosition, LInsertText);
 
           UndoList.PushItem(utInsert, InvalidTextPosition,
-            InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+            InvalidTextPosition, InvalidTextPosition, SelMode,
             LInsertBeginPosition, LInsertEndPosition);
         end;
       end
@@ -1658,7 +1726,7 @@ begin
         DeleteText(LInsertBeginPosition, LInsertEndPosition);
 
         UndoList.PushItem(utDelete, LCaretPosition,
-          LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+          LSelectionBeginPosition, LSelectionEndPosition, SelMode,
           LInsertBeginPosition, InvalidTextPosition, LDeleteText);
 
         if (LPos > LLineBeginPos) then
@@ -1666,7 +1734,7 @@ begin
           LInsertEndPosition := InsertText(LInsertBeginPosition, LeftStr(LInsertText, AEndPosition.Char - ABeginPosition.Char));
 
           UndoList.PushItem(utInsert, LCaretPosition,
-            InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+            InvalidTextPosition, InvalidTextPosition, SelMode,
             LInsertBeginPosition, LInsertEndPosition);
         end;
       end;
@@ -1701,9 +1769,9 @@ begin
     Result := APosition
   else
   begin
-    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+    LCaretPosition := CaretPosition;
+    LSelectionBeginPosition := SelBeginPosition;
+    LSelectionEndPosition := SelEndPosition;
     if ((Count > 0) and (APosition.Char - 1 > Length(FLines[APosition.Line].Text))) then
       LPosition := TextPosition(1 + Length(FLines[APosition.Line].Text), APosition.Line)
     else
@@ -1712,11 +1780,18 @@ begin
     Result := DoInsertText(LPosition, AText);
 
     UndoList.PushItem(utInsert, LCaretPosition,
-      LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+      LSelectionBeginPosition, LSelectionEndPosition, SelMode,
       LPosition, Result);
   end;
 
   RedoList.Clear();
+
+  if (SelMode = smNormal) then
+  begin
+    CaretPosition := Result;
+    SelBeginPosition := CaretPosition;
+    SelEndPosition := CaretPosition;
+  end;
 end;
 
 procedure TBCEditorLines.InternalClear(const AClearUndo: Boolean);
@@ -1730,9 +1805,18 @@ begin
   if (Capacity > 0) then
   begin
     Capacity := 0;
-    if Assigned(FOnCleared) then
-      FOnCleared(Self);
+    if (Assigned(OnCleared)) then
+      OnCleared(Self);
   end;
+end;
+
+function TBCEditorLines.IsPositionInSelection(const APosition: TBCEditorTextPosition): Boolean;
+begin
+  if (SelMode = smNormal) then
+    Result := (SelBeginPosition <= APosition) and (APosition <= SelEndPosition)
+  else
+    Result := (SelBeginPosition.Char <= APosition.Char) and (APosition.Char <= SelEndPosition.Char)
+      and (SelBeginPosition.Line <= APosition.Line) and (APosition.Line <= SelEndPosition.Line);
 end;
 
 procedure TBCEditorLines.Put(ALine: Integer; const AText: string);
@@ -1751,9 +1835,9 @@ begin
   begin
     Assert((0 <= ALine) and (ALine < Count), 'Line: ' + IntToStr(ALine) + '/' + IntToStr(Count));
 
-    LCaretPosition := TCustomBCEditor(Editor).TextCaretPosition;
-    LSelectionBeginPosition := TCustomBCEditor(Editor).SelectionBeginPosition;
-    LSelectionEndPosition := TCustomBCEditor(Editor).SelectionEndPosition;
+    LCaretPosition := CaretPosition;
+    LSelectionBeginPosition := SelBeginPosition;
+    LSelectionEndPosition := SelEndPosition;
     LText := FLines[ALine].Text;
 
     DoPut(ALine, AText);
@@ -1762,18 +1846,25 @@ begin
 
     if (LText <> '') then
       UndoList.PushItem(utDelete, LCaretPosition,
-        LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+        LSelectionBeginPosition, LSelectionEndPosition, SelMode,
         TextPosition(1, ALine), InvalidTextPosition, LText);
 
     if (AText <> '') then
       UndoList.PushItem(utInsert, LCaretPosition,
-        LSelectionBeginPosition, LSelectionEndPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+        LSelectionBeginPosition, LSelectionEndPosition, SelMode,
         TextPosition(1, ALine), TextPosition(1 + Length(AText), ALine));
 
     UndoList.EndUpdate();
   end;
 
   RedoList.Clear();
+
+  if (SelMode = smNormal) then
+  begin
+    CaretPosition := TextPosition(1 + Length(AText), ALine);
+    SelBeginPosition := CaretPosition;
+    SelEndPosition := CaretPosition;
+  end;
 end;
 
 procedure TBCEditorLines.PutAttributes(ALine: Integer; const AValue: PLineAttribute);
@@ -1849,7 +1940,26 @@ begin
   end;
 end;
 
-procedure TBCEditorLines.SetColumns(AValue: Boolean);
+procedure TBCEditorLines.SetCaretPosition(const AValue: TBCEditorTextPosition);
+begin
+  Assert((BOFTextPosition <= AValue) and ((AValue.Line < Count) or (AValue.Line = 0) and (Count = 0)));
+
+  if (AValue <> FCaretPosition) then
+  begin
+    BeginUpdate();
+
+    FCaretPosition := AValue;
+
+    SelBeginPosition := AValue;
+
+    Include(FState, lsCaretMoved);
+    EndUpdate();
+  end
+  else
+    SelBeginPosition := AValue;
+end;
+
+procedure TBCEditorLines.SetColumns(const AValue: Boolean);
 begin
   FColumns := AValue;
 end;
@@ -1883,7 +1993,51 @@ begin
   end;
 end;
 
-procedure TBCEditorLines.SetTabWidth(AValue: Integer);
+procedure TBCEditorLines.SetSelBeginPosition(const AValue: TBCEditorTextPosition);
+begin
+  Assert((BOFTextPosition <= AValue) and ((AValue.Line < Count) or (AValue.Line = 0) and (Count = 0)));
+
+  if (AValue <> FSelBeginPosition) then
+  begin
+    BeginUpdate();
+
+    FSelBeginPosition := AValue;
+    if (SelMode = smNormal) then
+      if (Count = 0) then
+        FSelBeginPosition := BOFTextPosition
+      else if (FSelBeginPosition.Char - 1 > Length(FLines[FSelBeginPosition.Line].Text)) then
+        FSelBeginPosition.Char := 1 + Length(FLines[FSelBeginPosition.Line].Text);
+
+    SelEndPosition := AValue;
+
+    Include(FState, lsSelChanged);
+    EndUpdate();
+  end
+  else
+    SelEndPosition := AValue;
+end;
+
+procedure TBCEditorLines.SetSelEndPosition(const AValue: TBCEditorTextPosition);
+begin
+  Assert((BOFTextPosition <= AValue) and ((AValue.Line < Count) or (AValue.Line = 0) and (Count = 0)));
+
+  if (AValue <> FSelEndPosition) then
+  begin
+    BeginUpdate();
+
+    FSelEndPosition := AValue;
+    if (SelMode = smNormal) then
+      if (Count = 0) then
+        FSelEndPosition := BOFTextPosition
+      else if (FSelEndPosition.Char - 1 > Length(FLines[FSelEndPosition.Line].Text)) then
+        FSelEndPosition.Char := 1 + Length(FLines[FSelEndPosition.Line].Text);
+
+    Include(FState, lsSelChanged);
+    EndUpdate();
+  end;
+end;
+
+procedure TBCEditorLines.SetTabWidth(const AValue: Integer);
 var
   LIndex: Integer;
 begin
@@ -1909,14 +2063,13 @@ var
   LText: string;
   LLine: Integer;
 begin
-  if Assigned(OnBeforeSetText) then
-    OnBeforeSetText(Self);
+  if Assigned(OnBeforeLoad) then
+    OnBeforeLoad(Self);
+
+  BeginUpdate();
 
   if (uoUndoAfterLoad in UndoOptions) then
-  begin
-    BeginUpdate();
     DeleteText(BOFTextPosition, EOFTextPosition);
-  end;
 
   InternalClear(not (uoUndoAfterLoad in UndoOptions));
 
@@ -1935,29 +2088,27 @@ begin
 
   Include(FState, lsLoading);
 
-  BeginUpdate();
-  try
-    LEndPosition := InsertText(BOFTextPosition, LText);
-    for LLine := 0 to Count - 1 do
-      Attributes[LLine].LineState := lsNone;
-  finally
-    EndUpdate();
+  LEndPosition := InsertText(BOFTextPosition, LText);
+  for LLine := 0 to Count - 1 do
+    Attributes[LLine].LineState := lsNone;
 
-    Exclude(FState, lsLoading);
-
-    if (Assigned(OnAfterSetText)) then
-      OnAfterSetText(Self);
-  end;
+  Exclude(FState, lsLoading);
 
   if (uoUndoAfterLoad in UndoOptions) then
   begin
     UndoList.PushItem(utInsert, BOFTextPosition,
-      InvalidTextPosition, InvalidTextPosition, TCustomBCEditor(Editor).Selection.ActiveMode,
+      InvalidTextPosition, InvalidTextPosition, SelMode,
       BOFTextPosition, LEndPosition);
-    EndUpdate();
 
     RedoList.Clear();
   end;
+
+  CaretPosition := BOFTextPosition;
+
+  EndUpdate();
+
+  if (Assigned(OnAfterLoad)) then
+    OnAfterLoad(Self);
 end;
 
 procedure TBCEditorLines.SetUpdateState(AUpdating: Boolean);
@@ -1967,19 +2118,30 @@ begin
     FFirstUpdatedLine := -1;
     FUpdatedLineCount := 0;
 
-    if (Assigned(OnChanging)) then
-      OnChanging(Self);
-
     UndoList.BeginUpdate();
+    FState := FState - [lsCaretMoved, lsSelChanged, lsTextChanged];
+    FOldCaretPosition := CaretPosition;
+    FOldSelBeginPosition := SelBeginPosition;
+    FOldSelEndPosition := SelEndPosition;
   end
   else
   begin
+    if (not (lsRedo in State) and ((lsCaretMoved in State) or (lsSelChanged in State)) and not UndoList.Updated) then
+    begin
+      UndoList.PushItem(utSelection, FOldCaretPosition,
+        FOldSelBeginPosition, FOldSelEndPosition, SelMode,
+        InvalidTextPosition, InvalidTextPosition);
+      RedoList.Clear();
+    end;
+
     UndoList.EndUpdate();
 
-    if (Assigned(OnUpdated) and (FFirstUpdatedLine >= 0)) then
+    if (Assigned(OnUpdated) and (FFirstUpdatedLine >= 0) and (FUpdatedLineCount > 0)) then
       OnUpdated(Self, FFirstUpdatedLine, FUpdatedLineCount);
-    if (Assigned(FOnChange)) then
-      FOnChange(Self);
+    if (Assigned(OnCaretMoved) and (lsCaretMoved in FState)) then
+      OnCaretMoved(Self);
+
+    FState := FState - [lsCaretMoved, lsSelChanged, lsTextChanged];
   end;
 end;
 
@@ -1988,7 +2150,7 @@ begin
   CustomSort(ABeginLine, AEndLine, CompareLines);
 end;
 
-function TBCEditorLines.TextPositionToCharIndex(const APosition: TBCEditorTextPosition): Integer;
+function TBCEditorLines.PositionToCharIndex(const APosition: TBCEditorTextPosition): Integer;
 var
   LLine: Integer;
   LLineBreakLength: Integer;

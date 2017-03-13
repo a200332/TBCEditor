@@ -2243,7 +2243,7 @@ begin
   FSelectionAvailable := AValue.SelectionAvailable;
   FBlockBeginPosition := AValue.SelectionBeginPosition;
   FBlockEndPosition := AValue.SelectionEndPosition;
-  FSelectionMode := AValue.Selection.Mode;
+  FSelectionMode := AValue.SelectionMode;
 end;
 
 procedure TBCEditorPrint.LoadFromStream(AStream: TStream);

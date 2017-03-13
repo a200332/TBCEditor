@@ -38,10 +38,6 @@ type
 
   TBCEditorCreateFileStreamEvent = procedure(ASender: TObject; const AFileName: string; var AStream: TStream) of object;
 
-  TBCEditorStateFlag = (sfCaretChanged, sfScrollBarChanged, sfLinesChanging, sfIgnoreNextChar, sfCaretVisible, sfDblClicked,
-    sfWaitForDragging, sfCodeFoldingInfoClicked, sfInSelection, sfDragging);
-  TBCEditorStateFlags = set of TBCEditorStateFlag;
-
   TBCEditorOption = (
     eoAutoIndent, { Will indent the caret on new lines with the same amount of leading white space as the preceding line }
     eoDragDropEditing, { Allows you to select a block of text and drag it within the document to another location }
@@ -340,7 +336,47 @@ type
   end;
   PBCEditorQuadColor = ^TBCEditorQuadColor;
 
+function Point(const APosition: TBCEditorTextPosition): TPoint; overload; inline;
+function Max(const A, B: TBCEditorTextPosition): TBCEditorTextPosition; overload; inline;
+function Min(const A, B: TBCEditorTextPosition): TBCEditorTextPosition; overload; inline;
+function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition; overload; inline;
+function TextPosition(const APos: TPoint): TBCEditorTextPosition; overload; inline;
+
 implementation {***************************************************************}
+
+function Max(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+begin
+  if (A > B) then
+    Result := A
+  else
+    Result := B;
+end;
+
+function Min(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+begin
+  if (A < B) then
+    Result := A
+  else
+    Result := B;
+end;
+
+function Point(const APosition: TBCEditorTextPosition): TPoint;
+begin
+  Result.X := APosition.Char - 1;
+  Result.Y := APosition.Line;
+end;
+
+function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
+begin
+  Result.Char := AChar;
+  Result.Line := ALine;
+end;
+
+function TextPosition(const APos: TPoint): TBCEditorTextPosition;
+begin
+  Result.Char := APos.X + 1;
+  Result.Line := APos.Y;
+end;
 
 { TBCEditorTextPosition *******************************************************}
 
