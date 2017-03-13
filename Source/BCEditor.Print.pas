@@ -245,6 +245,8 @@ type
       constructor Create;
     end;
 
+  strict private type
+    TCustomBCEditor = class(BCEditor.Editor.TCustomBCEditor);
   strict private
     FAbort: Boolean;
     FBlockBeginPosition: TBCEditorTextPosition;

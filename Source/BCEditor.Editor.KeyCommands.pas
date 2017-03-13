@@ -230,10 +230,8 @@ type
   end;
 
 const
-  EditorCommandStrings: array [0 .. 114] of TBCEditorCommandString = (
+  EditorCommandStrings: array [0 .. 112] of TBCEditorCommandString = (
     (Value: ecNone; Name: 'ecNone'),
-    (Value: ecEditCommandFirst; Name: 'ecEditCommandFirst'),
-    (Value: ecEditCommandLast; Name: 'ecEditCommandLast'),
     (Value: ecLeft; Name: 'ecLeft'),
     (Value: ecRight; Name: 'ecRight'),
     (Value: ecUp; Name: 'ecUp'),
