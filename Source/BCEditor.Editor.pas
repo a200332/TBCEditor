@@ -528,7 +528,7 @@ type
     procedure DeleteBookmark(ABookmark: TBCEditorMark); overload;
     procedure DeleteMark(AMark: TBCEditorMark);
     procedure DeleteWhitespace;
-    function DisplayPositionToPixels(const ADisplayPosition: TBCEditorDisplayPosition; const ALineText: string = ''): TPoint;
+    function DisplayPositionToClient(const ADisplayPosition: TBCEditorDisplayPosition; const ALineText: string = ''): TPoint;
     function DisplayPositionToTextPosition(const ADisplayPosition: TBCEditorDisplayPosition): TBCEditorTextPosition;
     procedure DoRedo(); inline; deprecated 'Use Redo()'; // 2017-02-12
     procedure DoUndo(); inline; deprecated 'Use Undo()'; // 2017-02-12
@@ -1381,7 +1381,7 @@ function TCustomBCEditor.CaretInView: Boolean;
 var
   LCaretPoint: TPoint;
 begin
-  LCaretPoint := DisplayPositionToPixels(DisplayCaretPosition);
+  LCaretPoint := DisplayPositionToClient(DisplayCaretPosition);
   Result := PtInRect(ClientRect, LCaretPoint);
 end;
 
@@ -2376,7 +2376,7 @@ begin
   inherited;
 end;
 
-function TCustomBCEditor.DisplayPositionToPixels(const ADisplayPosition: TBCEditorDisplayPosition;
+function TCustomBCEditor.DisplayPositionToClient(const ADisplayPosition: TBCEditorDisplayPosition;
   const ALineText: string = ''): TPoint;
 var
   LCharsBefore: Integer;
@@ -2403,7 +2403,10 @@ begin
   if LRow = 1 then
     FHighlighter.ResetCurrentRange
   else
+  begin
+    Assert(LRow <= Lines.Count, 'LRow: ' + IntToStr(LRow) + ', Lines.Count: ' + IntToStr(Lines.Count)); // Debug 2017-03-14
     FHighlighter.SetCurrentRange(FLines.Ranges[LRow - 2]);
+  end;
 
   if ALineText = '' then
     LLineText := FLines.ExpandedStrings[LRow - 1]
@@ -2969,7 +2972,7 @@ var
 begin
   Assert(FCompletionProposal.CompletionColumnIndex < FCompletionProposal.Columns.Count);
 
-  LPoint := ClientToScreen(DisplayPositionToPixels(DisplayCaretPosition));
+  LPoint := ClientToScreen(DisplayPositionToClient(DisplayCaretPosition));
   Inc(LPoint.Y, GetLineHeight);
 
   FCompletionProposalPopupWindow := TBCEditorCompletionProposalPopupWindow.Create(Self);
@@ -4376,8 +4379,6 @@ end;
 
 procedure TCustomBCEditor.EndUpdate();
 begin
-  Assert(UpdateCount > 0);
-
   if (UpdateCount > 0) then
   begin
     Dec(FUpdateCount);
@@ -4409,7 +4410,9 @@ begin
         end;
       end;
 
-      if (Assigned(OnChange) and ((efLinesCleared in State) or (efLinesDeleted in State) or (efLinesInserted in State) or (efLinesUpdated in State))) then
+      if (Assigned(OnChange)
+        and ((efLinesCleared in State) or (efLinesDeleted in State) or (efLinesInserted in State) or (efLinesUpdated in State))
+        and not (csReading in ComponentState)) then
         OnChange(Self);
 
       FState := FState - [efLinesDeleted, efLinesInserted, efLinesUpdated];
@@ -4431,7 +4434,7 @@ begin
   HandleNeeded;
 
   LDisplayCaretPosition := DisplayCaretPosition;
-  LPoint := DisplayPositionToPixels(DisplayCaretPosition);
+  LPoint := DisplayPositionToClient(DisplayCaretPosition);
   LLeftMarginWidth := GetLeftMarginWidth;
   FScrollPageWidth := GetScrollPageWidth;
   if (LPoint.X < LLeftMarginWidth) or (LPoint.X >= LLeftMarginWidth + FScrollPageWidth) then
@@ -7422,7 +7425,7 @@ begin
   try
     LTextPosition := TextPosition(Min(Lines.SelBeginPosition.Char, Lines.SelEndPosition.Char) - 1,
       Min(Lines.SelBeginPosition.Line, Lines.SelEndPosition.Line));
-    LPoint := DisplayPositionToPixels(TextPositionToDisplayPosition(LTextPosition));
+    LPoint := DisplayPositionToClient(TextPositionToDisplayPosition(LTextPosition));
     DragDrop(Self, LPoint.X, LPoint.Y);
   finally
     FCommandDrop := False;
@@ -7438,7 +7441,7 @@ begin
   try
     LTextPosition := TextPosition(Min(Lines.SelBeginPosition.Char, Lines.SelEndPosition.Char) + 1,
       Min(Lines.SelBeginPosition.Line, Lines.SelEndPosition.Line));
-    LPoint := DisplayPositionToPixels(TextPositionToDisplayPosition(LTextPosition));
+    LPoint := DisplayPositionToClient(TextPositionToDisplayPosition(LTextPosition));
     DragDrop(Self, LPoint.X, LPoint.Y);
   finally
     FCommandDrop := False;
@@ -7454,7 +7457,7 @@ begin
   try
     LTextPosition := TextPosition(Min(Lines.SelBeginPosition.Char, Lines.SelEndPosition.Char),
       Max(Lines.SelBeginPosition.Line, Lines.SelEndPosition.Line));
-    LPoint := DisplayPositionToPixels(TextPositionToDisplayPosition(LTextPosition));
+    LPoint := DisplayPositionToClient(TextPositionToDisplayPosition(LTextPosition));
     Inc(LPoint.Y, GetLineHeight);
     DragDrop(Self, LPoint.X, LPoint.Y);
   finally
@@ -7471,7 +7474,7 @@ begin
   try
     LTextPosition := TextPosition(Min(Lines.SelBeginPosition.Char, Lines.SelEndPosition.Char),
       Min(Lines.SelBeginPosition.Line, Lines.SelEndPosition.Line));
-    LPoint := DisplayPositionToPixels(TextPositionToDisplayPosition(LTextPosition));
+    LPoint := DisplayPositionToClient(TextPositionToDisplayPosition(LTextPosition));
     Dec(LPoint.Y, GetLineHeight);
     DragDrop(Self, LPoint.X, LPoint.Y);
   finally
@@ -7607,7 +7610,7 @@ begin
 
         if LShowInfo then
         begin
-          LPoint := Self.ClientToScreen(DisplayPositionToPixels(TextPositionToDisplayPosition(LTextPosition)));
+          LPoint := Self.ClientToScreen(DisplayPositionToClient(TextPositionToDisplayPosition(LTextPosition)));
           FTokenInfoTokenRect.Left := LPoint.X;
           FTokenInfoTokenRect.Top := LPoint.Y;
           Inc(LPoint.Y, GetLineHeight);
@@ -7804,7 +7807,7 @@ var
 begin
   if (HandleAllocated) then
   begin
-    LPoint := DisplayPositionToPixels(ADisplayCaretPosition);
+    LPoint := DisplayPositionToClient(ADisplayCaretPosition);
     Y := 0;
     X := 0;
     LCaretHeight := 1;
@@ -7871,6 +7874,9 @@ begin
       LTempBitmap.Canvas.Font.Style := Font.Style;
       LTempBitmap.Canvas.Font.Height := Font.Height;
       LTempBitmap.Canvas.Font.Size := Font.Size;
+
+      // Debug 2017-03-14
+      Assert(ADisplayCaretPosition.Row <= Lines.Count, 'Row: ' + IntToStr(ADisplayCaretPosition.Row) + ', Count: ' + IntToStr(Lines.Count));
 
       if ADisplayCaretPosition.Column <= Length(FLines[ADisplayCaretPosition.Row - 1]) then
         LTempBitmap.Canvas.TextOut(X, 0, FLines[ADisplayCaretPosition.Row - 1][ADisplayCaretPosition.Column]);
@@ -7980,7 +7986,7 @@ begin
     LDisplayPosition.Column := ATokenPosition + ATokenLength + 2;
     if FSpecialChars.Visible and (ALine <> FLines.Count) and (ALine <> FLineNumbersCount) then
       Inc(LDisplayPosition.Column);
-    LCollapseMarkRect.Left := DisplayPositionToPixels(LDisplayPosition, ACurrentLineText).X -
+    LCollapseMarkRect.Left := DisplayPositionToClient(LDisplayPosition, ACurrentLineText).X -
       FCodeFolding.Hint.Indicator.Padding.Left;
     LCollapseMarkRect.Right := FCodeFolding.Hint.Indicator.Padding.Right + LCollapseMarkRect.Left +
       FCodeFolding.Hint.Indicator.Width;
@@ -8905,9 +8911,9 @@ var
     LRect.Top := (ATextPosition.Line - TopLine + 1) * LineHeight;
     LRect.Bottom := LRect.Top + LineHeight;
     LDisplayPosition := TextPositionToDisplayPosition(ATextPosition);
-    LRect.Left := DisplayPositionToPixels(LDisplayPosition).X;
+    LRect.Left := DisplayPositionToClient(LDisplayPosition).X;
     Inc(LDisplayPosition.Column, LLength);
-    LRect.Right := DisplayPositionToPixels(LDisplayPosition).X;
+    LRect.Right := DisplayPositionToClient(LDisplayPosition).X;
     Canvas.Rectangle(LRect);
   end;
 
@@ -12922,7 +12928,7 @@ begin
     else
       LCaretStyle := FCaret.Styles.Overwrite;
 
-    LCaretPoint := DisplayPositionToPixels(LCaretDisplayPosition);
+    LCaretPoint := DisplayPositionToClient(LCaretDisplayPosition);
     LCaretPoint.X := LCaretPoint.X + FCaretOffset.X;
     if LCaretStyle in [csHorizontalLine, csThinHorizontalLine, csHalfBlock, csBlock] then
       LCaretPoint.X := LCaretPoint.X + 1;

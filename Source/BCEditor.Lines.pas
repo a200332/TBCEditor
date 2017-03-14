@@ -96,8 +96,6 @@ type
       property Items[const AIndex: Integer]: TItem read GetItems write SetItems;
       property UpdateCount: Integer read FUpdateCount;
       property Updated: Boolean read GetUpdated;
-
-      property BlockNumber: Integer read FBlockNumber;
     end;
 
   strict private
