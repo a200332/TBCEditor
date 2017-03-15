@@ -3,9 +3,7 @@ unit BCEditor.StyleHooks;
 interface
 
 uses
-  Windows, Messages,
-  Classes, Types,
-  Controls, Themes;
+  Winapi.Windows, Winapi.Messages, Vcl.Controls, Vcl.Themes, System.Classes, System.Types;
 
 const
   CM_UPDATE_VCLSTYLE_SCROLLBARS = CM_BASE + 2050;
@@ -92,8 +90,7 @@ type
 implementation
 
 uses
-  SysUtils, Math,
-  Graphics;
+  Vcl.Graphics, System.SysUtils, System.Math;
 
 type
   TWinControlClass = class(TWinControl);
@@ -102,10 +99,10 @@ type
 
 procedure TBCEditorStyleHook.CalcScrollBarsRect;
 var
-  BarInfo: TScrollBarInfo;
-  BorderValue: TSize;
-  LIndex: Integer;
   P: TPoint;
+  BorderValue: TSize;
+  BarInfo: TScrollBarInfo;
+  LIndex: Integer;
 
   procedure CalcVerticalRects;
   begin
@@ -215,7 +212,7 @@ end;
 
 procedure TBCEditorStyleHook.DrawHorzScrollBar(AHandle: HDC);
 var
-  B: Graphics.TBitmap;
+  B: TBitmap;
   Details: TThemedElementDetails;
   R: TRect;
 begin
@@ -223,7 +220,7 @@ begin
     Exit;
   if FHorzScrollBarWindow.Visible and StyleServices.Available then
   begin
-    B := Graphics.TBitmap.Create;
+    B := TBitmap.Create;
     try
       B.Width := FHorzScrollBarRect.Width;
       B.Height := FHorzScrollBarRect.Height;
@@ -262,7 +259,7 @@ end;
 
 procedure TBCEditorStyleHook.DrawVertScrollBar(AHandle: HDC);
 var
-  B: Graphics.TBitmap;
+  B: TBitmap;
   Details: TThemedElementDetails;
   R: TRect;
 begin
@@ -270,7 +267,7 @@ begin
     Exit;
   if FVertScrollBarWindow.Visible and StyleServices.Available then
   begin
-    B := Graphics.TBitmap.Create;
+    B := TBitmap.Create;
     try
       B.Width := FVertScrollBarRect.Width;
       B.Height := FVertScrollBarWindow.Height;
@@ -312,8 +309,8 @@ end;
 
 function TBCEditorStyleHook.GetHorzScrollBarSliderRect: TRect;
 var
-  BarInfo: TScrollBarInfo;
   P: TPoint;
+  BarInfo: TScrollBarInfo;
 begin
   if FHorzScrollBarWindow.Visible and FHorzScrollBarWindow.Enabled then
   begin
@@ -339,8 +336,8 @@ end;
 
 function TBCEditorStyleHook.GetVertScrollBarSliderRect: TRect;
 var
-  BarInfo: TScrollBarInfo;
   P: TPoint;
+  BarInfo: TScrollBarInfo;
 begin
   if FVertScrollBarWindow.Visible and FVertScrollBarWindow.Enabled then
   begin
@@ -396,8 +393,8 @@ end;
 
 procedure TBCEditorStyleHook.UpdateScrollBarWindow;
 var
-  BorderWidth: Integer;
   R: TRect;
+  BorderWidth: Integer;
 begin
   BorderWidth := 0;
   if FVertScrollBarWindow.Visible then
@@ -827,9 +824,9 @@ end;
 
 procedure TBCEditorStyleHook.WMNCMouseMove(var AMessage: TWMMouse);
 var
-  B: Boolean;
-  MustUpdateScroll: Boolean;
   P: TPoint;
+  MustUpdateScroll: Boolean;
+  B: Boolean;
 begin
   inherited;
   P := Point(AMessage.XPos, AMessage.YPos);
@@ -1002,8 +999,8 @@ end;
 
 procedure TBCEditorStyleHook.TVclStyleScrollBarWindow.WMPaint(var AMessage: TWMPaint);
 var
-  LHandle: HDC;
   LPaintStruct: TPaintStruct;
+  LHandle: HDC;
 begin
   BeginPaint(Handle, LPaintStruct);
   try

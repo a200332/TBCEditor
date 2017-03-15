@@ -1,34 +1,30 @@
 unit BCEditor.Utils;
 
-interface {********************************************************************}
+interface
 
 uses
-  Windows,
-  Math, Classes, UITypes,
-  Graphics,
-  BCEditor.Consts, BCEditor.Types;
+  Winapi.Windows, System.Math, System.Classes, Vcl.Graphics, System.UITypes, BCEditor.Consts, BCEditor.Types;
 
 function ActivateDropShadow(const AHandle: THandle): Boolean;
 function CaseNone(const AChar: Char): Char;
 function CaseStringNone(const AString: string): string;
 function CaseUpper(const AChar: Char): Char;
-procedure ClearList(var AList: TList);
 function ColorToHex(const AColor: TColor): string;
 function ConvertTabs(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean; const AColumns: Boolean): string;
-function DeleteWhitespace(const AText: string): string;
-procedure FreeList(var AList: TList);
 function IsCombiningDiacriticalMark(const AChar: Char): Boolean;
+function DeleteWhitespace(const AText: string): string;
 function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
 function MiddleColor(AColor1, AColor2: TColor): TColor;
 function MinMax(const AValue, AMinValue, AMaxValue: Integer): Integer;
-function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
 function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
+function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
+procedure ClearList(var AList: TList);
+procedure FreeList(var AList: TList);
 
-implementation {***************************************************************}
+implementation
 
 uses
-  SysUtils, Character,
-  Controls, Forms, Dialogs;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, System.SysUtils, System.Character;
 
 function ActivateDropShadow(const AHandle: THandle): Boolean;
 
@@ -43,8 +39,8 @@ const
   CS_DROPSHADOW = $00020000;
 
 var
-  B: Boolean;
   NewLong: Cardinal;
+  B: Boolean;
 begin
   B := True;
   if IsXP and SystemParametersInfo(SPI_SETDROPSHADOW, 0, @B, 0) then
@@ -78,21 +74,6 @@ begin
   end;
 end;
 
-procedure ClearList(var AList: TList);
-var
-  LIndex: Integer;
-begin
-  if not Assigned(AList) then
-    Exit;
-  for LIndex := 0 to AList.Count - 1 do
-    if Assigned(AList[LIndex]) then
-    begin
-      TObject(AList[LIndex]).Free;
-      AList[LIndex] := nil;
-    end;
-  AList.Clear;
-end;
-
 function ColorToHex(const AColor: TColor): string;
 begin
   Result := IntToHex(GetRValue(AColor), 2) + IntToHex(GetGValue(AColor), 2) + IntToHex(GetBValue(AColor), 2);
@@ -100,8 +81,8 @@ end;
 
 function ConvertTabs(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean; const AColumns: Boolean): string;
 var
-  LCount: Integer;
   LPosition: Integer;
+  LCount: Integer;
 begin
   AHasTabs := False;
   Result := ALine;
@@ -126,32 +107,6 @@ begin
   end;
 end;
 
-function DeleteWhitespace(const AText: string): string;
-var
-  LIndex: Integer;
-  LIndex2: Integer;
-begin
-  SetLength(Result, Length(AText));
-  LIndex2 := 0;
-  for LIndex := 1 to Length(AText) do
-    if not AText[LIndex].IsWhiteSpace then
-    begin
-      Inc(LIndex2);
-      Result[LIndex2] := AText[LIndex];
-    end;
-  SetLength(Result, LIndex2);
-end;
-
-procedure FreeList(var AList: TList);
-begin
-  ClearList(AList);
-  if Assigned(AList) then
-  begin
-    AList.Free;
-    AList := nil;
-  end;
-end;
-
 function IsCombiningDiacriticalMark(const AChar: Char): Boolean;
 begin
   case Word(AChar) of
@@ -162,30 +117,11 @@ begin
   end;
 end;
 
-function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
-begin
-  with CreateMessageDialog(AMessage, ADlgType, AButtons) do
-  try
-    HelpContext := 0;
-    HelpFile := '';
-    Position := poMainFormCenter;
-    Result := ShowModal;
-  finally
-    Free;
-  end;
-end;
-
 function MiddleColor(AColor1, AColor2: TColor): TColor;
 var
-  LBlue: Byte;
-  LBlue1: Byte;
-  LBlue2: Byte;
-  LGreen: Byte;
-  LGreen1: Byte;
-  LGreen2: Byte;
-  LRed: Byte;
-  LRed1: Byte;
-  LRed2: Byte;
+  LRed, LGreen, LBlue: Byte;
+  LRed1, LGreen1, LBlue1: Byte;
+  LRed2, LGreen2, LBlue2: Byte;
 begin
   LRed1 := GetRValue(AColor1);
   LRed2 := GetRValue(AColor2);
@@ -201,6 +137,59 @@ begin
   Result := RGB(LRed, LGreen, LBlue);
 end;
 
+procedure FreeList(var AList: TList);
+begin
+  ClearList(AList);
+  if Assigned(AList) then
+  begin
+    AList.Free;
+    AList := nil;
+  end;
+end;
+
+procedure ClearList(var AList: TList);
+var
+  LIndex: Integer;
+begin
+  if not Assigned(AList) then
+    Exit;
+  for LIndex := 0 to AList.Count - 1 do
+    if Assigned(AList[LIndex]) then
+    begin
+      TObject(AList[LIndex]).Free;
+      AList[LIndex] := nil;
+    end;
+  AList.Clear;
+end;
+
+function DeleteWhitespace(const AText: string): string;
+var
+  LIndex, LIndex2: Integer;
+begin
+  SetLength(Result, Length(AText));
+  LIndex2 := 0;
+  for LIndex := 1 to Length(AText) do
+    if not AText[LIndex].IsWhiteSpace then
+    begin
+      Inc(LIndex2);
+      Result[LIndex2] := AText[LIndex];
+    end;
+  SetLength(Result, LIndex2);
+end;
+
+function MessageDialog(const AMessage: string; ADlgType: TMsgDlgType; AButtons: TMsgDlgButtons): Integer;
+begin
+  with CreateMessageDialog(AMessage, ADlgType, AButtons) do
+  try
+    HelpContext := 0;
+    HelpFile := '';
+    Position := poMainFormCenter;
+    Result := ShowModal;
+  finally
+    Free;
+  end;
+end;
+
 function MinMax(const AValue, AMinValue, AMaxValue: Integer): Integer;
 var
   LValue: Integer;
@@ -209,12 +198,20 @@ begin
   Result := Max(LValue, AMinValue);
 end;
 
-function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
-var
-  LSize: TSize;
+function GetHasTabs(ALine: PChar; var ACharsBefore: Integer): Boolean;
 begin
-  GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
-  Result := LSize.cy;
+  Result := False;
+  ACharsBefore := 0;
+  if Assigned(ALine) then
+  begin
+    while ALine^ <> BCEDITOR_NONE_CHAR do
+    begin
+      if ALine^ = BCEDITOR_TAB_CHAR then
+        Exit(True);
+      Inc(ACharsBefore);
+      Inc(ALine);
+    end;
+  end
 end;
 
 function TextWidth(ACanvas: TCanvas; const AText: string): Integer;
@@ -223,6 +220,14 @@ var
 begin
   GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
   Result := LSize.cx;
+end;
+
+function TextHeight(ACanvas: TCanvas; const AText: string): Integer;
+var
+  LSize: TSize;
+begin
+  GetTextExtentPoint32(ACanvas.Handle, PChar(AText), Length(AText), LSize);
+  Result := LSize.cy;
 end;
 
 end.

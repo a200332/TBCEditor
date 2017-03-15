@@ -1,83 +1,37 @@
 unit BCEditor.Editor.MatchingPair;
 
-interface {********************************************************************}
+interface
 
 uses
-  Classes,
-  Graphics,
-  BCEditor.Types, BCEditor.Consts;
+  System.Classes, BCEditor.Editor.MatchingPair.Colors, BCEditor.Types;
 
 type
   TBCEditorMatchingPair = class(TPersistent)
-  type
-    TOptions = set of TBCEditorMatchingPairOption;
-
-    TColors = class(TPersistent)
-    strict private
-      FMatched: TColor;
-      FUnderline: TColor;
-      FUnmatched: TColor;
-    public
-      constructor Create;
-      procedure Assign(ASource: TPersistent); override;
-    published
-      property Matched: TColor read FMatched write FMatched default clAqua;
-      property Underline: TColor read FUnderline write FUnderline default clMatchingPairUnderline;
-      property Unmatched: TColor read FUnmatched write FUnmatched default clYellow;
-    end;
-
-  strict private const
-    DefaultOptions = [mpoUseMatchedColor];
   strict private
-    FColors: TColors;
+    FColors: TBCEditorMatchingPairColors;
     FEnabled: Boolean;
-    FOptions: TOptions;
-    procedure SetColors(const AValue: TColors);
+    FOptions: TBCEditorMatchingPairOptions;
+    procedure SetColors(const AValue: TBCEditorMatchingPairColors);
   public
     constructor Create;
     destructor Destroy; override;
     procedure Assign(ASource: TPersistent); override;
     procedure SetOption(const AOption: TBCEditorMatchingPairOption; const AEnabled: Boolean);
   published
-    property Colors: TColors read FColors write SetColors;
+    property Colors: TBCEditorMatchingPairColors read FColors write SetColors;
     property Enabled: Boolean read FEnabled write FEnabled;
-    property Options: TOptions read FOptions write FOptions default DefaultOptions;
+    property Options: TBCEditorMatchingPairOptions read FOptions write FOptions default [mpoUseMatchedColor];
   end;
 
-implementation {***************************************************************}
-
-{ TBCEditorMatchingPair *******************************************************}
-
-constructor TBCEditorMatchingPair.TColors.Create;
-begin
-  inherited;
-
-  FMatched := clAqua;
-  FUnderline := clMatchingPairUnderline;
-  FUnmatched := clYellow;
-end;
-
-procedure TBCEditorMatchingPair.TColors.Assign(ASource: TPersistent);
-begin
-  if ASource is TBCEditorMatchingPair.TColors then
-  with ASource as TBCEditorMatchingPair.TColors do
-  begin
-    Self.FMatched := FMatched;
-    Self.FUnmatched := FUnmatched;
-  end
-  else
-    inherited Assign(ASource);
-end;
-
-{ TBCEditorMatchingPair *******************************************************}
+implementation
 
 constructor TBCEditorMatchingPair.Create;
 begin
   inherited;
 
-  FColors := TBCEditorMatchingPair.TColors.Create;
+  FColors := TBCEditorMatchingPairColors.Create;
   FEnabled := True;
-  FOptions := DefaultOptions;
+  FOptions := [mpoUseMatchedColor];
 end;
 
 destructor TBCEditorMatchingPair.Destroy;
@@ -99,17 +53,17 @@ begin
     inherited Assign(ASource);
 end;
 
-procedure TBCEditorMatchingPair.SetColors(const AValue: TColors);
-begin
-  FColors.Assign(AValue);
-end;
-
 procedure TBCEditorMatchingPair.SetOption(const AOption: TBCEditorMatchingPairOption; const AEnabled: Boolean);
 begin
   if AEnabled then
     Include(FOptions, AOption)
   else
     Exclude(FOptions, AOption);
+end;
+
+procedure TBCEditorMatchingPair.SetColors(const AValue: TBCEditorMatchingPairColors);
+begin
+  FColors.Assign(AValue);
 end;
 
 end.
