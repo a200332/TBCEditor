@@ -3,14 +3,13 @@ unit BCEditor.Editor.Glyph;
 interface
 
 uses
-  Classes,
-  Graphics;
+  System.Classes, Vcl.Graphics;
 
 type
   TBCEditorGlyph = class(TPersistent)
   strict private
-    FBitmap: Graphics.TBitmap;
-    FInternalGlyph: Graphics.TBitmap;
+    FBitmap: TBitmap;
+    FInternalGlyph: TBitmap;
     FInternalMaskColor: TColor;
     FLeft: Integer;
     FMaskColor: TColor;
@@ -19,30 +18,30 @@ type
     function GetHeight: Integer;
     function GetWidth: Integer;
     procedure GlyphChange(ASender: TObject);
-    procedure SetBitmap(AValue: Graphics.TBitmap);
+    procedure SetBitmap(AValue: TBitmap);
     procedure SetLeft(AValue: Integer);
     procedure SetMaskColor(AValue: TColor);
     procedure SetVisible(AValue: Boolean);
   public
     constructor Create(AModule: THandle = 0; const AName: string = ''; AMaskColor: TColor = clFuchsia);
     destructor Destroy; override;
+
     procedure Assign(ASource: TPersistent); override;
     procedure Draw(ACanvas: TCanvas; X, Y: Integer; ALineHeight: Integer = 0);
     property Height: Integer read GetHeight;
     property Width: Integer read GetWidth;
   published
-    property Bitmap: Graphics.TBitmap read FBitmap write SetBitmap;
+    property Bitmap: TBitmap read FBitmap write SetBitmap;
     property Left: Integer read FLeft write SetLeft default 2;
     property MaskColor: TColor read FMaskColor write SetMaskColor default clNone;
-    property Visible: Boolean read FVisible write SetVisible default True;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property Visible: Boolean read FVisible write SetVisible default True;
   end;
 
 implementation
 
 uses
-  Windows,
-  SysUtils;
+  Winapi.Windows, System.SysUtils;
 
 constructor TBCEditorGlyph.Create(AModule: THandle = 0; const AName: string = ''; AMaskColor: TColor = clFuchsia);
 begin
@@ -50,7 +49,7 @@ begin
 
   if AName <> '' then
   begin
-    FInternalGlyph := Graphics.TBitmap.Create;
+    FInternalGlyph := Vcl.Graphics.TBitmap.Create;
     FInternalGlyph.Handle := LoadBitmap(AModule, PChar(AName));
     FInternalMaskColor := AMaskColor;
   end
@@ -58,7 +57,7 @@ begin
     FInternalMaskColor := clNone;
 
   FVisible := True;
-  FBitmap := Graphics.TBitmap.Create;
+  FBitmap := Vcl.Graphics.TBitmap.Create;
   FBitmap.OnChange := GlyphChange;
   FMaskColor := clNone;
   FLeft := 2;
@@ -97,7 +96,7 @@ end;
 
 procedure TBCEditorGlyph.Draw(ACanvas: TCanvas; X, Y: Integer; ALineHeight: Integer = 0);
 var
-  LGlyphBitmap: Graphics.TBitmap;
+  LGlyphBitmap: Vcl.Graphics.TBitmap;
   LMaskColor: TColor;
 begin
   if not FBitmap.Empty then
@@ -123,47 +122,15 @@ begin
   ACanvas.Draw(X, Y, LGlyphBitmap);
 end;
 
-function TBCEditorGlyph.GetHeight: Integer;
+procedure TBCEditorGlyph.SetBitmap(AValue: Vcl.Graphics.TBitmap);
 begin
-  if not FBitmap.Empty then
-    Result := FBitmap.Height
-  else
-  if Assigned(FInternalGlyph) then
-    Result := FInternalGlyph.Height
-  else
-    Result := 0;
-end;
-
-function TBCEditorGlyph.GetWidth: Integer;
-begin
-  if not FBitmap.Empty then
-    Result := FBitmap.Width
-  else
-  if Assigned(FInternalGlyph) then
-    Result := FInternalGlyph.Width
-  else
-    Result := 0;
+  FBitmap.Assign(AValue);
 end;
 
 procedure TBCEditorGlyph.GlyphChange(ASender: TObject);
 begin
   if Assigned(FOnChange) then
     FOnChange(Self);
-end;
-
-procedure TBCEditorGlyph.SetBitmap(AValue: Graphics.TBitmap);
-begin
-  FBitmap.Assign(AValue);
-end;
-
-procedure TBCEditorGlyph.SetLeft(AValue: Integer);
-begin
-  if FLeft <> AValue then
-  begin
-    FLeft := AValue;
-    if Assigned(FOnChange) then
-      FOnChange(Self);
-  end;
 end;
 
 procedure TBCEditorGlyph.SetMaskColor(AValue: TColor);
@@ -184,6 +151,38 @@ begin
     if Assigned(FOnChange) then
       FOnChange(Self);
   end;
+end;
+
+procedure TBCEditorGlyph.SetLeft(AValue: Integer);
+begin
+  if FLeft <> AValue then
+  begin
+    FLeft := AValue;
+    if Assigned(FOnChange) then
+      FOnChange(Self);
+  end;
+end;
+
+function TBCEditorGlyph.GetWidth: Integer;
+begin
+  if not FBitmap.Empty then
+    Result := FBitmap.Width
+  else
+  if Assigned(FInternalGlyph) then
+    Result := FInternalGlyph.Width
+  else
+    Result := 0;
+end;
+
+function TBCEditorGlyph.GetHeight: Integer;
+begin
+  if not FBitmap.Empty then
+    Result := FBitmap.Height
+  else
+  if Assigned(FInternalGlyph) then
+    Result := FInternalGlyph.Height
+  else
+    Result := 0;
 end;
 
 end.

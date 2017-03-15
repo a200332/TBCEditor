@@ -3,41 +3,35 @@ unit BCEditor.Export.HTML;
 interface
 
 uses
-  Classes, SysUtils,
-  Graphics,
-  BCEditor.Lines, BCEditor.Highlighter;
+  System.Classes, System.SysUtils, Vcl.Graphics, BCEditor.Lines, BCEditor.Highlighter;
 
 type
   TBCEditorExportHTML = class(TObject)
-  strict private type
-    TBCEditorLines = class(BCEditor.Lines.TBCEditorLines);
   private
     FCharSet: string;
     FFont: TFont;
     FHighlighter: TBCEditorHighlighter;
     FLines: TBCEditorLines;
     FStringList: TStrings;
-    procedure CreateFooter;
-    procedure CreateHeader;
     procedure CreateHTMLDocument;
+    procedure CreateHeader;
     procedure CreateInternalCSS;
     procedure CreateLines;
+    procedure CreateFooter;
   public
-    constructor Create(ALines: BCEditor.Lines.TBCEditorLines;
-      AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string); overload;
+    constructor Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string); overload;
     destructor Destroy; override;
+
     procedure SaveToStream(AStream: TStream; AEncoding: System.SysUtils.TEncoding);
   end;
 
 implementation
 
 uses
-  Windows,
-  UITypes,
-  BCEditor.Consts, BCEditor.Utils;
+  Winapi.Windows, System.UITypes, BCEditor.Highlighter.Attributes, BCEditor.Highlighter.Colors, BCEditor.Consts,
+  BCEditor.Utils;
 
-constructor TBCEditorExportHTML.Create(ALines: BCEditor.Lines.TBCEditorLines;
-  AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
+constructor TBCEditorExportHTML.Create(ALines: TBCEditorLines; AHighlighter: TBCEditorHighlighter; AFont: TFont; const ACharSet: string);
 begin
   inherited Create;
 
@@ -46,7 +40,7 @@ begin
   FCharSet := ACharSet;
   if FCharSet = '' then
     FCharSet := 'utf-8';
-  FLines := TBCEditorLines(ALines);
+  FLines := ALines;
   FHighlighter := AHighlighter;
   FFont := AFont;
 end;
@@ -56,27 +50,6 @@ begin
   FStringList.Free;
 
   inherited Destroy;
-end;
-
-procedure TBCEditorExportHTML.CreateFooter;
-begin
-  FStringList.Add('</body>');
-  FStringList.Add('</html>');
-end;
-
-procedure TBCEditorExportHTML.CreateHeader;
-begin
-  FStringList.Add('<!DOCTYPE HTML>');
-  FStringList.Add('');
-  FStringList.Add('<html>');
-  FStringList.Add('<head>');
-  FStringList.Add('  <meta charset="' + FCharSet + '">');
-
-  CreateInternalCSS;
-
-  FStringList.Add('</head>');
-  FStringList.Add('');
-  FStringList.Add('<body class="Editor">');
 end;
 
 procedure TBCEditorExportHTML.CreateHTMLDocument;
@@ -91,11 +64,26 @@ begin
   CreateFooter;
 end;
 
+procedure TBCEditorExportHTML.CreateHeader;
+begin
+  FStringList.Add('<!DOCTYPE HTML>');
+  FStringList.Add('');
+  FStringList.Add('<html>');
+  FStringList.Add('<head>');
+	FStringList.Add('  <meta charset="' + FCharSet + '">');
+
+  CreateInternalCSS;
+
+  FStringList.Add('</head>');
+  FStringList.Add('');
+  FStringList.Add('<body class="Editor">');
+end;
+
 procedure TBCEditorExportHTML.CreateInternalCSS;
 var
-  LElement: TBCEditorHighlighter.PElement;
   LIndex: Integer;
   LStyles: TList;
+  LElement: PBCEditorHighlighterElement;
 begin
   FStringList.Add('  <style>');
 
@@ -133,11 +121,10 @@ end;
 
 procedure TBCEditorExportHTML.CreateLines;
 var
-  LHighlighterAttribute: TBCEditorHighlighter.TAttribute;
   LIndex: Integer;
+  LTextLine, LToken: string;
+  LHighlighterAttribute: TBCEditorHighlighterAttribute;
   LPreviousElement: string;
-  LTextLine: string;
-  LToken: string;
 begin
   LPreviousElement := '';
   for LIndex := 0 to FLines.Count - 1 do
@@ -186,6 +173,12 @@ begin
     FStringList.Add('</span>');
 end;
 
+procedure TBCEditorExportHTML.CreateFooter;
+begin
+  FStringList.Add('</body>');
+  FStringList.Add('</html>');
+end;
+
 procedure TBCEditorExportHTML.SaveToStream(AStream: TStream; AEncoding: System.SysUtils.TEncoding);
 begin
   CreateHTMLDocument;
@@ -195,4 +188,3 @@ begin
 end;
 
 end.
-

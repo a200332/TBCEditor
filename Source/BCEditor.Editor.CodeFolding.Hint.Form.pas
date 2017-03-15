@@ -3,16 +3,14 @@ unit BCEditor.Editor.CodeFolding.Hint.Form;
 interface
 
 uses
-  Windows, Messages,
-  Classes, Types,
-  Forms, Controls, Graphics;
+  Winapi.Windows, Winapi.Messages, System.Classes, System.Types, Vcl.Forms, Vcl.Controls, Vcl.Graphics;
 
 type
   TBCEditorCodeFoldingHintForm = class(TCustomForm)
   strict private
     FBackgroundColor: TColor;
+    FBufferBitmap: TBitmap;
     FBorderColor: TColor;
-    FBufferBitmap: Graphics.TBitmap;
     FEffectiveItemHeight: Integer;
     FFont: TFont;
     FFontHeight: Integer;
@@ -41,7 +39,9 @@ type
   public
     constructor Create(AOwner: TComponent); overload; override;
     destructor Destroy; override;
+
     procedure Execute(const ACurrentString: string; X, Y: Integer);
+
     property BackgroundColor: TColor read FBackgroundColor write FBackgroundColor default clWindow;
     property BorderColor: TColor read FBorderColor write FBorderColor default clBtnFace;
     property Font: TFont read FFont write SetFont;
@@ -55,13 +55,14 @@ type
 implementation
 
 uses
-  SysUtils, UITypes,
-  BCEditor.Editor, BCEditor.Editor.KeyCommands, BCEditor.Utils, BCEditor.Consts;
-
-type
-  TCustomBCEditor = class(BCEditor.Editor.TCustomBCEditor);
+  System.SysUtils, System.UITypes, BCEditor.Editor.Base, BCEditor.Editor.KeyCommands, BCEditor.Utils,
+  BCEditor.Consts{$if defined(USE_ALPHASKINS)}, sSkinProvider, sMessages{$endif};
 
 constructor TBCEditorCodeFoldingHintForm.Create(AOwner: TComponent);
+{$if defined(USE_ALPHASKINS)}
+var
+  LSkinProvider: TsSkinProvider;
+{$endif}
 begin
   CreateNew(AOwner);
 
@@ -69,7 +70,7 @@ begin
   if not (csDesigning in ComponentState) then
     ControlStyle := ControlStyle + [csAcceptsControls];
 
-  FBufferBitmap := Graphics.TBitmap.Create;
+  FBufferBitmap := Vcl.Graphics.TBitmap.Create;
   Visible := False;
 
   Color := FBackgroundColor;
@@ -93,6 +94,16 @@ begin
 
   FHeightBuffer := 0;
   FFont.OnChange := FontChange;
+
+{$if defined(USE_ALPHASKINS)}
+  LSkinProvider := TsSkinProvider(SendMessage(Handle, SM_ALPHACMD, MakeWParam(0, AC_GETPROVIDER), 0));
+  if Assigned(LSkinProvider) then
+  begin
+    LSkinProvider.AllowExtBorders := False;
+    LSkinProvider.DrawNonClientArea := False;
+    LSkinProvider.DrawClientArea := False;
+  end;
+{$endif}
 end;
 
 destructor TBCEditorCodeFoldingHintForm.Destroy;
@@ -104,20 +115,6 @@ begin
   inherited Destroy;
 end;
 
-procedure TBCEditorCodeFoldingHintForm.Activate;
-begin
-  Visible := True;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.AdjustMetrics;
-begin
-  if (ClientWidth > 0) and (ClientHeight > 0) then
-  begin
-    FBufferBitmap.Width := ClientWidth;
-    FBufferBitmap.Height := ClientHeight;
-  end;
-end;
-
 procedure TBCEditorCodeFoldingHintForm.CreateParams(var AParams: TCreateParams);
 begin
   inherited CreateParams(AParams);
@@ -127,15 +124,119 @@ begin
       WindowClass.Style := WindowClass.Style or CS_DROPSHADOW;
 end;
 
+procedure TBCEditorCodeFoldingHintForm.Activate;
+begin
+  Visible := True;
+end;
+
 procedure TBCEditorCodeFoldingHintForm.Deactivate;
 begin
   Close;
 end;
 
+procedure TBCEditorCodeFoldingHintForm.KeyDown(var AKey: Word; AShift: TShiftState);
+var
+  LChar: Char;
+  LData: Pointer;
+  LEditorCommand: TBCEditorCommand;
+begin
+  with Owner as TBCBaseEditor do
+  begin
+    LData := nil;
+    LChar := BCEDITOR_NONE_CHAR;
+    LEditorCommand := TranslateKeyCode(AKey, AShift, LData);
+    CommandProcessor(LEditorCommand, LChar, LData);
+  end;
+  Invalidate;
+end;
+
 procedure TBCEditorCodeFoldingHintForm.DoKeyPressW(AKey: Char);
 begin
-  if AKey <> #0 then
+  if AKey <> BCEDITOR_NONE_CHAR then
     KeyPressW(AKey);
+end;
+
+procedure TBCEditorCodeFoldingHintForm.KeyPressW(var AKey: Char);
+begin
+  if Assigned(OnKeyPress) then
+    OnKeyPress(Self, AKey);
+  Invalidate;
+end;
+
+procedure TBCEditorCodeFoldingHintForm.Paint;
+
+  procedure ResetCanvas;
+  begin
+    with FBufferBitmap.Canvas do
+    begin
+      Pen.Color := FBackgroundColor;
+      Brush.Color := FBackgroundColor;
+      Font.Assign(FFont);
+    end;
+  end;
+
+var
+  LRect: TRect;
+  LIndex: Integer;
+begin
+  ResetCanvas;
+  LRect := ClientRect;
+  Winapi.Windows.ExtTextOut(FBufferBitmap.Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+  FBufferBitmap.Canvas.Pen.Color := FBorderColor;
+  FBufferBitmap.Canvas.Rectangle(LRect);
+
+  for LIndex := 0 to FItemList.Count - 1 do
+    FBufferBitmap.Canvas.TextOut(FMargin + 1, FEffectiveItemHeight * LIndex + FMargin, FItemList[LIndex]);
+
+  Canvas.Draw(0, 0, FBufferBitmap);
+end;
+
+procedure TBCEditorCodeFoldingHintForm.SetItemList(const AValue: TStrings);
+begin
+  FItemList.Assign(AValue);
+end;
+
+procedure TBCEditorCodeFoldingHintForm.SetItemHeight(const AValue: Integer);
+begin
+  if FItemHeight <> AValue then
+  begin
+    FItemHeight := AValue;
+    RecalculateItemHeight;
+  end;
+end;
+
+procedure TBCEditorCodeFoldingHintForm.RecalculateItemHeight;
+begin
+  Canvas.Font.Assign(FFont);
+  FFontHeight := TextHeight(Canvas, 'X');
+  if FItemHeight > 0 then
+    FEffectiveItemHeight := FItemHeight
+  else
+    FEffectiveItemHeight := FFontHeight;
+end;
+
+procedure TBCEditorCodeFoldingHintForm.WMEraseBackgrnd(var AMessage: TMessage);
+begin
+  AMessage.Result := 1;
+end;
+
+procedure TBCEditorCodeFoldingHintForm.WMGetDlgCode(var AMessage: TWMGetDlgCode);
+begin
+  inherited;
+  AMessage.Result := AMessage.Result or DLGC_WANTTAB;
+end;
+
+procedure TBCEditorCodeFoldingHintForm.SetFont(const AValue: TFont);
+begin
+  FFont.Assign(AValue);
+  RecalculateItemHeight;
+  AdjustMetrics;
+end;
+
+procedure TBCEditorCodeFoldingHintForm.FontChange(ASender: TObject);
+begin
+  RecalculateItemHeight;
+  AdjustMetrics;
 end;
 
 procedure TBCEditorCodeFoldingHintForm.Execute(const ACurrentString: string; X, Y: Integer);
@@ -152,13 +253,12 @@ procedure TBCEditorCodeFoldingHintForm.Execute(const ACurrentString: string; X, 
 
   procedure RecalculateFormPlacement;
   var
-    LBorderWidth: Integer;
-    LHeight: Integer;
     LIndex: Integer;
-    LNewWidth: Integer;
     LWidth: Integer;
-    LX: Integer;
-    LY: Integer;
+    LHeight: Integer;
+    LX, LY: Integer;
+    LBorderWidth: Integer;
+    LNewWidth: Integer;
   begin
     LX := X;
     LY := Y;
@@ -186,7 +286,7 @@ procedure TBCEditorCodeFoldingHintForm.Execute(const ACurrentString: string; X, 
 
     if LY + LHeight > GetWorkAreaHeight then
     begin
-      LY := LY - LHeight - (Owner as TCustomBCEditor).LineHeight - 2;
+      LY := LY - LHeight - (Owner as TBCBaseEditor).LineHeight - 2;
       if LY < 0 then
         LY := 0;
     end;
@@ -204,103 +304,13 @@ begin
   Visible := True;
 end;
 
-procedure TBCEditorCodeFoldingHintForm.FontChange(ASender: TObject);
+procedure TBCEditorCodeFoldingHintForm.AdjustMetrics;
 begin
-  RecalculateItemHeight;
-  AdjustMetrics;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.KeyDown(var AKey: Word; AShift: TShiftState);
-var
-  LChar: Char;
-  LData: Pointer;
-  LEditorCommand: TBCEditorCommand;
-begin
-  with Owner as TCustomBCEditor do
+  if (ClientWidth > 0) and (ClientHeight > 0) then
   begin
-    LData := nil;
-    LChar := #0;
-    LEditorCommand := TranslateKeyCode(AKey, AShift, LData);
-    CommandProcessor(LEditorCommand, LChar, LData);
+    FBufferBitmap.Width := ClientWidth;
+    FBufferBitmap.Height := ClientHeight;
   end;
-  Invalidate;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.KeyPressW(var AKey: Char);
-begin
-  if Assigned(OnKeyPress) then
-    OnKeyPress(Self, AKey);
-  Invalidate;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.Paint;
-
-  procedure ResetCanvas;
-  begin
-    with FBufferBitmap.Canvas do
-    begin
-      Pen.Color := FBackgroundColor;
-      Brush.Color := FBackgroundColor;
-      Font.Assign(FFont);
-    end;
-  end;
-
-var
-  LIndex: Integer;
-  LRect: TRect;
-begin
-  ResetCanvas;
-  LRect := ClientRect;
-  ExtTextOut(FBufferBitmap.Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
-  FBufferBitmap.Canvas.Pen.Color := FBorderColor;
-  FBufferBitmap.Canvas.Rectangle(LRect);
-
-  for LIndex := 0 to FItemList.Count - 1 do
-    FBufferBitmap.Canvas.TextOut(FMargin + 1, FEffectiveItemHeight * LIndex + FMargin, FItemList[LIndex]);
-
-  Canvas.Draw(0, 0, FBufferBitmap);
-end;
-
-procedure TBCEditorCodeFoldingHintForm.RecalculateItemHeight;
-begin
-  Canvas.Font.Assign(FFont);
-  FFontHeight := TextHeight(Canvas, 'X');
-  if FItemHeight > 0 then
-    FEffectiveItemHeight := FItemHeight
-  else
-    FEffectiveItemHeight := FFontHeight;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.SetFont(const AValue: TFont);
-begin
-  FFont.Assign(AValue);
-  RecalculateItemHeight;
-  AdjustMetrics;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.SetItemHeight(const AValue: Integer);
-begin
-  if FItemHeight <> AValue then
-  begin
-    FItemHeight := AValue;
-    RecalculateItemHeight;
-  end;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.SetItemList(const AValue: TStrings);
-begin
-  FItemList.Assign(AValue);
-end;
-
-procedure TBCEditorCodeFoldingHintForm.WMEraseBackgrnd(var AMessage: TMessage);
-begin
-  AMessage.Result := 1;
-end;
-
-procedure TBCEditorCodeFoldingHintForm.WMGetDlgCode(var AMessage: TWMGetDlgCode);
-begin
-  inherited;
-  AMessage.Result := AMessage.Result or DLGC_WANTTAB;
 end;
 
 end.

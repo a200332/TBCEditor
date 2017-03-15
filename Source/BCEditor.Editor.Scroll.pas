@@ -3,41 +3,28 @@ unit BCEditor.Editor.Scroll;
 interface
 
 uses
-  Classes, UITypes,
-  Forms,
-  BCEditor.Editor.Glyph, BCEditor.Types;
+  System.Classes, System.UITypes, BCEditor.Types, BCEditor.Editor.Glyph, BCEditor.Editor.Scroll.Hint,
+  BCEditor.Editor.Scroll.Shadow;
+
+const
+  BCEDITOR_DEFAULT_SCROLL_OPTIONS = [{soAutosizeMaxWidth,} soPastEndOfLine, soShowVerticalScrollHint, soWheelClickMove];
 
 type
   TBCEditorScroll = class(TPersistent)
-  type
-    TEvent = procedure(ASender: TObject; AScrollBar: TScrollBarKind) of object;
-    TOptions = set of TBCEditorScrollOption;
-
-    THint = class(TPersistent)
-    strict private
-      FFormat: TBCEditorScrollHintFormat;
-    public
-      constructor Create;
-      procedure Assign(ASource: TPersistent); override;
-    published
-      property Format: TBCEditorScrollHintFormat read FFormat write FFormat default shfTopLineOnly;
-    end;
-
-  strict private const
-    DefaultOptions = [soPastEndOfLine, soShowVerticalScrollHint, soWheelClickMove];
   strict private
     FBars: System.UITypes.TScrollStyle;
-    FHint: TBCEditorScroll.THint;
+    FHint: TBCEditorScrollHint;
     FIndicator: TBCEditorGlyph;
     FMaxWidth: Integer;
     FOnChange: TNotifyEvent;
-    FOptions: TOptions;
+    FOptions: TBCEditorScrollOptions;
+    FShadow: TBCEditorScrollShadow;
     procedure DoChange;
     procedure SetBars(const AValue: System.UITypes.TScrollStyle);
-    procedure SetHint(const AValue: TBCEditorScroll.THint);
+    procedure SetHint(const AValue: TBCEditorScrollHint);
     procedure SetIndicator(const AValue: TBCEditorGlyph);
     procedure SetOnChange(AValue: TNotifyEvent);
-    procedure SetOptions(const AValue: TOptions);
+    procedure SetOptions(const AValue: TBCEditorScrollOptions);
   public
     constructor Create;
     destructor Destroy; override;
@@ -45,77 +32,43 @@ type
     procedure SetOption(const AOption: TBCEditorScrollOption; const AEnabled: Boolean);
   published
     property Bars: System.UITypes.TScrollStyle read FBars write SetBars default System.UITypes.TScrollStyle.ssBoth;
-    property Hint: TBCEditorScroll.THint read FHint write SetHint;
+    property Hint: TBCEditorScrollHint read FHint write SetHint;
     property Indicator: TBCEditorGlyph read FIndicator write SetIndicator;
-    property Options: TOptions read FOptions write SetOptions default DefaultOptions;
     property OnChange: TNotifyEvent read FOnChange write SetOnChange;
+    property Options: TBCEditorScrollOptions read FOptions write SetOptions default BCEDITOR_DEFAULT_SCROLL_OPTIONS;
+    property Shadow: TBCEditorScrollShadow read FShadow write FShadow;
   end;
 
-implementation {***************************************************************}
+implementation
 
 uses
-  Graphics,
-  BCEditor.Utils, BCEditor.Consts;
-
-{ TBCEditorScroll.THint *******************************************************}
-
-constructor TBCEditorScroll.THint.Create;
-begin
-  inherited;
-
-  FFormat := shfTopLineOnly;
-end;
-
-procedure TBCEditorScroll.THint.Assign(ASource: TPersistent);
-begin
-  if ASource is TBCEditorScroll.THint then
-  with ASource as TBCEditorScroll.THint do
-    Self.FFormat := FFormat
-  else
-    inherited Assign(ASource);
-end;
-
-{ TBCEditorScroll *************************************************************}
+  BCEditor.Utils, BCEditor.Consts, Vcl.Graphics;
 
 constructor TBCEditorScroll.Create;
 begin
   inherited;
 
-  FOptions := DefaultOptions;
+  FOptions := BCEDITOR_DEFAULT_SCROLL_OPTIONS;
   FMaxWidth := 1024;
   FBars := System.UITypes.TScrollStyle.ssBoth;
-  FHint := TBCEditorScroll.THint.Create;
+  FHint := TBCEditorScrollHint.Create;
   FIndicator := TBCEditorGlyph.Create(HInstance, BCEDITOR_MOUSE_MOVE_SCROLL, clFuchsia);
+  FShadow := TBCEditorScrollShadow.Create;
 end;
 
 destructor TBCEditorScroll.Destroy;
 begin
   FHint.Free;
   FIndicator.Free;
+  FShadow.Free;
 
   inherited;
 end;
 
-procedure TBCEditorScroll.Assign(ASource: TPersistent);
+procedure TBCEditorScroll.SetOnChange(AValue: TNotifyEvent);
 begin
-  if ASource is TBCEditorScroll then
-  with ASource as TBCEditorScroll do
-  begin
-    Self.FBars := FBars;
-    Self.FHint.Assign(FHint);
-    Self.FIndicator.Assign(FIndicator);
-    Self.FOptions := FOptions;
-    Self.FMaxWidth := FMaxWidth;
-    Self.DoChange;
-  end
-  else
-    inherited Assign(ASource);
-end;
-
-procedure TBCEditorScroll.DoChange;
-begin
-  if Assigned(FOnChange) then
-    FOnChange(Self);
+  FOnChange := AValue;
+  FShadow.OnChange := AValue;
 end;
 
 procedure TBCEditorScroll.SetBars(const AValue: System.UITypes.TScrollStyle);
@@ -127,19 +80,27 @@ begin
   end;
 end;
 
-procedure TBCEditorScroll.SetHint(const AValue: THint);
+procedure TBCEditorScroll.DoChange;
 begin
-  FHint.Assign(AValue);
+  if Assigned(FOnChange) then
+    FOnChange(Self);
 end;
 
-procedure TBCEditorScroll.SetIndicator(const AValue: TBCEditorGlyph);
+procedure TBCEditorScroll.Assign(ASource: TPersistent);
 begin
-  FIndicator.Assign(AValue);
-end;
-
-procedure TBCEditorScroll.SetOnChange(AValue: TNotifyEvent);
-begin
-  FOnChange := AValue;
+  if ASource is TBCEditorScroll then
+  with ASource as TBCEditorScroll do
+  begin
+    Self.FBars := FBars;
+    Self.FHint.Assign(FHint);
+    Self.FIndicator.Assign(FIndicator);
+    Self.FShadow.Assign(FShadow);
+    Self.FOptions := FOptions;
+    Self.FMaxWidth := FMaxWidth;
+    Self.DoChange;
+  end
+  else
+    inherited Assign(ASource);
 end;
 
 procedure TBCEditorScroll.SetOption(const AOption: TBCEditorScrollOption; const AEnabled: Boolean);
@@ -150,13 +111,23 @@ begin
     Exclude(FOptions, AOption);
 end;
 
-procedure TBCEditorScroll.SetOptions(const AValue: TOptions);
+procedure TBCEditorScroll.SetOptions(const AValue: TBCEditorScrollOptions);
 begin
   if FOptions <> AValue then
   begin
     FOptions := AValue;
     DoChange;
   end;
+end;
+
+procedure TBCEditorScroll.SetHint(const AValue: TBCEditorScrollHint);
+begin
+  FHint.Assign(AValue);
+end;
+
+procedure TBCEditorScroll.SetIndicator(const AValue: TBCEditorGlyph);
+begin
+  FIndicator.Assign(AValue);
 end;
 
 end.

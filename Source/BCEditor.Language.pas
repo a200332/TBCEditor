@@ -3,7 +3,8 @@ unit BCEditor.Language;
 interface
 
 resourcestring
-  { BCEditor.Editor }
+  { BCEditor.Editor.Base }
+  SBCEditorVersion = 'Version';
   SBCEditorScrollInfoTopLine = 'Top line: %d';
   SBCEditorScrollInfo = '%d - %d';
   SBCEditorSearchStringNotFound = 'Search string ''%s'' not found';
@@ -24,7 +25,11 @@ resourcestring
   { BCEditor.Print.Preview }
   SBCEditorPreviewScrollHint = 'Page: %d';
 
-  { BCEditor.Highlighter }
+  { BCEditor.TextBuffer }
+  SBCEditorListIndexOutOfBounds = 'Invalid stringlist index %d';
+  SBCEditorInvalidCapacity = 'Stringlist capacity cannot be smaller than count';
+
+  { BCEditor.Highlighter.Import.JSON }
   SBCEditorErrorInHighlighterParse = 'JSON parse error on line %d column %d: %s';
   SBCEditorErrorInHighlighterImport = 'Error in highlighter import: %s';
 

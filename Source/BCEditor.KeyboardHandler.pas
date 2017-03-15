@@ -3,9 +3,7 @@ unit BCEditor.KeyboardHandler;
 interface
 
 uses
-  SysUtils, Classes,
-  Graphics, Controls, Forms,
-  BCEditor.Types;
+  System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, BCEditor.Types;
 
 type
   TBCEditorMethodList = class
@@ -16,6 +14,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+
     procedure Add(AHandler: TMethod);
     procedure Remove(AHandler: TMethod);
     property Count: Integer read GetCount;
@@ -39,6 +38,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
+
     procedure AddKeyDownHandler(AHandler: TKeyEvent);
     procedure AddKeyPressHandler(AHandler: TBCEditorKeyPressWEvent);
     procedure AddKeyUpHandler(AHandler: TKeyEvent);
@@ -80,12 +80,6 @@ begin
   inherited;
 end;
 
-procedure TBCEditorMethodList.Add(AHandler: TMethod);
-begin
-  FData.Add(AHandler.Data);
-  FData.Add(AHandler.Code);
-end;
-
 function TBCEditorMethodList.GetCount: Integer;
 begin
   Result := FData.Count div 2;
@@ -96,6 +90,12 @@ begin
   AIndex := AIndex * 2;
   Result.Data := FData[AIndex];
   Result.Code := FData[AIndex + 1];
+end;
+
+procedure TBCEditorMethodList.Add(AHandler: TMethod);
+begin
+  FData.Add(AHandler.Data);
+  FData.Add(AHandler.Code);
 end;
 
 procedure TBCEditorMethodList.Remove(AHandler: TMethod);
@@ -149,19 +149,14 @@ begin
   FKeyDownChain.Add(TMethod(AHandler));
 end;
 
-procedure TBCEditorKeyboardHandler.AddKeyPressHandler(AHandler: TBCEditorKeyPressWEvent);
-begin
-  FKeyPressChain.Add(TMethod(AHandler));
-end;
-
 procedure TBCEditorKeyboardHandler.AddKeyUpHandler(AHandler: TKeyEvent);
 begin
   FKeyUpChain.Add(TMethod(AHandler));
 end;
 
-procedure TBCEditorKeyboardHandler.AddMouseCursorHandler(AHandler: TBCEditorMouseCursorEvent);
+procedure TBCEditorKeyboardHandler.AddKeyPressHandler(AHandler: TBCEditorKeyPressWEvent);
 begin
-  FMouseCursorChain.Add(TMethod(AHandler));
+  FKeyPressChain.Add(TMethod(AHandler));
 end;
 
 procedure TBCEditorKeyboardHandler.AddMouseDownHandler(AHandler: TMouseEvent);
@@ -172,6 +167,11 @@ end;
 procedure TBCEditorKeyboardHandler.AddMouseUpHandler(AHandler: TMouseEvent);
 begin
   FMouseUpChain.Add(TMethod(AHandler));
+end;
+
+procedure TBCEditorKeyboardHandler.AddMouseCursorHandler(AHandler: TBCEditorMouseCursorEvent);
+begin
+  FMouseCursorChain.Add(TMethod(AHandler));
 end;
 
 procedure TBCEditorKeyboardHandler.ExecuteKeyDown(ASender: TObject; var Key: Word; Shift: TShiftState);
@@ -196,31 +196,6 @@ begin
     end;
   finally
     FInKeyDown := False;
-  end;
-end;
-
-procedure TBCEditorKeyboardHandler.ExecuteKeyPress(ASender: TObject; var Key: Char);
-var
-  LIndex: Integer;
-begin
-  if FInKeyPress then
-    Exit;
-  FInKeyPress := True;
-  try
-    with FKeyPressChain do
-    begin
-      for LIndex := Count - 1 downto 0 do
-      begin
-        TBCEditorKeyPressWEvent(Items[LIndex])(ASender, Key);
-        if Key = BCEDITOR_NONE_CHAR then
-        begin
-          FInKeyPress := False;
-          Exit;
-        end;
-      end;
-    end;
-  finally
-    FInKeyPress := False;
   end;
 end;
 
@@ -249,19 +224,28 @@ begin
   end;
 end;
 
-procedure TBCEditorKeyboardHandler.ExecuteMouseCursor(ASender: TObject; const ALineCharPos: TBCEditorTextPosition;
-  var ACursor: TCursor);
+procedure TBCEditorKeyboardHandler.ExecuteKeyPress(ASender: TObject; var Key: Char);
 var
   LIndex: Integer;
 begin
-  if FInMouseCursor then
+  if FInKeyPress then
     Exit;
-  FInMouseCursor := True;
+  FInKeyPress := True;
   try
-    for LIndex := FMouseCursorChain.Count - 1 downto 0 do
-      TBCEditorMouseCursorEvent(FMouseCursorChain[LIndex])(ASender, ALineCharPos, ACursor);
+    with FKeyPressChain do
+    begin
+      for LIndex := Count - 1 downto 0 do
+      begin
+        TBCEditorKeyPressWEvent(Items[LIndex])(ASender, Key);
+        if Key = BCEDITOR_NONE_CHAR then
+        begin
+          FInKeyPress := False;
+          Exit;
+        end;
+      end;
+    end;
   finally
-    FInMouseCursor := False;
+    FInKeyPress := False;
   end;
 end;
 
@@ -297,14 +281,25 @@ begin
   end;
 end;
 
+procedure TBCEditorKeyboardHandler.ExecuteMouseCursor(ASender: TObject; const ALineCharPos: TBCEditorTextPosition;
+  var ACursor: TCursor);
+var
+  LIndex: Integer;
+begin
+  if FInMouseCursor then
+    Exit;
+  FInMouseCursor := True;
+  try
+    for LIndex := FMouseCursorChain.Count - 1 downto 0 do
+      TBCEditorMouseCursorEvent(FMouseCursorChain[LIndex])(ASender, ALineCharPos, ACursor);
+  finally
+    FInMouseCursor := False;
+  end;
+end;
+
 procedure TBCEditorKeyboardHandler.RemoveKeyDownHandler(AHandler: TKeyEvent);
 begin
   FKeyDownChain.Remove(TMethod(AHandler));
-end;
-
-procedure TBCEditorKeyboardHandler.RemoveKeyPressHandler(AHandler: TBCEditorKeyPressWEvent);
-begin
-  FKeyPressChain.Remove(TMethod(AHandler));
 end;
 
 procedure TBCEditorKeyboardHandler.RemoveKeyUpHandler(AHandler: TKeyEvent);
@@ -312,9 +307,9 @@ begin
   FKeyUpChain.Remove(TMethod(AHandler));
 end;
 
-procedure TBCEditorKeyboardHandler.RemoveMouseCursorHandler(AHandler: TBCEditorMouseCursorEvent);
+procedure TBCEditorKeyboardHandler.RemoveKeyPressHandler(AHandler: TBCEditorKeyPressWEvent);
 begin
-  FMouseCursorChain.Remove(TMethod(AHandler));
+  FKeyPressChain.Remove(TMethod(AHandler));
 end;
 
 procedure TBCEditorKeyboardHandler.RemoveMouseDownHandler(AHandler: TMouseEvent);
@@ -325,6 +320,11 @@ end;
 procedure TBCEditorKeyboardHandler.RemoveMouseUpHandler(AHandler: TMouseEvent);
 begin
   FMouseUpChain.Remove(TMethod(AHandler));
+end;
+
+procedure TBCEditorKeyboardHandler.RemoveMouseCursorHandler(AHandler: TBCEditorMouseCursorEvent);
+begin
+  FMouseCursorChain.Remove(TMethod(AHandler));
 end;
 
 end.
