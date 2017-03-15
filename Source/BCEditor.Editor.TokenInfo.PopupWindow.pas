@@ -1,18 +1,11 @@
 unit BCEditor.Editor.TokenInfo.PopupWindow;
 
-{
-  Supported tags in contents:
-
-  <a href="Reference">Link text</a>
-  <b>Bold text</b>
-  <i>Italic text</i>
-}
-
 interface
 
 uses
-  System.Classes, System.Types, Vcl.Graphics, BCEditor.Types, BCEditor.Lines, BCEditor.Editor.PopupWindow,
-  BCEditor.Editor.TokenInfo;
+  Classes, Types,
+  Graphics, Controls,
+  BCEditor.Types, BCEditor.Lines, BCEditor.Editor.PopupWindow, BCEditor.Editor.TokenInfo;
 
 type
   TBCEditorTokenInfoEvent = procedure(ASender: TObject; const ATextPosition: TBCEditorTextPosition;
@@ -23,7 +16,7 @@ type
 
   TBCEditorTokenInfoPopupWindow = class(TBCEditorPopupWindow)
   strict private
-    FBitmapBuffer: Vcl.Graphics.TBitmap;
+    FBitmapBuffer: Graphics.TBitmap;
     FContent: TBCEditorLines;
     FContentTextTokensList: TList;
     FMaxHeight: Integer;
@@ -36,9 +29,8 @@ type
   protected
     procedure Paint; override;
   public
-    constructor Create(AOwner: TComponent); override;
+    constructor Create(const AEditor: TCustomControl);
     destructor Destroy; override;
-
     procedure Assign(ASource: TPersistent); override;
     procedure Execute(const APoint: TPoint);
     property Content: TBCEditorLines read FContent write FContent;
@@ -48,7 +40,9 @@ type
 implementation
 
 uses
-  Winapi.Windows, BCEditor.Consts, BCEditor.Utils, System.UITypes;
+  Windows,
+  UITypes,
+  BCEditor.Consts, BCEditor.Utils;
 
 const
   MARGIN_LEFT = 3;
@@ -64,9 +58,9 @@ type
 
 { TBCEditorTokenInfoPopupWindow }
 
-constructor TBCEditorTokenInfoPopupWindow.Create(AOwner: TComponent);
+constructor TBCEditorTokenInfoPopupWindow.Create(const AEditor: TCustomControl);
 begin
-  inherited Create(AOwner);
+  inherited Create(AEditor);
 
   FContent := TBCEditorLines.Create(nil);
   FContent.Clear;
@@ -76,7 +70,7 @@ begin
   FTitleContent.Clear;
   FTitleContentTextTokensList := TList.Create;
 
-  FBitmapBuffer := Vcl.Graphics.TBitmap.Create;
+  FBitmapBuffer := Graphics.TBitmap.Create;
 end;
 
 destructor TBCEditorTokenInfoPopupWindow.Destroy;
@@ -142,25 +136,16 @@ begin
   Show(APoint);
 end;
 
-procedure TBCEditorTokenInfoPopupWindow.SetStyles(const AStyles: TBCEditorTokenInfoTextStyles);
-begin
-  FBitmapBuffer.Canvas.Font.Style := [];
-  if tsBold in AStyles then
-    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsBold];
-  if tsItalic in AStyles then
-    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsItalic];
-  if tsReference in AStyles then
-    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsUnderline];
-end;
-
 procedure TBCEditorTokenInfoPopupWindow.Paint;
 var
   LIndex: Integer;
-  LPTextToken: PBCEditorTokenInfoTextToken;
+  LLeft: Integer;
   LPreviousStyles: TBCEditorTokenInfoTextStyles;
-  LLeft, LTop, LPreviousTop: Integer;
-  LText: string;
+  LPreviousTop: Integer;
+  LPTextToken: PBCEditorTokenInfoTextToken;
   LRect: TRect;
+  LText: string;
+  LTop: Integer;
 
   procedure PaintToken;
   begin
@@ -191,7 +176,7 @@ begin
       LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[FTitleContentTextTokensList.Count - 1]);
       LRect.Height := LPTextToken^.Rect.Bottom;
 
-      Winapi.Windows.ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
+      ExtTextOut(Canvas.Handle, 0, 0, ETO_OPAQUE, LRect, '', 0, nil);
 
       LPTextToken := PBCEditorTokenInfoTextToken(FTitleContentTextTokensList[0]);
       LPreviousStyles := LPTextToken^.Styles;
@@ -258,16 +243,18 @@ const
   CTOKEN_BOLD = 1;
   CTOKEN_ITALIC = 2;
 var
-  LIndex: Integer;
-  LPText, LPToken, LPBookmark: PChar;
-  LPTextToken: PBCEditorTokenInfoTextToken;
-  LCurrentValue: string;
-  LCurrentStyles: TBCEditorTokenInfoTextStyles;
+  LCloseTokens: array [0..2] of string;
   LCurrentRect: TRect;
   LCurrentReference: string;
-  LTextHeight: Integer;
+  LCurrentStyles: TBCEditorTokenInfoTextStyles;
+  LCurrentValue: string;
+  LIndex: Integer;
   LOpenTokens: array [0..2] of string;
-  LCloseTokens: array [0..2] of string;
+  LPBookmark: PChar;
+  LPText: PChar;
+  LPTextToken: PBCEditorTokenInfoTextToken;
+  LPToken: PChar;
+  LTextHeight: Integer;
 
   procedure AddTokens;
   begin
@@ -401,6 +388,17 @@ begin
   end;
   if LCurrentValue <> '' then
     AddTextToken;
+end;
+
+procedure TBCEditorTokenInfoPopupWindow.SetStyles(const AStyles: TBCEditorTokenInfoTextStyles);
+begin
+  FBitmapBuffer.Canvas.Font.Style := [];
+  if tsBold in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsBold];
+  if tsItalic in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsItalic];
+  if tsReference in AStyles then
+    FBitmapBuffer.Canvas.Font.Style := Canvas.Font.Style + [fsUnderline];
 end;
 
 end.

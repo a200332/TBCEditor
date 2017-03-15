@@ -3,18 +3,19 @@ unit BCEditor.Register;
 interface
 
 uses
-  System.Classes, BCEditor.Editor, BCEditor.Editor.DB, BCEditor.Print, BCEditor.Print.Preview, BCEditor.MacroRecorder;
+  Classes,
+  BCEditor.Editor, BCEditor.Print, BCEditor.Print.Preview, BCEditor.MacroRecorder;
 
 procedure Register;
 
 implementation
 
 uses
-  DesignIntf;
+  DesignEditors, DesignIntf, StrEdit, VCLEditors;
 
 procedure Register;
 begin
-  RegisterComponents('BCEditor', [TBCEditor, TBCDBEditor, TBCEditorPrint, TBCEditorPrintPreview, TBCEditorMacroRecorder]);
+  RegisterComponents('BCEditor', [TBCEditor, TBCEditorPrint, TBCEditorPrintPreview, TBCEditorMacroRecorder]);
   { UnlistPublishedProperty }
   UnlistPublishedProperty(TBCEditor, 'Ctl3D');
   UnlistPublishedProperty(TBCEditor, 'CustomHint');
@@ -30,6 +31,10 @@ begin
   UnlistPublishedProperty(TBCEditor, 'ParentFont');
   UnlistPublishedProperty(TBCEditor, 'ParentShowHint');
   UnlistPublishedProperty(TBCEditor, 'ShowHint');
+
+  RegisterPropertyEditor(TypeInfo(Char), nil, '', TCharProperty);
+  RegisterPropertyEditor(TypeInfo(TStrings), nil, '', TStringListProperty);
+  RegisterPropertyEditor(TypeInfo(TShortCut), TBCEditorMacroRecorder, '', TShortCutProperty);
 end;
 
 end.

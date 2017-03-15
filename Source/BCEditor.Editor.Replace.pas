@@ -3,15 +3,22 @@ unit BCEditor.Editor.Replace;
 interface
 
 uses
-  System.Classes, BCEditor.Types;
+  Classes,
+  BCEditor.Types, BCEditor.Editor.Search;
 
 type
   TBCEditorReplace = class(TPersistent)
+  type
+    TChangeEvent = procedure(Event: TBCEditorReplaceChanges) of object;
+    TEvent = procedure(ASender: TObject; const ASearch, AReplace: string; ALine, AColumn: Integer;
+      ADeleteLine: Boolean; var AAction: TBCEditorReplaceAction) of object;
+    TOptions = set of TBCEditorReplaceOption;
+
   strict private
     FAction: TBCEditorReplaceActionOption;
     FEngine: TBCEditorSearchEngine;
-    FOnChange: TBCEditorReplaceChangeEvent;
-    FOptions: TBCEditorReplaceOptions;
+    FOnChange: TChangeEvent;
+    FOptions: TOptions;
     procedure SetEngine(const AValue: TBCEditorSearchEngine);
   public
     constructor Create;
@@ -20,8 +27,8 @@ type
   published
     property Action: TBCEditorReplaceActionOption read FAction write FAction default eraReplace;
     property Engine: TBCEditorSearchEngine read FEngine write SetEngine default seNormal;
-    property OnChange: TBCEditorReplaceChangeEvent read FOnChange write FOnChange;
-    property Options: TBCEditorReplaceOptions read FOptions write FOptions default [roPrompt];
+    property OnChange: TChangeEvent read FOnChange write FOnChange;
+    property Options: TOptions read FOptions write FOptions default [roPrompt];
   end;
 
 implementation

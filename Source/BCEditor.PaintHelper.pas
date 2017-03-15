@@ -3,7 +3,9 @@ unit BCEditor.PaintHelper;
 interface
 
 uses
-  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics, System.Math, System.Types, System.UITypes,
+  Windows,
+  SysUtils, Classes, Math, Types, UITypes,
+  Graphics,
   BCEditor.Types;
 
 const
@@ -38,17 +40,17 @@ type
   TBCEditorFontsInfoManager = class(TObject)
   strict private
     FFontsInfo: TList;
-    function FindFontsInfo(const ALogFont: TLogFont): PBCEditorSharedFontsInfo;
     function CreateFontsInfo(ABaseFont: TFont; const ALogFont: TLogFont): PBCEditorSharedFontsInfo;
     procedure DestroyFontHandles(ASharedFontsInfo: PBCEditorSharedFontsInfo);
+    function FindFontsInfo(const ALogFont: TLogFont): PBCEditorSharedFontsInfo;
     procedure RetrieveLogFontForComparison(ABaseFont: TFont; var ALogFont: TLogFont);
   public
     constructor Create;
     destructor Destroy; override;
-    procedure LockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
-    procedure UnLockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
     function GetFontsInfo(ABaseFont: TFont): PBCEditorSharedFontsInfo;
+    procedure LockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
     procedure ReleaseFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
+    procedure UnLockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
   end;
 
   TBCEditorFontStock = class(TObject)
@@ -63,13 +65,13 @@ type
     FUsingFontHandles: Boolean;
     function GetBaseFont: TFont;
   protected
-    function GetCharWidth: Integer;
+    procedure CalculateFontMetrics(AHandle: HDC; ACharHeight: PInteger; ACharWidth: PInteger);
     function GetCharHeight: Integer;
+    function GetCharWidth: Integer;
     function GetFixedSizeFont: Boolean;
     function GetFontData(AIndex: Integer): PBCEditorFontData;
-    function InternalGetHandle: HDC;
     function InternalCreateFont(AStyle: TFontStyles): HFont;
-    procedure CalculateFontMetrics(AHandle: HDC; ACharHeight: PInteger; ACharWidth: PInteger);
+    function InternalGetHandle: HDC;
     procedure InternalReleaseDC(AValue: HDC);
     procedure ReleaseFontsInfo;
     procedure SetBaseFont(AValue: TFont);
@@ -80,12 +82,11 @@ type
   public
     constructor Create(AInitialFont: TFont);
     destructor Destroy; override;
-
     procedure ReleaseFontHandles; virtual;
-    property CharWidth: Integer read GetCharWidth;
     property BaseFont: TFont read GetBaseFont;
-    property Style: TFontStyles read FCurrentStyle write SetStyle;
+    property CharWidth: Integer read GetCharWidth;
     property FontHandle: HFont read FCurrentFont;
+    property Style: TFontStyles read FCurrentStyle write SetStyle;
   end;
 
   EBCEditorFontStockException = class(Exception);
@@ -95,9 +96,9 @@ type
   TBCEditorPaintHelper = class(TObject)
   strict private
     FBackgroundColor: TColor;
+    FCalcExtentBaseStyle: TFontStyles;
     FCharHeight: Integer;
     FCharWidth: Integer;
-    FCalcExtentBaseStyle: TFontStyles;
     FColor: TColor;
     FCurrentFont: HFont;
     FDrawingCount: Integer;
@@ -105,13 +106,12 @@ type
     FFontStock: TBCEditorFontStock;
     FHandle: HDC;
     FSaveHandle: Integer;
-    FStockBitmap: Vcl.Graphics.TBitmap;
+    FStockBitmap: Graphics.TBitmap;
   protected
     property DrawingCount: Integer read FDrawingCount;
   public
     constructor Create(ACalcExtentBaseStyle: TFontStyles; ABaseFont: TFont);
     destructor Destroy; override;
-
     procedure BeginDrawing(AHandle: HDC);
     procedure EndDrawing;
     procedure SetBackgroundColor(AValue: TColor);
@@ -125,7 +125,7 @@ type
     property Color: TColor read FColor;
     property FixedSizeFont: Boolean read FFixedSizeFont;
     property FontStock: TBCEditorFontStock read FFontStock;
-    property StockBitmap: Vcl.Graphics.TBitmap read FStockBitmap;
+    property StockBitmap: Graphics.TBitmap read FStockBitmap;
   end;
 
   EBCEditorPaintHelperException = class(Exception);
@@ -133,7 +133,8 @@ type
 implementation
 
 uses
-  BCEditor.Utils, BCEditor.Consts, BCEditor.Language, System.Character;
+  Character,
+  BCEditor.Utils, BCEditor.Consts, BCEditor.Language;
 
 var
   GFontsInfoManager: TBCEditorFontsInfoManager;
@@ -145,44 +146,11 @@ begin
   Result := GFontsInfoManager;
 end;
 
-{ TBCEditorFontsInfoManager }
-
-procedure TBCEditorFontsInfoManager.LockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
-begin
-  Inc(ASharedFontsInfo^.LockCount);
-end;
-
 constructor TBCEditorFontsInfoManager.Create;
 begin
   inherited;
 
   FFontsInfo := TList.Create;
-end;
-
-function TBCEditorFontsInfoManager.CreateFontsInfo(ABaseFont: TFont; const ALogFont: TLogFont): PBCEditorSharedFontsInfo;
-begin
-  New(Result);
-  FillChar(Result^, SizeOf(TBCEditorSharedFontsInfo), 0);
-  with Result^ do
-  try
-    BaseFont := TFont.Create;
-    BaseFont.Assign(ABaseFont);
-    BaseLogFont := ALogFont;
-  except
-    Result^.BaseFont.Free;
-    Dispose(Result);
-    raise;
-  end;
-end;
-
-procedure TBCEditorFontsInfoManager.UnLockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
-begin
-  with ASharedFontsInfo^ do
-  begin
-    Dec(LockCount);
-    if 0 = LockCount then
-      DestroyFontHandles(ASharedFontsInfo);
-  end;
 end;
 
 destructor TBCEditorFontsInfoManager.Destroy;
@@ -202,10 +170,26 @@ begin
   inherited;
 end;
 
+function TBCEditorFontsInfoManager.CreateFontsInfo(ABaseFont: TFont; const ALogFont: TLogFont): PBCEditorSharedFontsInfo;
+begin
+  New(Result);
+  FillChar(Result^, SizeOf(TBCEditorSharedFontsInfo), 0);
+  with Result^ do
+  try
+    BaseFont := TFont.Create;
+    BaseFont.Assign(ABaseFont);
+    BaseLogFont := ALogFont;
+  except
+    Result^.BaseFont.Free;
+    Dispose(Result);
+    raise;
+  end;
+end;
+
 procedure TBCEditorFontsInfoManager.DestroyFontHandles(ASharedFontsInfo: PBCEditorSharedFontsInfo);
 var
-  LIndex: Integer;
   LFontData: TBCEditorFontData;
+  LIndex: Integer;
 begin
   with ASharedFontsInfo^ do
   for LIndex := Low(TBCEditorStockFontPatterns) to High(TBCEditorStockFontPatterns) do
@@ -250,6 +234,13 @@ begin
     Inc(Result^.RefCount);
 end;
 
+{ TBCEditorFontsInfoManager }
+
+procedure TBCEditorFontsInfoManager.LockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
+begin
+  Inc(ASharedFontsInfo^.LockCount);
+end;
+
 procedure TBCEditorFontsInfoManager.ReleaseFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
 begin
   Assert(Assigned(ASharedFontsInfo));
@@ -283,13 +274,38 @@ begin
   end;
 end;
 
+procedure TBCEditorFontsInfoManager.UnLockFontsInfo(ASharedFontsInfo: PBCEditorSharedFontsInfo);
+begin
+  with ASharedFontsInfo^ do
+  begin
+    Dec(LockCount);
+    if 0 = LockCount then
+      DestroyFontHandles(ASharedFontsInfo);
+  end;
+end;
+
+constructor TBCEditorFontStock.Create(AInitialFont: TFont);
+begin
+  inherited Create;
+
+  SetBaseFont(AInitialFont);
+end;
+
+destructor TBCEditorFontStock.Destroy;
+begin
+  ReleaseFontsInfo;
+  Assert(FHandleRefCount = 0);
+
+  inherited;
+end;
+
 { TBCEditorFontStock }
 
 procedure TBCEditorFontStock.CalculateFontMetrics(AHandle: HDC; ACharHeight: PInteger; ACharWidth: PInteger);
 var
-  LTextMetric: TTextMetric;
   LCharInfo: TABC;
   LHasABC: Boolean;
+  LTextMetric: TTextMetric;
 begin
   GetTextMetrics(AHandle, LTextMetric);
 
@@ -310,34 +326,19 @@ begin
   ACharHeight^ := Abs(LTextMetric.tmHeight)
 end;
 
-constructor TBCEditorFontStock.Create(AInitialFont: TFont);
-begin
-  inherited Create;
-
-  SetBaseFont(AInitialFont);
-end;
-
-destructor TBCEditorFontStock.Destroy;
-begin
-  ReleaseFontsInfo;
-  Assert(FHandleRefCount = 0);
-
-  inherited;
-end;
-
 function TBCEditorFontStock.GetBaseFont: TFont;
 begin
   Result := FPSharedFontsInfo^.BaseFont;
 end;
 
-function TBCEditorFontStock.GetCharWidth: Integer;
-begin
-  Result := FPCurrentFontData^.CharWidth;
-end;
-
 function TBCEditorFontStock.GetCharHeight: Integer;
 begin
   Result := FPCurrentFontData^.CharHeight;
+end;
+
+function TBCEditorFontStock.GetCharWidth: Integer;
+begin
+  Result := FPCurrentFontData^.CharWidth;
 end;
 
 function TBCEditorFontStock.GetFixedSizeFont: Boolean;
@@ -435,11 +436,12 @@ end;
 
 procedure TBCEditorFontStock.SetStyle(const AValue: TFontStyles);
 var
-  LIndex: Integer;
-  LHandle: HDC;
-  LOldFont: HFont;
   LFontDataPointer: PBCEditorFontData;
-  LSize1, LSize2: TSize;
+  LHandle: HDC;
+  LIndex: Integer;
+  LOldFont: HFont;
+  LSize1: TSize;
+  LSize2: TSize;
 begin
   Assert(SizeOf(TFontStyles) = 1);
 
@@ -495,7 +497,7 @@ begin
   inherited Create;
 
   FFontStock := TBCEditorFontStock.Create(ABaseFont);
-  FStockBitmap := Vcl.Graphics.TBitmap.Create;
+  FStockBitmap := Graphics.TBitmap.Create;
   FStockBitmap.Canvas.Brush.Color := clWhite;
   FCalcExtentBaseStyle := ACalcExtentBaseStyle;
   SetBaseFont(ABaseFont);
@@ -521,8 +523,8 @@ begin
     FHandle := AHandle;
     FSaveHandle := SaveDC(AHandle);
     SelectObject(AHandle, FCurrentFont);
-    Winapi.Windows.SetTextColor(AHandle, ColorToRGB(FColor));
-    Winapi.Windows.SetBkColor(AHandle, ColorToRGB(FBackgroundColor));
+    SetTextColor(AHandle, ColorToRGB(FColor));
+    SetBkColor(AHandle, ColorToRGB(FBackgroundColor));
   end;
   Inc(FDrawingCount);
 end;
@@ -538,6 +540,16 @@ begin
     FSaveHandle := 0;
     FHandle := 0;
     FDrawingCount := 0;
+  end;
+end;
+
+procedure TBCEditorPaintHelper.SetBackgroundColor(AValue: TColor);
+begin
+  if FBackgroundColor <> AValue then
+  begin
+    FBackgroundColor := AValue;
+    if FHandle <> 0 then
+      SetBkColor(FHandle, ColorToRGB(AValue));
   end;
 end;
 
@@ -576,18 +588,6 @@ begin
   end;
 end;
 
-procedure TBCEditorPaintHelper.SetStyle(const AValue: TFontStyles);
-begin
-  with FFontStock do
-  begin
-    SetStyle(AValue);
-    Self.FCurrentFont := FontHandle;
-  end;
-  FStockBitmap.Canvas.Font.Style := AValue;
-  if FHandle <> 0 then
-    SelectObject(FHandle, FCurrentFont);
-end;
-
 procedure TBCEditorPaintHelper.SetForegroundColor(AValue: TColor);
 begin
   if FColor <> AValue then
@@ -598,14 +598,16 @@ begin
   end;
 end;
 
-procedure TBCEditorPaintHelper.SetBackgroundColor(AValue: TColor);
+procedure TBCEditorPaintHelper.SetStyle(const AValue: TFontStyles);
 begin
-  if FBackgroundColor <> AValue then
+  with FFontStock do
   begin
-    FBackgroundColor := AValue;
-    if FHandle <> 0 then
-      Winapi.Windows.SetBkColor(FHandle, ColorToRGB(AValue));
+    SetStyle(AValue);
+    Self.FCurrentFont := FontHandle;
   end;
+  FStockBitmap.Canvas.Font.Style := AValue;
+  if FHandle <> 0 then
+    SelectObject(FHandle, FCurrentFont);
 end;
 
 initialization

@@ -3,7 +3,8 @@ unit BCEditor.Editor.KeyCommands;
 interface
 
 uses
-  System.Classes, System.SysUtils, Vcl.Menus;
+  Classes, SysUtils,
+  Menus;
 
 const
   ecNone = 0;
@@ -82,6 +83,8 @@ const
   ecSetBookmark9 = 328;
   ecGotoNextBookmark = 330;
   ecGotoPreviousBookmark = 331;
+  { CompletionProposal }
+  ecCompletionProposal = 470;
   { Focus }
   ecGotFocus = 480;
   ecLostFocus = 481;
@@ -128,6 +131,9 @@ const
   ecMoveCharLeft = 703;
   ecMoveCharRight = 704;
   { Search }
+  ecSearchFindFirst = 802;
+  ecSearchFind = 803;
+  ecSearchReplace = 804;
   ecSearchNext = 800;
   ecSearchPrevious = 801;
   { Comments }
@@ -146,8 +152,8 @@ type
 
   TBCEditorHookedCommandHandler = class(TObject)
   strict private
-    FEvent: TBCEditorHookedCommandEvent;
     FData: Pointer;
+    FEvent: TBCEditorHookedCommandEvent;
   public
     constructor Create(AEvent: TBCEditorHookedCommandEvent; AData: pointer);
     function Equals(AEvent: TBCEditorHookedCommandEvent): Boolean; reintroduce;
@@ -157,32 +163,32 @@ type
 
   TBCEditorKeyCommand = class(TCollectionItem)
   strict private
+    FCommand: TBCEditorCommand;
     FKey: Word;
     FSecondaryKey: Word;
-    FShiftState: TShiftState;
     FSecondaryShiftState: TShiftState;
-    FCommand: TBCEditorCommand;
-    function GetShortCut: TShortCut;
+    FShiftState: TShiftState;
     function GetSecondaryShortCut: TShortCut;
+    function GetShortCut: TShortCut;
     procedure SetCommand(const AValue: TBCEditorCommand);
     procedure SetKey(const AValue: Word);
     procedure SetSecondaryKey(const AValue: Word);
-    procedure SetShiftState(const AValue: TShiftState);
     procedure SetSecondaryShiftState(const AValue: TShiftState);
-    procedure SetShortCut(const AValue: TShortCut);
     procedure SetSecondaryShortCut(const AValue: TShortCut);
+    procedure SetShiftState(const AValue: TShiftState);
+    procedure SetShortCut(const AValue: TShortCut);
   protected
     function GetDisplayName: string; override;
   public
     procedure Assign(ASource: TPersistent); override;
     property Key: Word read FKey write SetKey;
     property SecondaryKey: Word read FSecondaryKey write SetSecondaryKey;
-    property ShiftState: TShiftState read FShiftState write SetShiftState;
     property SecondaryShiftState: TShiftState read FSecondaryShiftState write SetSecondaryShiftState;
+    property ShiftState: TShiftState read FShiftState write SetShiftState;
   published
     property Command: TBCEditorCommand read FCommand write SetCommand;
-    property ShortCut: TShortCut read GetShortCut write SetShortCut default 0;
     property SecondaryShortCut: TShortCut read GetSecondaryShortCut write SetSecondaryShortCut default 0;
+    property ShortCut: TShortCut read GetShortCut write SetShortCut default 0;
   end;
 
   EBCEditorKeyCommandException = class(Exception);
@@ -196,17 +202,15 @@ type
     function GetOwner: TPersistent; override;
   public
     constructor Create(AOwner: TPersistent);
-
+    procedure Add(const ACommand: TBCEditorCommand; const AShift: TShiftState; const AKey: Word);
+    procedure Assign(ASource: TPersistent); override;
     function FindCommand(ACommand: TBCEditorCommand): Integer;
     function FindKeyCode(AKeyCode: Word; AShift: TShiftState): Integer;
     function FindKeyCodes(AKeyCode: Word; AShift: TShiftState; ASecondaryKeycode: Word; ASecondaryShift: TShiftState): Integer;
     function FindShortcut(AShortCut: TShortCut): Integer;
     function FindShortcuts(AShortCut, ASecondaryShortCut: TShortCut): Integer;
     function NewItem: TBCEditorKeyCommand;
-    procedure Add(const ACommand: TBCEditorCommand; const AShift: TShiftState; const AKey: Word);
-    procedure Assign(ASource: TPersistent); override;
     procedure ResetDefaults;
-  public
     property Items[AIndex: Integer]: TBCEditorKeyCommand read GetItem write SetItem; default;
   end;
 
@@ -216,7 +220,8 @@ function EditorCommandToIdent(ACommand: LongInt; var AIdent: string): Boolean;
 implementation
 
 uses
-  Winapi.Windows, BCEditor.Language;
+  Windows,
+  BCEditor.Language;
 
 type
   TBCEditorCommandString = record
@@ -225,7 +230,7 @@ type
   end;
 
 const
-  EditorCommandStrings: array [0 .. 106] of TBCEditorCommandString = (
+  EditorCommandStrings: array [0 .. 112] of TBCEditorCommandString = (
     (Value: ecNone; Name: 'ecNone'),
     (Value: ecLeft; Name: 'ecLeft'),
     (Value: ecRight; Name: 'ecRight'),
@@ -244,6 +249,7 @@ const
     (Value: ecEditorTop; Name: 'ecEditorTop'),
     (Value: ecEditorBottom; Name: 'ecEditorBottom'),
     (Value: ecGotoXY; Name: 'ecGotoXY'),
+    (Value: ecSelection; Name: 'ecSelection'),
     (Value: ecSelectionLeft; Name: 'ecSelectionLeft'),
     (Value: ecSelectionRight; Name: 'ecSelectionRight'),
     (Value: ecSelectionUp; Name: 'ecSelectionUp'),
@@ -267,34 +273,11 @@ const
     (Value: ecScrollDown; Name: 'ecScrollDown'),
     (Value: ecScrollLeft; Name: 'ecScrollLeft'),
     (Value: ecScrollRight; Name: 'ecScrollRight'),
-    (Value: ecBackspace; Name: 'ecBackspace'),
-    (Value: ecDeleteChar; Name: 'ecDeleteChar'),
-    (Value: ecDeleteWord; Name: 'ecDeleteWord'),
-    (Value: ecDeleteLastWord; Name: 'ecDeleteLastWord'),
-    (Value: ecDeleteBeginningOfLine; Name: 'ecDeleteBeginningOfLine'),
-    (Value: ecDeleteEndOfLine; Name: 'ecDeleteEndOfLine'),
-    (Value: ecDeleteLine; Name: 'ecDeleteLine'),
-    (Value: ecClear; Name: 'ecClear'),
-    (Value: ecLineBreak; Name: 'ecLineBreak'),
-    (Value: ecInsertLine; Name: 'ecInsertLine'),
-    (Value: ecChar; Name: 'ecChar'),
-    (Value: ecImeStr; Name: 'ecImeStr'),
-    (Value: ecUndo; Name: 'ecUndo'),
-    (Value: ecRedo; Name: 'ecRedo'),
-    (Value: ecCut; Name: 'ecCut'),
-    (Value: ecCopy; Name: 'ecCopy'),
-    (Value: ecPaste; Name: 'ecPaste'),
     (Value: ecInsertMode; Name: 'ecInsertMode'),
     (Value: ecOverwriteMode; Name: 'ecOverwriteMode'),
     (Value: ecToggleMode; Name: 'ecToggleMode'),
-    (Value: ecBlockIndent; Name: 'ecBlockIndent'),
-    (Value: ecBlockUnindent; Name: 'ecBlockUnindent'),
-    (Value: ecTab; Name: 'ecTab'),
-    (Value: ecShiftTab; Name: 'ecShiftTab'),
     (Value: ecNormalSelect; Name: 'ecNormalSelect'),
     (Value: ecColumnSelect; Name: 'ecColumnSelect'),
-    (Value: ecUserFirst; Name: 'ecUserFirst'),
-    (Value: ecContextHelp; Name: 'ecContextHelp'),
     (Value: ecToggleBookmark; Name: 'ecToggleBookmark'),
     (Value: ecGotoBookmark1; Name: 'ecGotoBookmark1'),
     (Value: ecGotoBookmark2; Name: 'ecGotoBookmark2'),
@@ -316,11 +299,31 @@ const
     (Value: ecSetBookmark9; Name: 'ecSetBookmark9'),
     (Value: ecGotoNextBookmark; Name: 'ecGotoNextBookmark'),
     (Value: ecGotoPreviousBookmark; Name: 'ecGotoPreviousBookmark'),
+    (Value: ecGotFocus; Name: 'ecGotFocus'),
+    (Value: ecLostFocus; Name: 'ecLostFocus'),
+    (Value: ecContextHelp; Name: 'ecContextHelp'),
+    (Value: ecBackspace; Name: 'ecBackspace'),
+    (Value: ecDeleteChar; Name: 'ecDeleteChar'),
+    (Value: ecDeleteWord; Name: 'ecDeleteWord'),
+    (Value: ecDeleteLastWord; Name: 'ecDeleteLastWord'),
+    (Value: ecDeleteBeginningOfLine; Name: 'ecDeleteBeginningOfLine'),
+    (Value: ecDeleteEndOfLine; Name: 'ecDeleteEndOfLine'),
+    (Value: ecDeleteLine; Name: 'ecDeleteLine'),
+    (Value: ecClear; Name: 'ecClear'),
+    (Value: ecLineBreak; Name: 'ecLineBreak'),
+    (Value: ecInsertLine; Name: 'ecInsertLine'),
+    (Value: ecChar; Name: 'ecChar'),
     (Value: ecString; Name: 'ecString'),
-    (Value: ecMoveLineUp; Name: 'ecMoveLineUp'),
-    (Value: ecMoveLineDown; Name: 'ecMoveLineDown'),
-    (Value: ecMoveCharLeft; Name: 'ecMoveCharLeft'),
-    (Value: ecMoveCharRight; Name: 'ecMoveCharRight'),
+    (Value: ecImeStr; Name: 'ecImeStr'),
+    (Value: ecUndo; Name: 'ecUndo'),
+    (Value: ecRedo; Name: 'ecRedo'),
+    (Value: ecCopy; Name: 'ecCopy'),
+    (Value: ecCut; Name: 'ecCut'),
+    (Value: ecPaste; Name: 'ecPaste'),
+    (Value: ecBlockIndent; Name: 'ecBlockIndent'),
+    (Value: ecBlockUnindent; Name: 'ecBlockUnindent'),
+    (Value: ecTab; Name: 'ecTab'),
+    (Value: ecShiftTab; Name: 'ecShiftTab'),
     (Value: ecUpperCase; Name: 'ecUpperCase'),
     (Value: ecLowerCase; Name: 'ecLowerCase'),
     (Value: ecAlternatingCase; Name: 'ecAlternatingCase'),
@@ -329,10 +332,18 @@ const
     (Value: ecUpperCaseBlock; Name: 'ecUpperCaseBlock'),
     (Value: ecLowerCaseBlock; Name: 'ecLowerCaseBlock'),
     (Value: ecAlternatingCaseBlock; Name: 'ecAlternatingCaseBlock'),
+    (Value: ecMoveLineUp; Name: 'ecMoveLineUp'),
+    (Value: ecMoveLineDown; Name: 'ecMoveLineDown'),
+    (Value: ecMoveCharLeft; Name: 'ecMoveCharLeft'),
+    (Value: ecMoveCharRight; Name: 'ecMoveCharRight'),
+    (Value: ecSearchFindFirst; Name: 'ecSearchFindFirst'),
+    (Value: ecSearchFind; Name: 'ecSearchFind'),
+    (Value: ecSearchReplace; Name: 'ecSearchReplace'),
     (Value: ecSearchNext; Name: 'ecSearchNext'),
     (Value: ecSearchPrevious; Name: 'ecSearchPrevious'),
     (Value: ecLineComment; Name: 'ecLineComment'),
-    (Value: ecBlockComment; Name: 'ecBlockComment')
+    (Value: ecBlockComment; Name: 'ecBlockComment'),
+    (Value: ecCompletionProposal; Name: 'ecCompletionProposal')
   );
 
 function IdentToEditorCommand(const AIdent: string; var ACommand: LongInt): Boolean;
@@ -372,6 +383,7 @@ begin
     end;
   end;
 
+  AIdent := IntToStr(ACommand);
   Result := False;
 end;
 
@@ -426,9 +438,14 @@ begin
     Result := inherited GetDisplayName;
 end;
 
+function TBCEditorKeyCommand.GetSecondaryShortCut: TShortCut;
+begin
+  Result := Menus.ShortCut(SecondaryKey, SecondaryShiftState);
+end;
+
 function TBCEditorKeyCommand.GetShortCut: TShortCut;
 begin
-  Result := Vcl.Menus.ShortCut(Key, ShiftState);
+  Result := Menus.ShortCut(Key, ShiftState);
 end;
 
 procedure TBCEditorKeyCommand.SetCommand(const AValue: TBCEditorCommand);
@@ -441,34 +458,6 @@ procedure TBCEditorKeyCommand.SetKey(const AValue: Word);
 begin
   if FKey <> AValue then
     FKey := AValue;
-end;
-
-procedure TBCEditorKeyCommand.SetShiftState(const AValue: TShiftState);
-begin
-  if FShiftState <> AValue then
-    FShiftState := AValue;
-end;
-
-procedure TBCEditorKeyCommand.SetShortCut(const AValue: TShortCut);
-var
-  LNewKey: Word;
-  LNewShiftState: TShiftState;
-  LDuplicate: Integer;
-begin
-  if AValue <> 0 then
-  begin
-    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(AValue, SecondaryShortCut);
-    if (LDuplicate <> -1) and (LDuplicate <> Self.Index) then
-      raise EBCEditorKeyCommandException.Create(SBCEditorDuplicateShortcut);
-  end;
-
-  Vcl.Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
-
-  if (LNewKey <> Key) or (LNewShiftState <> ShiftState) then
-  begin
-    Key := LNewKey;
-    ShiftState := LNewShiftState;
-  end;
 end;
 
 procedure TBCEditorKeyCommand.SetSecondaryKey(const AValue: Word);
@@ -496,7 +485,7 @@ begin
       raise EBCEditorKeyCommandException.Create(SBCEditOrduplicateShortcut);
   end;
 
-  Vcl.Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
+  Menus.ShortCutToKey(AValue, LNewKey, LNewShiftState);
   if (LNewKey <> SecondaryKey) or (LNewShiftState <> SecondaryShiftState) then
   begin
     SecondaryKey := LNewKey;
@@ -504,16 +493,39 @@ begin
   end;
 end;
 
-function TBCEditorKeyCommand.GetSecondaryShortCut: TShortCut;
+procedure TBCEditorKeyCommand.SetShiftState(const AValue: TShiftState);
 begin
-  Result := Vcl.Menus.ShortCut(SecondaryKey, SecondaryShiftState);
+  if FShiftState <> AValue then
+    FShiftState := AValue;
 end;
 
-{ TBCEditorKeyCommands }
-
-function TBCEditorKeyCommands.NewItem: TBCEditorKeyCommand;
+procedure TBCEditorKeyCommand.SetShortCut(const AValue: TShortCut);
+var
+  LNewKey: Word;
+  LNewShiftState: TShiftState;
+  LDuplicate: Integer;
 begin
-  Result := TBCEditorKeyCommand(inherited Add);
+  if AValue <> 0 then
+  begin
+    LDuplicate := TBCEditorKeyCommands(Collection).FindShortcuts(AValue, SecondaryShortCut);
+    if (LDuplicate <> -1) and (LDuplicate <> Self.Index) then
+      raise EBCEditorKeyCommandException.Create(SBCEditorDuplicateShortcut);
+  end;
+
+  ShortCutToKey(AValue, LNewKey, LNewShiftState);
+
+  if (LNewKey <> Key) or (LNewShiftState <> ShiftState) then
+  begin
+    Key := LNewKey;
+    ShiftState := LNewShiftState;
+  end;
+end;
+
+constructor TBCEditorKeyCommands.Create(AOwner: TPersistent);
+begin
+  inherited Create(TBCEditorKeyCommand);
+
+  FOwner := AOwner;
 end;
 
 procedure TBCEditorKeyCommands.Add(const ACommand: TBCEditorCommand; const AShift: TShiftState; const AKey: Word);
@@ -540,13 +552,6 @@ begin
   end
   else
     inherited Assign(ASource);
-end;
-
-constructor TBCEditorKeyCommands.Create(AOwner: TPersistent);
-begin
-  inherited Create(TBCEditorKeyCommand);
-
-  FOwner := AOwner;
 end;
 
 function TBCEditorKeyCommands.FindCommand(ACommand: TBCEditorCommand): Integer;
@@ -622,6 +627,13 @@ begin
   Result := FOwner;
 end;
 
+{ TBCEditorKeyCommands }
+
+function TBCEditorKeyCommands.NewItem: TBCEditorKeyCommand;
+begin
+  Result := TBCEditorKeyCommand(inherited Add);
+end;
+
 procedure TBCEditorKeyCommands.ResetDefaults;
 begin
   Clear;
@@ -671,6 +683,8 @@ begin
   Add(ecBackspace, [ssShift], VK_BACK);
   Add(ecDeleteLastWord, [ssCtrl], VK_BACK);
   { Search }
+  Add(ecSearchFind, [ssCtrl], Ord('F'));
+  Add(ecSearchReplace, [ssCtrl], Ord('R'));
   Add(ecSearchNext, [], VK_F3);
   Add(ecSearchPrevious, [ssShift], VK_F3);
   { Enter (return) & Tab }

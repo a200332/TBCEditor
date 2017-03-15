@@ -1,10 +1,12 @@
 unit BCEditor.Types;
 
-interface
+interface {********************************************************************}
 
 uses
-  Winapi.Windows, System.Classes, Vcl.Forms, Vcl.Graphics, Vcl.Controls, BCEditor.Highlighter.Attributes,
-  BCEditor.Consts, System.SysUtils, BCEditor.Editor.CompletionProposal.Columns;
+  Windows,
+  Classes, SysUtils,
+  Forms, Graphics, Controls,
+  BCEditor.Consts;
 
 type
   TBCEditorArrayOfString = array of string;
@@ -14,23 +16,11 @@ type
 
   TBCEditorCaretStyle = (csVerticalLine, csThinVerticalLine, csHorizontalLine, csThinHorizontalLine, csHalfBlock, csBlock);
 
-  TBCEditorCompletionProposalEvent = procedure(Sender: TObject; AColumns: TBCEditorCompletionProposalColumns;
-    const AInput: string; const AKey: Word; const AShift: TShiftState; var ACanExecute: Boolean) of object;
-  TBCEditorCompletionProposalSelectedEvent = procedure(Sender: TObject; var ASelectedItem: string) of object;
-  TBCEditorCompletionProposalValidateEvent = procedure(ASender: TObject; Shift: TShiftState; EndToken: Char) of object;
-
   TBCEditorDropFilesEvent = procedure(ASender: TObject; APos: TPoint; AFiles: TStrings) of object;
 
   TBCEditorPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas) of object;
 
   TBCEditorReplaceAction = (raCancel, raSkip, raReplace, raReplaceAll);
-
-  TBCEditorReplaceTextEvent = procedure(ASender: TObject; const ASearch, AReplace: string; ALine, AColumn: Integer;
-    ADeleteLine: Boolean; var AAction: TBCEditorReplaceAction) of object;
-
-  TBCEditorScrollEvent = procedure(ASender: TObject; AScrollBar: TScrollBarKind) of object;
-
-  TBCEditorCaretChangedEvent = procedure(ASender: TObject; X, Y: Integer) of object;
 
   TBCEditorMarkPanelPaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; const ARect: TRect; const AFirstLine: Integer; const ALastLine: Integer) of object;
   TBCEditorMarkPanelLinePaintEvent = procedure(ASender: TObject; ACanvas: TCanvas; const ARect: TRect; const ALineNumber: Integer) of object;
@@ -48,10 +38,6 @@ type
 
   TBCEditorCreateFileStreamEvent = procedure(ASender: TObject; const AFileName: string; var AStream: TStream) of object;
 
-  TBCEditorStateFlag = (sfCaretChanged, sfScrollBarChanged, sfLinesChanging, sfIgnoreNextChar, sfCaretVisible, sfDblClicked,
-    sfWaitForDragging, sfCodeFoldingInfoClicked, sfInSelection, sfDragging);
-  TBCEditorStateFlags = set of TBCEditorStateFlag;
-
   TBCEditorOption = (
     eoAutoIndent, { Will indent the caret on new lines with the same amount of leading white space as the preceding line }
     eoDragDropEditing, { Allows you to select a block of text and drag it within the document to another location }
@@ -63,14 +49,10 @@ type
   TBCEditorCaretOption = (
     coRightMouseClickMove { When clicking with the right mouse for a popup menu, move the cursor to that location }
   );
-  TBCEditorCaretOptions = set of TBCEditorCaretOption;
-
   TBCEditorCaretMultiEditOption = (
     meoShowActiveLine,
     meoShowGhost { Ghost caret follows mouse cursor when moved }
   );
-  TBCEditorCaretMultiEditOptions = set of TBCEditorCaretMultiEditOption;
-
   TBCEditorTextEntryMode = (temInsert, temOverwrite);
 
   TBCEditorScrollOption = (
@@ -81,8 +63,6 @@ type
     soShowVerticalScrollHint, { Shows a hint of the visible line numbers when scrolling vertically }
     soWheelClickMove { Scrolling by mouse move after wheel click. }
   );
-  TBCEditorScrollOptions = set of TBCEditorScrollOption;
-
   TBCEditorTabOption = (
     toColumns,
     toPreviousLineIndent,
@@ -100,12 +80,10 @@ type
   TBCEditorSelectionOption = (
     soALTSetsColumnMode,
     soExpandRealNumbers,
-    soHighlightSimilarTerms,
     soTermsCaseSensitive,
     soToEndOfLine,
     soTripleClickRowSelect
   );
-  TBCEditorSelectionOptions = set of TBCEditorSelectionOption;
 
   TBCEditorSearchChanges = (
     scRefresh,
@@ -113,12 +91,10 @@ type
     scEngineUpdate,
     scInSelectionActive
   );
-  TBCEditorSearchChangeEvent = procedure(Event: TBCEditorSearchChanges) of object;
 
   TBCEditorReplaceChanges = (
     rcEngineUpdate
   );
-  TBCEditorReplaceChangeEvent = procedure(Event: TBCEditorReplaceChanges) of object;
 
   TBCEditorSearchOption = (
     soBeepIfStringNotFound,
@@ -131,8 +107,6 @@ type
     soWholeWordsOnly,
     soWrapAround
   );
-  TBCEditorSearchOptions = set of TBCEditorSearchOption;
-
   TBCEditorSyncEditOption = (
     seCaseSensitive
   );
@@ -147,7 +121,6 @@ type
     roSelectedOnly,
     roWholeWordsOnly
   );
-  TBCEditorReplaceOptions = set of TBCEditorReplaceOption;
 
   TBCEditorReplaceActionOption = (
     eraReplace,
@@ -163,7 +136,6 @@ type
   TBCEditorSearchMapOption = (
     moShowActiveLine
   );
-  TBCEditorSearchMapOptions = set of TBCEditorSearchMapOption;
 
   TBCEditorCompletionProposalOption = (
     cpoAutoInvoke,
@@ -176,32 +148,29 @@ type
     cpoShowShadow,
     cpoUseHighlighterColumnFont
   );
-  TBCEditorCompletionProposalOptions = set of TBCEditorCompletionProposalOption;
 
   TBCEditorLeftMarginBookMarkPanelOption = (
     bpoToggleBookmarkByClick,
     bpoToggleMarkByClick
   );
-  TBCEditorLeftMarginBookMarkPanelOptions = set of TBCEditorLeftMarginBookMarkPanelOption;
 
   TBCEditorRightMarginOption = (
     rmoAutoLinebreak,
     rmoMouseMove,
     rmoShowMovingHint
   );
-  TBCEditorRightMarginOptions = set of TBCEditorRightMarginOption;
 
+  PBCEditorTextPosition = ^TBCEditorTextPosition;
   TBCEditorTextPosition = record
     Char: Integer;
     Line: Integer;
+    class operator Equal(a, b: TBCEditorTextPosition): Boolean;
+    class operator GreaterThan(a, b: TBCEditorTextPosition): Boolean;
+    class operator GreaterThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+    class operator LessThan(a, b: TBCEditorTextPosition): Boolean;
+    class operator LessThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+    class operator NotEqual(a, b: TBCEditorTextPosition): Boolean;
   end;
-  PBCEditorTextPosition = ^TBCEditorTextPosition;
-
-  TBCEditorSearchItem = record
-    BeginTextPosition: TBCEditorTextPosition;
-    EndTextPosition: TBCEditorTextPosition;
-  end;
-  PBCEditorSearchItem = ^TBCEditorSearchItem;
 
   TBCEditorDisplayPosition = record
     Column: Integer;
@@ -242,11 +211,6 @@ type
     ttWebLink
   );
 
-  TBCEditorMatchingPairToken = record
-    OpenToken: string;
-    CloseToken: string;
-  end;
-  PBCEditorMatchingPairToken = ^TBCEditorMatchingPairToken;
 
   TBCEditorMatchingTokenResult = (
     trCloseAndOpenTokenFound,
@@ -255,14 +219,6 @@ type
     trOpenTokenFound,
     trOpenAndCloseTokenFound
   );
-
-  TBCEditorMatchingPairMatch = record
-    OpenToken: string;
-    CloseToken: string;
-    OpenTokenPos: TBCEditorTextPosition;
-    CloseTokenPos: TBCEditorTextPosition;
-    TokenAttribute: TBCEditorHighlighterAttribute;
-  end;
 
   TBCEditorKeyPressWEvent = procedure(ASender: TObject; var AKey: Char) of object;
 
@@ -273,7 +229,6 @@ type
   TBCEditorEmptySpace = (
     esNone,
     esSpace,
-    esSubstitute,
     esTab
   );
 
@@ -303,7 +258,6 @@ type
     scoMiddleColor,
     scoShowOnlyInSelection
   );
-  TBCEditorSpecialCharsOptions = set of TBCEditorSpecialCharsOption;
   TBCEditorSpecialCharsStyle = (scsDot, scsSolid);
 
   TBCEditorTabConvertProc = function(const ALine: string; ATabWidth: Integer; var AHasTabs: Boolean;
@@ -314,7 +268,6 @@ type
     lnoLeadingZeros,
     lnoAfterLastLine
   );
-  TBCEditorLeftMarginLineNumberOptions = set of TBCEditorLeftMarginLineNumberOption;
 
   TBCEditorMatchingPairOption = (
     mpoHighlightAfterToken,
@@ -322,7 +275,6 @@ type
     mpoUnderline,
     mpoUseMatchedColor
   );
-  TBCEditorMatchingPairOptions = set of TBCEditorMatchingPairOption;
 
   TBCEditorMinimapOption = (
     moShowBookmarks,
@@ -330,33 +282,27 @@ type
     moShowSearchResults,
     moShowSpecialChars
   );
-  TBCEditorMinimapOptions = set of TBCEditorMinimapOption;
 
   TBCEditorMinimapAlign = (maLeft, maRight);
   TBCEditorSearchMapAlign = (saLeft, saRight);
 
   TBCEditorUndoOption = (
     uoGroupUndo,
+    uoUndoAfterLoad,
     uoUndoAfterSave
   );
-  TBCEditorUndoOptions = set of TBCEditorUndoOption;
 
   TBCEditorCase = (cNone=-1, cUpper=0, cLower=1, cAlternating=2, cSentence=3, cTitle=4, cOriginal=5);
 
   TBCEditorKeyCharType = (ctFoldOpen, ctFoldClose, ctSkipOpen, ctSkipClose);
 
-  TBCEditorSortOrder = (soAsc, soDesc, soRandom);
-
-  TBCEditorChangeReason = (crInsert, crPaste, crDragDropInsert, crDelete, crLineBreak, crIndent, crUnindent,
-    crCaret, crSelection, crNothing, crGroupBreak);
+  TBCEditorSortOrder = (soAsc, soDesc);
 
   TBCEditorWordWrapWidth = (wwwPage, wwwRightMargin);
 
   TBCEditorCodeFoldingMarkStyle = (msCircle, msSquare, msTriangle);
   TBCEditorCodeFoldingHintIndicatorMarkStyle = (imsThreeDots, imsTriangle);
   TBCEditorCodeFoldingChanges = (fcEnabled, fcRefresh, fcRescan);
-
-  TBCEditorCodeFoldingChangeEvent = procedure(Event: TBCEditorCodeFoldingChanges) of object;
 
   TBCEditorCodeFoldingOption = (
     cfoAutoPadding,
@@ -370,22 +316,18 @@ type
     cfoShowTreeLine,
     cfoUncollapseByHintClick
   );
-  TBCEditorCodeFoldingOptions = set of TBCEditorCodeFoldingOption;
 
   TBCEditorTokenInfoOption = (
     tioAutoSize
   );
-  TBCEditorTokenInfoOptions = set of TBCEditorTokenInfoOption;
 
   TBCEditorLeftMarginBorderStyle = (mbsNone, mbsMiddle, mbsRight);
 
   TBCEditorScrollHintFormat = (shfTopLineOnly, shfTopToBottom);
 
   TBCEditorMinimapIndicatorOption = (ioInvertBlending, ioShowBorder, ioUseBlending);
-  TBCEditorMinimapIndicatorOptions = set of TBCEditorMinimapIndicatorOption;
 
   TBCEditorCodeFoldingHintIndicatorOption = (hioShowBorder, hioShowMark);
-  TBCEditorCodeFoldingHintIndicatorOptions = set of TBCEditorCodeFoldingHintIndicatorOption;
 
   TBCEditorQuadColor = packed record
   case Boolean of
@@ -394,29 +336,78 @@ type
   end;
   PBCEditorQuadColor = ^TBCEditorQuadColor;
 
-  TBCEditorCodeFoldingHintIndicatorPadding = class(TPadding)
-  protected
-    class procedure InitDefaults(Margins: TMargins); override;
-  published
-    property Left default 0;
-    property Top default 1;
-    property Right default 0;
-    property Bottom default 1;
-  end;
+function Point(const APosition: TBCEditorTextPosition): TPoint; overload; inline;
+function Max(const A, B: TBCEditorTextPosition): TBCEditorTextPosition; overload; inline;
+function Min(const A, B: TBCEditorTextPosition): TBCEditorTextPosition; overload; inline;
+function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition; overload; inline;
+function TextPosition(const APos: TPoint): TBCEditorTextPosition; overload; inline;
 
-implementation
+implementation {***************************************************************}
 
-{ TBCEditorCodeFoldingHintIndicatorPadding }
-
-class procedure TBCEditorCodeFoldingHintIndicatorPadding.InitDefaults(Margins: TMargins);
+function Max(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
 begin
-  with Margins do
-  begin
-    Left := 0;
-    Right := 0;
-    Top := 1;
-    Bottom := 1;
-  end;
+  if (A > B) then
+    Result := A
+  else
+    Result := B;
+end;
+
+function Min(const A, B: TBCEditorTextPosition): TBCEditorTextPosition;
+begin
+  if (A < B) then
+    Result := A
+  else
+    Result := B;
+end;
+
+function Point(const APosition: TBCEditorTextPosition): TPoint;
+begin
+  Result.X := APosition.Char - 1;
+  Result.Y := APosition.Line;
+end;
+
+function TextPosition(const AChar, ALine: Integer): TBCEditorTextPosition;
+begin
+  Result.Char := AChar;
+  Result.Line := ALine;
+end;
+
+function TextPosition(const APos: TPoint): TBCEditorTextPosition;
+begin
+  Result.Char := APos.X + 1;
+  Result.Line := APos.Y;
+end;
+
+{ TBCEditorTextPosition *******************************************************}
+
+class operator TBCEditorTextPosition.Equal(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Char = b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.GreaterThan(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line > b.Line) or (a.Char > b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.GreaterThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line > b.Line) or (a.Char >= b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.LessThan(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line < b.Line) or (a.Char < b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.LessThanOrEqual(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Line < b.Line) or (a.Char <= b.Char) and (a.Line = b.Line);
+end;
+
+class operator TBCEditorTextPosition.NotEqual(a, b: TBCEditorTextPosition): Boolean;
+begin
+  Result := (a.Char <> b.Char) or (a.Line <> b.Line);
 end;
 
 end.
