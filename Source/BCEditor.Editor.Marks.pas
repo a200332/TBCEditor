@@ -3,7 +3,7 @@ unit BCEditor.Editor.Marks;
 interface
 
 uses
-  Vcl.Controls, System.Classes, System.Contnrs, Vcl.Graphics, BCEditor.Consts;
+  Vcl.Controls, System.Classes, System.Contnrs, Vcl.Graphics;
 
 type
   TBCEditorMark = class

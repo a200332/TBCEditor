@@ -133,7 +133,7 @@ type
 implementation
 
 uses
-  BCEditor.Utils, BCEditor.Consts, BCEditor.Language, System.Character;
+  BCEditor.Language, System.Character;
 
 var
   GFontsInfoManager: TBCEditorFontsInfoManager;
