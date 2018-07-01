@@ -1,0 +1,12 @@
+/Source/*.dcu
+/Source/__history
+/Demo/*.local
+/Demo/*.identcache
+/Demo/*.stat
+/Packages/*.skincfg
+/Packages/*.local
+/Packages/Win32/Debug/*.dcu
+/Packages/Win32/Release/*.dcu
+*.dcu
+__history
+*.stat
