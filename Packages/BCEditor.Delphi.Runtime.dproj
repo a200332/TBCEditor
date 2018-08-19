@@ -3,7 +3,7 @@
         <ProjectGuid>{AC917C2B-5870-48AD-981D-668AD3E4A533}</ProjectGuid>
         <MainSource>BCEditor.Delphi.Runtime.dpk</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Package</AppType>
         <FrameworkType>VCL</FrameworkType>
@@ -79,11 +79,19 @@
         <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>FileVersion=1.3.2.8;ProductName=DDuce.Demos;ProductVersion=1.3.2.8;CompanyName=Tim Sinaeve;LegalCopyright=(c) 2018 Tim Sinaeve;FileDescription=DDuce Demos;OriginalFilename=BCEditor.Delphi.Runtime.bpl</VerInfo_Keys>
+        <VerInfo_Build>8</VerInfo_Build>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Release>2</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Keys>FileVersion=1.3.2.8;ProductName=DDuce.Demos;ProductVersion=1.3.2.8;CompanyName=Tim Sinaeve;LegalCopyright=(c) 2018 Tim Sinaeve;FileDescription=DDuce Demos;OriginalFilename=BCEditor.Delphi.Runtime.bpl</VerInfo_Keys>
+        <VerInfo_Build>8</VerInfo_Build>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Release>2</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -95,11 +103,19 @@
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>FileVersion=1.3.2.8;ProductName=DDuce.Demos;ProductVersion=1.3.2.8;CompanyName=Tim Sinaeve;LegalCopyright=(c) 2018 Tim Sinaeve;FileDescription=DDuce Demos;OriginalFilename=BCEditor.Delphi.Runtime.bpl</VerInfo_Keys>
+        <VerInfo_Build>8</VerInfo_Build>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Release>2</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>FileVersion=1.3.2.8;ProductName=DDuce.Demos;ProductVersion=1.3.2.8;CompanyName=Tim Sinaeve;LegalCopyright=(c) 2018 Tim Sinaeve;FileDescription=DDuce Demos;OriginalFilename=BCEditor.Delphi.Runtime.bpl</VerInfo_Keys>
+        <VerInfo_Build>8</VerInfo_Build>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Release>2</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -110,11 +126,19 @@
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <VerInfo_Keys>FileVersion=1.3.2.8;ProductName=DDuce.Demos;ProductVersion=1.3.2.8;CompanyName=Tim Sinaeve;LegalCopyright=(c) 2018 Tim Sinaeve;FileDescription=DDuce Demos;OriginalFilename=BCEditor.Delphi.Runtime.bpl</VerInfo_Keys>
+        <VerInfo_Build>8</VerInfo_Build>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Release>2</VerInfo_Release>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <DCC_DcuOutput>.\$(Platform)\$(Config)</DCC_DcuOutput>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Keys>FileVersion=1.3.2.8;ProductName=DDuce.Demos;ProductVersion=1.3.2.8;CompanyName=Tim Sinaeve;LegalCopyright=(c) 2018 Tim Sinaeve;FileDescription=DDuce Demos;OriginalFilename=BCEditor.Delphi.Runtime.bpl</VerInfo_Keys>
+        <VerInfo_Build>8</VerInfo_Build>
+        <VerInfo_MinorVer>3</VerInfo_MinorVer>
+        <VerInfo_Release>2</VerInfo_Release>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">
